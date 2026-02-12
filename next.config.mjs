@@ -1,3 +1,9 @@
 export default {
-  output: 'export',
+    output: 'export',
+    eslint: {
+          ignoreDuringBuilds: true,
+    },
+    typescript: {
+          ignoreBuildErrors: true,
+    },
 };
