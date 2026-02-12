@@ -63,6 +63,7 @@ export default function EditProjectPage() {
             faculty: formData.get('faculty') as string,
             primary_outcome: formData.get('primary_outcome') as string,
             proponents: (formData.get('proponents') as string).split(',').map(s => s.trim()),
+            lead_proponents: (formData.get('lead_proponents') as string).split(',').map(s => s.trim()),
             last_updated_date: new Date().toISOString(),
         };
 
@@ -143,10 +144,10 @@ export default function EditProjectPage() {
                         </div>
 
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
                             <input
-                                name="category"
-                                defaultValue={project.category || ''}
+                                name="faculty"
+                                defaultValue={project.faculty || ''}
                                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
                             />
                         </div>
@@ -154,10 +155,10 @@ export default function EditProjectPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead(s) (comma separated)</label>
                             <input
-                                name="faculty"
-                                defaultValue={project.faculty || ''}
+                                name="lead_proponents"
+                                defaultValue={project.lead_proponents.join(', ')}
                                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
                             />
                         </div>
