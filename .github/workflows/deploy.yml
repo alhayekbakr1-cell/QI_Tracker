@@ -23,7 +23,7 @@ jobs:
       - name: Detect package manager
         id: detect-package-manager
         run: |
-          if [ -f "${{ github.workspace }}/dashboard/package-lock.json" ]; then
+          if [ -f "${{ github.workspace }}/package-lock.json" ]; then
             echo "manager=npm" >> $GITHUB_OUTPUT
             echo "command=ci" >> $GITHUB_OUTPUT
             echo "runner=npx --no-install" >> $GITHUB_OUTPUT
@@ -35,26 +35,24 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-size: 20
+          node-version: 20
           cache: ${{ steps.detect-package-manager.outputs.manager }}
-          cache-dependency-path: dashboard/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Setup Pages
         uses: actions/configure-pages@v4
         with:
           static_site_generator: next
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
-        working-directory: dashboard
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
-        working-directory: dashboard
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dashboard/out
+          path: ./out
 
   deploy:
     environment:
