@@ -47,3 +47,10 @@ export interface Metric {
     value: number;
     pdsa_cycle_id: number | null;
 }
+
+export interface DirectoryEntry {
+    id: string;
+    name: string;
+    email: string;
+    created_at: string;
+}
