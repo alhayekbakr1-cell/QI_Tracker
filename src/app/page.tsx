@@ -8,6 +8,7 @@ import { Project, ProjectStatus } from "@/types";
 import { Plus, Search, Filter, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import DashboardCharts from "@/components/DashboardCharts";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -53,6 +54,18 @@ export default function Dashboard() {
     'Sustain the Gains': projects.filter(p => p.status === 'Sustain the Gains').length,
   };
 
+  const statusChartData = [
+    { name: 'Idea', value: stats.Idea },
+    { name: 'Pre-Intervention', value: stats['Pre-Intervention'] },
+    { name: 'Intervention Ongoing', value: stats['Intervention Ongoing'] },
+    { name: 'Sustain the Gains', value: stats['Sustain the Gains'] },
+  ].filter(d => d.value > 0);
+
+  const categoryChartData = [
+    { name: 'Inpatient', value: projects.filter(p => p.category === 'Inpatient').length },
+    { name: 'Outpatient', value: projects.filter(p => p.category === 'Outpatient').length },
+  ];
+
   const recentProjects = projects.slice(0, 6);
 
   return (
@@ -76,13 +89,15 @@ export default function Dashboard() {
       <PHIWarning />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <StatCard label="Total Projects" value={stats.Total} color="bg-advent-blue" textColor="text-white" />
         <StatCard label="Ideas" value={stats.Idea} color="bg-white" textColor="text-slate-900" />
         <StatCard label="Pre-Interv." value={stats['Pre-Intervention']} color="bg-white" textColor="text-slate-900" />
         <StatCard label="Ongoing" value={stats['Intervention Ongoing']} color="bg-white" textColor="text-slate-900" />
         <StatCard label="Sustained" value={stats['Sustain the Gains']} valueColor="text-advent-green" color="bg-white" textColor="text-slate-900" />
       </div>
+
+      <DashboardCharts statusData={statusChartData} categoryData={categoryChartData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Updates */}
