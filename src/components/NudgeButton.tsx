@@ -87,16 +87,42 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
         `QI Chief`
     );
 
-    const handleNudge = () => {
-        if (isLoadingEmail) return;
+    const handleNudge = async () => {
+        if (isLoadingEmail || !recipientEmail) {
+            alert("No recipient email found. Please check logs.");
+            return;
+        }
 
-        // 1. Open the Helper Modal (Backup UI)
-        setIsModalOpen(true);
+        const confirmSend = window.confirm(`Send formal nudge email to: ${recipientEmail}?`);
+        if (!confirmSend) return;
 
-        // 2. Try to Launch Outlook Automatically (Best Case)
-        // This attempts to open the default mail client immediately.
-        // If it works, great! If blocked, the modal is already open as a fallback.
-        window.location.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+        setIsLoadingEmail(true); // Re-use loading state for "Sending..."
+
+        try {
+            const response = await fetch('/api/nudge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    leadEmails: recipientEmail,
+                    projectTitle: project.title,
+                    daysSinceUpdate,
+                    lastUpdated: format(lastUpdated, 'MMM d, yyyy')
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send email');
+            }
+
+            alert("✅ Nudge Sent Successfully!");
+        } catch (err: any) {
+            console.error("Nudge API Error:", err);
+            alert(`❌ Failed to send: ${err.message}. \n\nCheck if RESEND_API_KEY is configured.`);
+        } finally {
+            setIsLoadingEmail(false);
+        }
     };
 
     return (
@@ -109,7 +135,7 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
                     className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-amber-100 transition-all border border-amber-200 disabled:opacity-50"
                 >
                     {isLoadingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <BellRing className="w-4 h-4" />}
-                    Nudge Leads
+                    {isLoadingEmail ? "Sending..." : "Nudge Leads"}
                 </button>
             ) : (
                 <button
@@ -125,14 +151,7 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
                 </button>
             )}
 
-            <NudgeModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                project={project}
-                recipientEmail={recipientEmail}
-                emailSubject={subject}
-                emailBody={body}
-            />
+            {/* Modal removed as we now send directly */}
         </>
     );
 }
