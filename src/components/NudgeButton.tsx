@@ -1,11 +1,11 @@
 "use client"
 
-import { Project } from "@/types";
-import { BellRing, Loader2 } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
+import { BellRing, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import emailjs from '@emailjs/browser';
-import { supabase } from "@/lib/supabase";
-import { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { Project } from "@/types";
 import NudgeModal from "./NudgeModal";
 
 interface NudgeButtonProps {
