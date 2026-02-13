@@ -46,16 +46,25 @@ export default function ProjectsPage() {
             if (faculty) {
                 query = query.ilike("faculty", `%${faculty}%`);
             }
-            if (lead) {
-                query = query.contains("lead_proponents", [lead]);
-            }
 
             const { data, error } = await query.order("last_updated_date", { ascending: false });
 
             if (error) {
                 console.error(error);
             } else {
-                setProjects((data || []) as Project[]);
+                let filteredData = data || [];
+
+                // Client-side filtering for lead_proponents to support partial case-insensitive matches
+                if (lead) {
+                    const searchLower = lead.toLowerCase();
+                    filteredData = filteredData.filter(p =>
+                        p.lead_proponents?.some((name: string) =>
+                            name.toLowerCase().includes(searchLower)
+                        )
+                    );
+                }
+
+                setProjects(filteredData as Project[]);
             }
             setIsLoading(false);
         }
