@@ -93,33 +93,35 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
             return;
         }
 
-        const confirmSend = window.confirm(`Send formal nudge email to: ${recipientEmail}?`);
+        const confirmSend = window.confirm(`Send formal nudge request via Formspree?\n\nRecipient: ${recipientEmail}`);
         if (!confirmSend) return;
 
-        setIsLoadingEmail(true); // Re-use loading state for "Sending..."
+        setIsLoadingEmail(true);
 
         try {
-            const response = await fetch('/api/nudge', {
+            const response = await fetch("https://formspree.io/f/xbdagedv", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    leadEmails: recipientEmail,
-                    projectTitle: project.title,
-                    daysSinceUpdate,
-                    lastUpdated: format(lastUpdated, 'MMM d, yyyy')
+                    _replyto: recipientEmail, // Allows you to hit "Reply" to email the lead
+                    subject: `QI Nudge: ${project.title}`,
+                    message: `Please update the project: ${project.title}. it has been ${daysSinceUpdate} days since the last update.`,
+                    project_title: project.title,
+                    lead_emails: recipientEmail,
+                    days_inactive: daysSinceUpdate,
+                    last_update: format(lastUpdated, 'MMM d, yyyy')
                 }),
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to send email');
+            if (response.ok) {
+                alert("✅ Nudge request sent to Formspree!");
+            } else {
+                const data = await response.json();
+                throw new Error(data.error || "Formspree submission failed");
             }
-
-            alert("✅ Nudge Sent Successfully!");
         } catch (err: any) {
-            console.error("Nudge API Error:", err);
-            alert(`❌ Failed to send: ${err.message}. \n\nCheck if RESEND_API_KEY is configured.`);
+            console.error("Formspree Error:", err);
+            alert(`❌ Failed to send: ${err.message}`);
         } finally {
             setIsLoadingEmail(false);
         }
