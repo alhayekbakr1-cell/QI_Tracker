@@ -89,7 +89,14 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
 
     const handleNudge = () => {
         if (isLoadingEmail) return;
+
+        // 1. Open the Helper Modal (Backup UI)
         setIsModalOpen(true);
+
+        // 2. Try to Launch Outlook Automatically (Best Case)
+        // This attempts to open the default mail client immediately.
+        // If it works, great! If blocked, the modal is already open as a fallback.
+        window.location.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
     };
 
     return (
