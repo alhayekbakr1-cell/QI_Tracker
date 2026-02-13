@@ -7,14 +7,16 @@ export default function ExportCSVButton({ projects }: { projects: Project[] }) {
     const handleExport = () => {
         if (!projects || projects.length === 0) return;
 
-        const headers = ["Title", "Status", "Category", "Subcategory", "Faculty", "Leads", "Last Updated"];
+        const headers = ["Title", "Status", "Category", "Subcategory", "Faculty", "Leads", "Proponents", "Primary Outcome", "Last Updated"];
         const rows = projects.map(p => [
-            `"${p.title.replace(/"/g, '""')}"`,
+            `"${(p.title || "").replace(/"/g, '""')}"`,
             p.status,
             p.category,
             p.subcategory || "",
             p.faculty || "",
-            `"${p.lead_proponents.join(", ")}"`,
+            `"${(p.lead_proponents || []).join(", ").replace(/"/g, '""')}"`,
+            `"${(p.proponents || []).join(", ").replace(/"/g, '""')}"`,
+            `"${(p.primary_outcome || "").replace(/"/g, '""')}"`,
             p.last_updated_date
         ]);
 
