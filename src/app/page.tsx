@@ -65,6 +65,7 @@ export default function Dashboard() {
 
         <Link
           href="/projects/new"
+          prefetch={false}
           className="flex items-center gap-2 bg-advent-blue text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-advent-blue/20 hover:bg-advent-dark-blue transition-all active:scale-95"
         >
           <Plus className="w-5 h-5" />
@@ -88,7 +89,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">Recently Updated</h2>
-            <Link href="/projects" className="text-sm font-bold text-advent-blue hover:text-advent-lightblue flex items-center gap-1 group">
+            <Link href="/projects" prefetch={false} className="text-sm font-bold text-advent-blue hover:text-advent-lightblue flex items-center gap-1 group">
               View all Masterlist <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -131,6 +132,7 @@ export default function Dashboard() {
                 <Link
                   key={s}
                   href={`/projects?status=${s}`}
+                  prefetch={false}
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-md text-xs font-semibold text-slate-600 transition-colors"
                 >
                   {s}
@@ -144,6 +146,7 @@ export default function Dashboard() {
             <p className="text-sm text-blue-100 mb-4">Track PDSA cycles and project outcomes across the department.</p>
             <Link
               href="/metrics"
+              prefetch={false}
               className="inline-block bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm"
             >
               Go to departmental metrics

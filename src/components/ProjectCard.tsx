@@ -8,6 +8,7 @@ export default function ProjectCard({ project }: { project: Project }) {
     return (
         <Link
             href={`/projects/view?id=${project.id}`}
+            prefetch={false}
             className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-advent-blue/30 transition-all flex flex-col h-full relative overflow-hidden"
         >
             {/* Hover Indicator */}

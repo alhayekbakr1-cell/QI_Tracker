@@ -20,21 +20,21 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
                     <div className="flex items-center gap-8">
-                        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-advent-blue">
+                        <Link href="/" prefetch={false} className="flex items-center gap-2 font-bold text-xl text-advent-blue">
                             <span className="bg-advent-blue text-white p-1 rounded-md">QI</span>
                             <span>Chief Tracker</span>
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-6">
-                            <Link href="/" className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-advent-lightblue border-b-2 border-transparent hover:border-advent-lightblue py-5 transition-all">
+                            <Link href="/" prefetch={false} className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-advent-lightblue border-b-2 border-transparent hover:border-advent-lightblue py-5 transition-all">
                                 <LayoutDashboard className="w-4 h-4" />
                                 Dashboard
                             </Link>
-                            <Link href="/projects" className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-advent-lightblue border-b-2 border-transparent hover:border-advent-lightblue py-5 transition-all">
+                            <Link href="/projects" prefetch={false} className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-advent-lightblue border-b-2 border-transparent hover:border-advent-lightblue py-5 transition-all">
                                 <List className="w-4 h-4" />
                                 Projects
                             </Link>
-                            <Link href="/resources" className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-advent-lightblue border-b-2 border-transparent hover:border-advent-lightblue py-5 transition-all">
+                            <Link href="/resources" prefetch={false} className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-advent-lightblue border-b-2 border-transparent hover:border-advent-lightblue py-5 transition-all">
                                 <BookOpen className="w-4 h-4" />
                                 Resources
                             </Link>

@@ -94,7 +94,7 @@ export default function ProjectsPage() {
                                         <StatusBadge status={project.status} />
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Link href={`/projects/view?id=${project.id}`} className="text-sm font-bold text-slate-900 group-hover:text-advent-blue line-clamp-2 transition-colors">
+                                        <Link href={`/projects/view?id=${project.id}`} prefetch={false} className="text-sm font-bold text-slate-900 group-hover:text-advent-blue line-clamp-2 transition-colors">
                                             {project.title}
                                         </Link>
                                         <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mt-1">{project.category} • {project.subcategory}</span>

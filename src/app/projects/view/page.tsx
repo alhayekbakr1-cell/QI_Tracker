@@ -16,7 +16,8 @@ import {
     Info,
     CheckCircle2,
     Clock,
-    Plus
+    Plus,
+    Edit3
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -91,7 +92,7 @@ export default function ProjectDetailPage() {
 
     return (
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Link href="/projects" className="flex items-center gap-2 text-slate-500 hover:text-advent-blue mb-6 transition-colors text-sm font-semibold group">
+            <Link href="/projects" prefetch={false} className="flex items-center gap-2 text-slate-500 hover:text-advent-blue mb-6 transition-colors text-sm font-semibold group">
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Masterlist
             </Link>
@@ -115,9 +116,10 @@ export default function ProjectDetailPage() {
 
                         <Link
                             href={`/projects/edit?id=${id}`}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black uppercase tracking-widest text-slate-500 hover:text-advent-blue hover:border-advent-blue/30 transition-all active:scale-95"
+                            prefetch={false}
+                            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:border-advent-blue hover:text-advent-blue transition-all"
                         >
-                            <TrendingUp className="w-4 h-4" />
+                            <Edit3 className="w-4 h-4" />
                             Edit Project
                         </Link>
                     </div>
