@@ -17,7 +17,9 @@ import {
     CheckCircle2,
     Clock,
     Plus,
-    Edit3
+    Edit3,
+    FileText,
+    Presentation
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -224,11 +226,60 @@ export default function ProjectDetailPage() {
                             <Paperclip className="w-4 h-4" />
                             Attachments
                         </h3>
-                        <div className="flex flex-col gap-2 mb-6 text-sm">
-                            <button className="text-[10px] font-black text-advent-blue hover:text-advent-lightblue flex items-center justify-center gap-2 border-2 border-advent-blue/10 border-dashed p-4 rounded-xl hover:bg-advent-blue/5 transition-all uppercase tracking-widest group">
-                                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-                                Add File
-                            </button>
+                        <div className="flex flex-col gap-3 mb-6">
+                            {project.protocol_url ? (
+                                <a
+                                    href={project.protocol_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-700 font-bold text-sm hover:bg-emerald-100 transition-all group"
+                                >
+                                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] uppercase tracking-widest text-emerald-500 font-black">QI Protocol</span>
+                                        <span>View Document</span>
+                                    </div>
+                                </a>
+                            ) : (
+                                <div className="flex items-center gap-3 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-400 font-bold text-sm italic">
+                                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] uppercase tracking-widest text-slate-300 font-black">QI Protocol</span>
+                                        <span>Missing</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {project.presentation_url ? (
+                                <a
+                                    href={project.presentation_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all group"
+                                >
+                                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                                        <Presentation className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] uppercase tracking-widest text-amber-500 font-black">QI Presentation</span>
+                                        <span>View Slides</span>
+                                    </div>
+                                </a>
+                            ) : (
+                                <div className="flex items-center gap-3 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-400 font-bold text-sm italic">
+                                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300">
+                                        <Presentation className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] uppercase tracking-widest text-slate-300 font-black">QI Presentation</span>
+                                        <span>Missing</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 pt-6 border-t border-slate-100 text-[10px] uppercase tracking-[0.2em]">

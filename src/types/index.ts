@@ -25,6 +25,8 @@ export interface Project {
     created_at: string;
     updated_at: string;
     updated_by: string | null;
+    protocol_url: string | null;
+    presentation_url: string | null;
 }
 
 export interface Comment {

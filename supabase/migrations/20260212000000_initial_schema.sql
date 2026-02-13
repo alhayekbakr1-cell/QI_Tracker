@@ -29,8 +29,9 @@ CREATE TABLE projects (
     internal_notes TEXT, -- Visible only to Operators
     last_updated_date TIMESTAMPTZ DEFAULT NOW(), -- Represents the "Last Updated" metadata from Excel
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_by UUID REFERENCES auth.users(id)
+    updated_by UUID REFERENCES auth.users(id),
+    protocol_url TEXT,
+    presentation_url TEXT
 );
 
 -- Comments Table

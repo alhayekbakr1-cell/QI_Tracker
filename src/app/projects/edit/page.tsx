@@ -7,7 +7,9 @@ import PHIWarning from "@/components/PHIWarning";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
+import FileUploader from "@/components/FileUploader";
 import { useEffect, useState } from "react";
+import { FileDown } from "lucide-react";
 
 export default function EditProjectPage() {
     const searchParams = useSearchParams();
@@ -180,6 +182,55 @@ export default function EditProjectPage() {
                             defaultValue={project.primary_outcome || ''}
                             className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[120px] resize-none"
                         />
+                    </div>
+
+                    <div className="space-y-6 pt-10 border-t border-slate-100">
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Project Depot</h3>
+                            <p className="text-slate-500 text-sm font-medium mt-1">Manage institutional templates and project documents.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Template</span>
+                                    <a
+                                        href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
+                                        download
+                                        className="flex items-center gap-2 text-advent-blue text-xs font-bold hover:underline"
+                                    >
+                                        <FileDown className="w-3 h-3" />
+                                        Download .docx
+                                    </a>
+                                </div>
+                                <FileUploader
+                                    projectId={id!}
+                                    fieldName="protocol_url"
+                                    currentUrl={project.protocol_url}
+                                    onUploadComplete={(url) => setProject({ ...project, protocol_url: url })}
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Presentation Template</span>
+                                    <a
+                                        href="/QI_Tracker/templates/AdventHealth IM GME QI Template.pptx"
+                                        download
+                                        className="flex items-center gap-2 text-advent-blue text-xs font-bold hover:underline"
+                                    >
+                                        <FileDown className="w-3 h-3" />
+                                        Download .pptx
+                                    </a>
+                                </div>
+                                <FileUploader
+                                    projectId={id!}
+                                    fieldName="presentation_url"
+                                    currentUrl={project.presentation_url}
+                                    onUploadComplete={(url) => setProject({ ...project, presentation_url: url })}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
