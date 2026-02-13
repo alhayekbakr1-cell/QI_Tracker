@@ -27,17 +27,33 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
             const subject = encodeURIComponent(`QI Update Requested: ${project.title}`);
             const leadNames = project.lead_proponents;
 
+            console.log("Nudging leads:", leadNames);
+
             // Look up emails for leads in the directory
             let recipients = "";
+            let foundEmails: string[] = [];
+
             if (leadNames.length > 0) {
-                const { data: directory } = await supabase
+                const { data: directory, error } = await supabase
                     .from('directory')
-                    .select('email')
+                    .select('email, name')
                     .in('name', leadNames);
 
-                if (directory && directory.length > 0) {
-                    recipients = directory.map(d => d.email).join(",");
+                if (error) {
+                    console.error("Directory lookup error:", error);
+                    alert("Error: Could not attempt email lookup. Please try again.");
+                    return;
                 }
+
+                if (directory && directory.length > 0) {
+                    foundEmails = directory.map(d => d.email);
+                    recipients = foundEmails.join(",");
+                }
+            }
+
+            if (!recipients) {
+                const proceed = window.confirm(`Warning: No email addresses found for ${leadNames.join(", ")}.\n\nThe email will open with a blank 'To' field.\n\nDo you want to proceed?`);
+                if (!proceed) return;
             }
 
             const body = encodeURIComponent(
@@ -52,6 +68,7 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
             window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
         } catch (error) {
             console.error("Nudge generation failed:", error);
+            alert("Something went wrong while generating the nudge. check console for details.");
         } finally {
             setIsGenerating(false);
         }
