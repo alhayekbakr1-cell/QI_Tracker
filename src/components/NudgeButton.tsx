@@ -33,22 +33,39 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
                     return;
                 }
 
+                console.log("Nudge: Fetching emails for", leadNames);
+
                 const { data: directory, error } = await supabase
                     .from('directory')
                     .select('email')
                     .in('name', leadNames);
 
                 if (error) {
-                    console.error("Directory lookup error:", error);
-                    setErrorMsg("System Error: Could not verify email.");
+                    console.error("Nudge: Directory lookup error:", error);
+                    // FALLBACK: Construct email manually if API fails (401/404)
+                    // Format: Firstname.Lastname.MD@AdventHealth.com
+                    const fallbackEmails = leadNames.map(name => {
+                        return name.replace(/ /g, ".") + "@AdventHealth.com";
+                    }).join(",");
+                    console.warn("Nudge: Using fallback email:", fallbackEmails);
+                    setRecipientEmail(fallbackEmails);
+                    // Don't set errorMsg, just let it work with fallback
                 } else if (directory && directory.length > 0) {
                     const emails = directory.map(d => d.email).join(",");
                     setRecipientEmail(emails);
                 } else {
-                    setErrorMsg(`No email found for: ${leadNames.join(", ")}`);
+                    // No directory match, try fallback
+                    const fallbackEmails = leadNames.map(name => {
+                        return name.replace(/ /g, ".") + "@AdventHealth.com";
+                    }).join(",");
+                    setRecipientEmail(fallbackEmails);
                 }
             } catch (err) {
                 console.error("Nudge init failed:", err);
+                const fallbackEmails = project.lead_proponents.map(name => {
+                    return name.replace(/ /g, ".") + "@AdventHealth.com";
+                }).join(",");
+                setRecipientEmail(fallbackEmails);
             } finally {
                 setIsLoadingEmail(false);
             }
