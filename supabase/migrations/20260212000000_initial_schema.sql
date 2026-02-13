@@ -101,13 +101,19 @@ CREATE POLICY "Operators can insert projects" ON projects FOR INSERT WITH CHECK 
 CREATE POLICY "Operators can update projects" ON projects FOR UPDATE USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'Operator')
 );
+CREATE POLICY "Operators can delete projects" ON projects FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'Operator')
+);
 
 -- Comments:
 -- Anyone can view comments
 CREATE POLICY "Anyone can view comments" ON comments FOR SELECT USING (true);
 -- Anyone can insert comments
 CREATE POLICY "Anyone can insert comments" ON comments FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
--- Operators or comment authors can update/delete? Let's say only Operators can "resolve"
+-- Operators can delete comments
+CREATE POLICY "Operators can delete comments" ON comments FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'Operator')
+);
 
 -- Metrics & Resources:
 CREATE POLICY "Anyone can view metrics" ON metrics FOR SELECT USING (true);
