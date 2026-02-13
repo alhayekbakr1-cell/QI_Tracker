@@ -89,6 +89,10 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
     );
 
     const handleNudge = async () => {
+        // --- TEST MODE: Override recipient to YOUR email ---
+        // const recipientEmail = "bakr.alhayek.md@adventhealth.com"; 
+        // ---------------------------------------------------
+
         if (isLoadingEmail || !recipientEmail) {
             alert("No recipient email found. Please check logs.");
             return;
@@ -106,18 +110,19 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
             const PUBLIC_KEY = 'FUMeORBrHGR5uaims';
 
             const templateParams = {
-                lead_email: recipientEmail, // This variable directs the email to the Lead (set in EmailJS template)
-                to_name: recipientEmail.split('@')[0].replace('.', ' '), // "nasar khan"
+                // lead_email: recipientEmail, // REAL PRODUCTION MODE
+                lead_email: "bakr.alhayek.md@adventhealth.com", // SAFE TEST MODE (Sends only to you)
+                to_name: recipientEmail.split('@')[0].replace('.', ' '), // Still shows lead's name in template
                 project_title: project.title,
                 days_inactive: daysSinceUpdate,
                 last_update: format(lastUpdated, 'MMM d, yyyy'),
                 message: `Please log in to the QI Tracker and update your "Updates and Barriers" section to keep the dashboard current.`,
-                reply_to: 'noreply@qitracker.com' // Placeholder as we don't know the sender's email
+                reply_to: 'noreply@qitracker.com'
             };
 
             await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
 
-            alert(`✅ Nudge sent to ${recipientEmail} successfully!`);
+            alert(`✅ Test Nudge sent to YOU (bakr.alhayek.md@adventhealth.com) successfully!`);
         } catch (err: any) {
             console.error("EmailJS Error:", err);
             alert(`❌ Failed to send: ${err.text || err.message}`);
