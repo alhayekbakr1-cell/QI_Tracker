@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { format } from "date-fns";
 import MetricEntryForm from "@/components/MetricEntryForm";
+import NudgeButton from "@/components/NudgeButton";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -116,14 +117,17 @@ export default function ProjectDetailPage() {
                             </h1>
                         </div>
 
-                        <Link
-                            href={`/projects/edit?id=${id}`}
-                            prefetch={false}
-                            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:border-advent-blue hover:text-advent-blue transition-all"
-                        >
-                            <Edit3 className="w-4 h-4" />
-                            Edit Project
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            <NudgeButton project={project} variant="full" />
+                            <Link
+                                href={`/projects/edit?id=${id}`}
+                                prefetch={false}
+                                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:border-advent-blue hover:text-advent-blue transition-all"
+                            >
+                                <Edit3 className="w-4 h-4" />
+                                Edit Project
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Workflow Indicator */}

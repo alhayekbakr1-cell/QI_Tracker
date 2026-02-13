@@ -9,6 +9,7 @@ import Link from "next/link";
 import { format, subDays, isBefore } from "date-fns";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import ProjectFilters from "@/components/ProjectFilters";
+import NudgeButton from "@/components/NudgeButton";
 import { useEffect, useState } from "react";
 
 export default function ProjectsPage() {
@@ -139,7 +140,8 @@ export default function ProjectsPage() {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                         {format(new Date(project.last_updated_date), 'MMM d, yyyy')}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                    <td className="px-6 py-4 whitespace-nowrap text-right flex items-center justify-end gap-2">
+                                        <NudgeButton project={project} />
                                         <button className="text-slate-400 hover:text-slate-600 p-1">
                                             <MoreHorizontal className="w-5 h-5" />
                                         </button>
