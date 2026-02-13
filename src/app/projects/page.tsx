@@ -4,9 +4,9 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Project } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Clock, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, subDays, isBefore } from "date-fns";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import ProjectFilters from "@/components/ProjectFilters";
 import { useEffect, useState } from "react";
@@ -21,6 +21,8 @@ export default function ProjectsPage() {
     const status = searchParams.get("status");
     const q = searchParams.get("q");
     const category = searchParams.get("category");
+    const faculty = searchParams.get("faculty");
+    const lead = searchParams.get("lead");
 
     useEffect(() => {
         async function fetchProjects() {
@@ -41,6 +43,12 @@ export default function ProjectsPage() {
             if (category) {
                 query = query.eq("category", category);
             }
+            if (faculty) {
+                query = query.ilike("faculty", `%${faculty}%`);
+            }
+            if (lead) {
+                query = query.contains("lead_proponents", [lead]);
+            }
 
             const { data, error } = await query.order("last_updated_date", { ascending: false });
 
@@ -53,7 +61,7 @@ export default function ProjectsPage() {
         }
 
         fetchProjects();
-    }, [status, q, category, supabase, router]);
+    }, [status, q, category, faculty, lead, supabase, router]);
 
     if (isLoading) {
         return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
@@ -94,8 +102,14 @@ export default function ProjectsPage() {
                                         <StatusBadge status={project.status} />
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Link href={`/projects/view?id=${project.id}`} prefetch={false} className="text-sm font-bold text-slate-900 group-hover:text-advent-blue line-clamp-2 transition-colors">
+                                        <Link href={`/projects/view?id=${project.id}`} prefetch={false} className="text-sm font-bold text-slate-900 group-hover:text-advent-blue line-clamp-2 transition-colors flex items-center gap-2">
                                             {project.title}
+                                            {isBefore(new Date(project.last_updated_date), subDays(new Date(), 30)) && (
+                                                <span className="inline-flex items-center gap-1 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-black uppercase tracking-widest" title="No updates in >30 days">
+                                                    <Clock className="w-2.5 h-2.5" />
+                                                    Stale
+                                                </span>
+                                            )}
                                         </Link>
                                         <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mt-1">{project.category} • {project.subcategory}</span>
                                     </td>

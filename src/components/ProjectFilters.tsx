@@ -25,13 +25,35 @@ export default function ProjectFilters() {
 
     return (
         <div className="bg-white p-4 rounded-xl border border-slate-200 mb-6 flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[300px]">
+            <div className="relative flex-1 min-w-[200px]">
                 <Search className={`absolute left-3 top-2.5 w-4 h-4 transition-colors ${isPending ? 'text-advent-blue animate-pulse' : 'text-slate-400'}`} />
                 <input
                     type="text"
                     placeholder="Search by title..."
                     defaultValue={searchParams.get('q') || ''}
                     onChange={(e) => updateFilter('q', e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue outline-none transition-all"
+                />
+            </div>
+
+            <div className="relative flex-1 min-w-[200px]">
+                <Search className={`absolute left-3 top-2.5 w-4 h-4 transition-colors ${isPending ? 'text-advent-blue animate-pulse' : 'text-slate-400'}`} />
+                <input
+                    type="text"
+                    placeholder="Search by Faculty..."
+                    defaultValue={searchParams.get('faculty') || ''}
+                    onChange={(e) => updateFilter('faculty', e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue outline-none transition-all"
+                />
+            </div>
+
+            <div className="relative flex-1 min-w-[200px]">
+                <Search className={`absolute left-3 top-2.5 w-4 h-4 transition-colors ${isPending ? 'text-advent-blue animate-pulse' : 'text-slate-400'}`} />
+                <input
+                    type="text"
+                    placeholder="Search by Lead..."
+                    defaultValue={searchParams.get('lead') || ''}
+                    onChange={(e) => updateFilter('lead', e.target.value)}
                     className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue outline-none transition-all"
                 />
             </div>
