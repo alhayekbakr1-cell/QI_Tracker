@@ -2,8 +2,9 @@
 
 import { Project } from "@/types";
 import { BellRing, Loader2 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
-import { createClient } from "@/utils/supabase/client";
+import { differenceInDays, format } from "date-fns";
+import emailjs from '@emailjs/browser';
+import { supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
 import NudgeModal from "./NudgeModal";
 
@@ -93,35 +94,33 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
             return;
         }
 
-        const confirmSend = window.confirm(`Send formal nudge request via Formspree?\n\nRecipient: ${recipientEmail}`);
+        const confirmSend = window.confirm(`Send formal nudge email to: ${recipientEmail}?`);
         if (!confirmSend) return;
 
         setIsLoadingEmail(true);
 
         try {
-            const response = await fetch("https://formspree.io/f/xbdagedv", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    _replyto: recipientEmail, // Allows you to hit "Reply" to email the lead
-                    subject: `QI Nudge: ${project.title}`,
-                    message: `Please update the project: ${project.title}. it has been ${daysSinceUpdate} days since the last update.`,
-                    project_title: project.title,
-                    lead_emails: recipientEmail,
-                    days_inactive: daysSinceUpdate,
-                    last_update: format(lastUpdated, 'MMM d, yyyy')
-                }),
-            });
+            // EmailJS Configuration
+            const SERVICE_ID = 'service_cmylzni';
+            const TEMPLATE_ID = 'template_zp4ihsn';
+            const PUBLIC_KEY = 'FUMeORBrHGR5uaims';
 
-            if (response.ok) {
-                alert("✅ Nudge request sent to Formspree!");
-            } else {
-                const data = await response.json();
-                throw new Error(data.error || "Formspree submission failed");
-            }
+            const templateParams = {
+                lead_email: recipientEmail, // This variable directs the email to the Lead (set in EmailJS template)
+                to_name: recipientEmail.split('@')[0].replace('.', ' '), // "nasar khan"
+                project_title: project.title,
+                days_inactive: daysSinceUpdate,
+                last_update: format(lastUpdated, 'MMM d, yyyy'),
+                message: `Please log in to the QI Tracker and update your "Updates and Barriers" section to keep the dashboard current.`,
+                reply_to: 'noreply@qitracker.com' // Placeholder as we don't know the sender's email
+            };
+
+            await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
+
+            alert(`✅ Nudge sent to ${recipientEmail} successfully!`);
         } catch (err: any) {
-            console.error("Formspree Error:", err);
-            alert(`❌ Failed to send: ${err.message}`);
+            console.error("EmailJS Error:", err);
+            alert(`❌ Failed to send: ${err.text || err.message}`);
         } finally {
             setIsLoadingEmail(false);
         }
