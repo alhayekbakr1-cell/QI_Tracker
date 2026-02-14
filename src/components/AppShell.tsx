@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import Header from '@/components/Header'
+import QIConsultantChat from '@/components/QIConsultantChat'
 
 export default function AppShell({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<any>(null)
@@ -49,6 +50,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <main className="flex-1 flex flex-col">
                 {children}
             </main>
+            {user && <QIConsultantChat />}
         </>
     )
 }

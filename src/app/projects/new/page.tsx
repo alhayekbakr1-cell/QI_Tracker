@@ -6,7 +6,7 @@ import PHIWarning from "@/components/PHIWarning";
 import { ArrowLeft, Save, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { draftSummary } from "@/utils/ai";
+import { draftSummary, generateSMARTAim, suggestMetrics, checkDuplication } from "@/utils/ai";
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
@@ -118,7 +118,33 @@ export default function NewProjectPage() {
             <form onSubmit={handleSubmit} className="space-y-8 bg-white p-10 rounded-3xl border border-slate-200 shadow-sm">
                 <div className="grid grid-cols-1 gap-8">
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Project Title</label>
+                        <div className="flex justify-between items-end ml-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Project Title</label>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const title = (document.getElementsByName('title')[0] as HTMLInputElement).value;
+                                    if (!title || title.length < 5) return alert("Please enter at least 5 characters for the title.");
+                                    const btn = document.getElementById('duplicate-check-btn');
+                                    if (btn) btn.innerHTML = '<span class="animate-spin text-[8px]">🌀</span> Checking...';
+                                    try {
+                                        const { data: projects } = await supabase.from('projects').select('title').limit(50);
+                                        const summaries = projects?.map(p => p.title).join(', ') || "";
+                                        const result = await checkDuplication(title, summaries);
+                                        alert("AI Duplicate Check:\n\n" + result);
+                                    } catch (e: any) {
+                                        alert("AI Error: " + e.message);
+                                    } finally {
+                                        if (btn) btn.innerHTML = '<svg class="w-3 h-3" ...>...</svg> Check Duplicates';
+                                    }
+                                }}
+                                id="duplicate-check-btn"
+                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-all border border-amber-100"
+                            >
+                                <Sparkles className="w-3 h-3" />
+                                Check Duplicates
+                            </button>
+                        </div>
                         <input
                             name="title"
                             required
@@ -162,7 +188,32 @@ export default function NewProjectPage() {
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Outcome</label>
+                        <div className="flex justify-between items-end ml-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Primary Outcome (SMART Aim)</label>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const title = (document.getElementsByName('title')[0] as HTMLInputElement).value;
+                                    const currentAim = (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value;
+                                    if (!title) return alert("Please enter a title first.");
+                                    const btn = document.getElementById('smart-aim-btn');
+                                    if (btn) btn.innerHTML = '<span class="animate-spin">🌀</span> Working...';
+                                    try {
+                                        const smart = await generateSMARTAim(title, currentAim);
+                                        (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value = smart;
+                                    } catch (e: any) {
+                                        alert("AI Error: " + e.message);
+                                    } finally {
+                                        if (btn) btn.innerHTML = '<svg class="w-3 h-3" ...>...</svg> Make SMART';
+                                    }
+                                }}
+                                id="smart-aim-btn"
+                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100"
+                            >
+                                <Sparkles className="w-3 h-3" />
+                                Make SMART
+                            </button>
+                        </div>
                         <textarea
                             name="primary_outcome"
                             placeholder="e.g., Increase rate of counseling from 20% to 50%..."

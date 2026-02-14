@@ -26,6 +26,9 @@ import { format } from "date-fns";
 import MetricEntryForm from "@/components/MetricEntryForm";
 import NudgeButton from "@/components/NudgeButton";
 import PDSAAnalyzer from "@/components/PDSAAnalyzer";
+import MetricSuggester from "@/components/MetricSuggester";
+import QualityAudit from "@/components/QualityAudit";
+import ProjectTags from "@/components/ProjectTags";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -116,6 +119,7 @@ export default function ProjectDetailPage() {
                             <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
                                 {project.title}
                             </h1>
+                            <ProjectTags title={project.title} category={project.category || ""} />
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -173,6 +177,7 @@ export default function ProjectDetailPage() {
 
                         {/* Metrics Section */}
                         <Section title="Project Metrics" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
+                            <MetricSuggester projectTitle={project.title} />
                             <div className="flex justify-end mb-4">
                                 <MetricEntryForm projectId={id!} />
                             </div>
@@ -227,6 +232,7 @@ export default function ProjectDetailPage() {
                 {/* Sidebar */}
                 <div className="space-y-6">
                     <PDSAAnalyzer project={project} metrics={metrics} />
+                    <QualityAudit project={project} />
 
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-24">
                         <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">

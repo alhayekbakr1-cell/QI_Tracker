@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Profile, UserRole } from "@/types";
 import { Shield, Users, Check, X, Loader2 } from "lucide-react";
 import PHIWarning from "@/components/PHIWarning";
+import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
 
 export default function AdminPage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -108,6 +109,7 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            <ExecutiveReportCenter />
             <PHIWarning />
 
             <div className="glass rounded-2xl overflow-hidden shadow-lg border-0 ring-1 ring-slate-200/50">
