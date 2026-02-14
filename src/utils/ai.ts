@@ -139,3 +139,16 @@ export async function getSuggestedTags(title: string, category: string) {
   `;
   return askAI(prompt);
 }
+
+export async function getProtocolSectionAdvice(section: string, question: string) {
+  const prompt = `
+    You are a Quality Improvement (QI) Academic Consultant at AdventHealth.
+    A resident is currently filling out the "${section}" section of their QI Protocol.
+    
+    Resident's Question: "${question}"
+    
+    Provide a professional, academic, and encouraging answer that helps them fill this specific section correctly according to QI best practices (e.g., SQUIRE guidelines, PDSA methodology).
+    Be concise but high-value.
+  `;
+  return askAI(prompt);
+}

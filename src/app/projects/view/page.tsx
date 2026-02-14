@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Project, Comment } from "@/types";
+import { Project, Comment, Metric } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 import PHIWarning from "@/components/PHIWarning";
 import MetricCharts from "@/components/MetricCharts";
@@ -13,6 +13,7 @@ import {
     Paperclip,
     History,
     TrendingUp,
+    Sparkles,
     Info,
     CheckCircle2,
     Clock,
@@ -29,6 +30,7 @@ import PDSAAnalyzer from "@/components/PDSAAnalyzer";
 import MetricSuggester from "@/components/MetricSuggester";
 import QualityAudit from "@/components/QualityAudit";
 import ProjectTags from "@/components/ProjectTags";
+import ProtocolWizard from "@/components/ProtocolWizard";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -36,7 +38,8 @@ export default function ProjectDetailPage() {
     const id = searchParams.get("id");
 
     const [project, setProject] = useState<Project | null>(null);
-    const [metrics, setMetrics] = useState<any[]>([]);
+    const [metrics, setMetrics] = useState<Metric[]>([]);
+    const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
@@ -256,15 +259,18 @@ export default function ProjectDetailPage() {
                                     </div>
                                 </a>
                             ) : (
-                                <div className="flex items-center gap-3 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-400 font-bold text-sm italic">
-                                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300">
-                                        <FileText className="w-5 h-5" />
+                                <button
+                                    onClick={() => setIsWizardOpen(true)}
+                                    className="flex items-center gap-3 p-4 bg-white border border-dashed border-slate-300 rounded-xl text-advent-blue font-bold text-sm hover:bg-advent-blue/5 hover:border-advent-blue transition-all group"
+                                >
+                                    <div className="w-8 h-8 bg-advent-blue/10 rounded-lg flex items-center justify-center text-advent-blue group-hover:scale-110 transition-transform">
+                                        <Sparkles className="w-5 h-5" />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[9px] uppercase tracking-widest text-slate-300 font-black">QI Protocol</span>
-                                        <span>Missing</span>
+                                    <div className="flex flex-col text-left">
+                                        <span className="text-[9px] uppercase tracking-widest text-advent-blue/40 font-black">QI Protocol</span>
+                                        <span>Generate with AI</span>
                                     </div>
-                                </div>
+                                </button>
                             )}
 
                             {project.presentation_url ? (
@@ -305,6 +311,13 @@ export default function ProjectDetailPage() {
                     </div>
                 </div>
             </div>
+            {isWizardOpen && project && (
+                <ProtocolWizard
+                    projectId={project.id}
+                    projectTitle={project.title}
+                    onClose={() => setIsWizardOpen(false)}
+                />
+            )}
         </div>
     );
 }
