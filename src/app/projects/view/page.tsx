@@ -25,6 +25,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import MetricEntryForm from "@/components/MetricEntryForm";
 import NudgeButton from "@/components/NudgeButton";
+import PDSAAnalyzer from "@/components/PDSAAnalyzer";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -225,6 +226,8 @@ export default function ProjectDetailPage() {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
+                    <PDSAAnalyzer project={project} metrics={metrics} />
+
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-24">
                         <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
                             <Paperclip className="w-4 h-4" />

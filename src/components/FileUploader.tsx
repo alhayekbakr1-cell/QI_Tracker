@@ -13,6 +13,8 @@ interface FileUploaderProps {
 
 export default function FileUploader({ projectId, fieldName, onUploadComplete, currentUrl }: FileUploaderProps) {
     const [uploading, setUploading] = useState(false);
+    const [isLinking, setIsLinking] = useState(false);
+    const [linkUrl, setLinkUrl] = useState("");
     const supabase = createClient();
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,49 +56,109 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
         }
     };
 
+    const handleLinkSubmit = async () => {
+        if (!linkUrl) return;
+        setUploading(true);
+        try {
+            const { error: updateError } = await supabase
+                .from('projects')
+                .update({ [fieldName]: linkUrl })
+                .eq('id', projectId);
+
+            if (updateError) throw updateError;
+            onUploadComplete(linkUrl);
+            setIsLinking(false);
+            setLinkUrl("");
+        } catch (error) {
+            console.error('Error linking file:', error);
+            alert('Error linking URL!');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col gap-2">
             <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                 {fieldName === "protocol_url" ? "QI Protocol" : "QI Presentation"}
             </label>
 
-            <div className="flex items-center gap-3 p-3 border border-dashed border-slate-200 rounded-lg bg-slate-50/50">
-                {currentUrl ? (
-                    <div className="flex items-center gap-2 text-advent-blue font-bold text-sm">
-                        <FileCheck className="w-5 h-5 text-emerald-500" />
-                        Uploaded
+            <div className="flex flex-col gap-3 p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+                <div className="flex items-center gap-3">
+                    {currentUrl ? (
+                        <div className="flex items-center gap-2 text-advent-navy font-bold text-sm">
+                            <div className="bg-emerald-500/10 p-1.5 rounded-lg">
+                                <FileCheck className="w-5 h-5 text-emerald-500" />
+                            </div>
+                            <span>
+                                {currentUrl.includes('supabase.co') ? 'Filesystem Asset' : 'External Link'}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-slate-300 font-bold text-sm italic">
+                            <div className="bg-slate-50 p-1.5 rounded-lg text-slate-300">
+                                <Upload className="w-5 h-5" />
+                            </div>
+                            Missing
+                        </div>
+                    )}
+
+                    <div className="flex-1" />
+
+                    <div className="flex gap-2">
+                        {!isLinking && (
+                            <>
+                                <button
+                                    onClick={() => setIsLinking(true)}
+                                    className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-100 transition-all border border-slate-200"
+                                >
+                                    Link URL
+                                </button>
+                                <label className={`
+                                    cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all
+                                    ${uploading ? 'bg-slate-100 text-slate-400' : 'bg-advent-navy text-white hover:bg-advent-cobalt shadow-lg shadow-advent-navy/10'}
+                                `}>
+                                    {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                    {currentUrl ? "Replace File" : "Upload File"}
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        accept={fieldName === "protocol_url" ? ".docx,.pdf" : ".pptx,.pdf"}
+                                        onChange={handleUpload}
+                                        disabled={uploading}
+                                    />
+                                </label>
+                            </>
+                        )}
                     </div>
-                ) : (
-                    <div className="flex items-center gap-2 text-slate-400 font-bold text-sm italic">
-                        Missing
+                </div>
+
+                {isLinking && (
+                    <div className="flex flex-col gap-3 animate-in zoom-in-95 duration-200">
+                        <input
+                            type="url"
+                            placeholder="Paste OneDrive or Shareable link here..."
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-advent-navy/5 outline-none"
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setIsLinking(false)}
+                                className="px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleLinkSubmit}
+                                disabled={!linkUrl || uploading}
+                                className="px-6 py-2 bg-advent-navy text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-advent-cobalt disabled:opacity-50"
+                            >
+                                {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save Link"}
+                            </button>
+                        </div>
                     </div>
                 )}
-
-                <div className="flex-1" />
-
-                <label className={`
-                    cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-all
-                    ${uploading ? 'bg-slate-100 text-slate-400' : 'bg-advent-blue/10 text-advent-blue hover:bg-advent-blue/20'}
-                `}>
-                    {uploading ? (
-                        <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            Uploading...
-                        </>
-                    ) : (
-                        <>
-                            <Upload className="w-3 h-3" />
-                            {currentUrl ? "Replace" : "Upload"}
-                        </>
-                    )}
-                    <input
-                        type="file"
-                        className="hidden"
-                        accept={fieldName === "protocol_url" ? ".docx,.pdf" : ".pptx,.pdf"}
-                        onChange={handleUpload}
-                        disabled={uploading}
-                    />
-                </label>
             </div>
         </div>
     );

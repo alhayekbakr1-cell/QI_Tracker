@@ -3,9 +3,56 @@
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import PHIWarning from "@/components/PHIWarning";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { draftSummary } from "@/utils/ai";
+
+function AIUpdateSection({ initialValue }: { initialValue: string }) {
+    const [value, setValue] = useState(initialValue);
+    const [isDrafting, setIsDrafting] = useState(false);
+
+    const handleAIDraft = async () => {
+        if (!value || value.length < 10) {
+            alert("Please enter some bullet points or notes first to help the AI draft a summary.");
+            return;
+        }
+        setIsDrafting(true);
+        try {
+            const drafted = await draftSummary(value);
+            setValue(drafted);
+        } catch (error) {
+            console.error("AI Drafting error:", error);
+            alert("AI Drafting failed. Ensure Supabase Edge Functions are deployed and GEMINI_API_KEY is set.");
+        } finally {
+            setIsDrafting(false);
+        }
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="flex justify-between items-end ml-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Initial Updates/Barriers (Optional)</label>
+                <button
+                    type="button"
+                    onClick={handleAIDraft}
+                    disabled={isDrafting}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-3 py-1.5 rounded-lg hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50"
+                >
+                    {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    Draft with AI
+                </button>
+            </div>
+            <textarea
+                name="updates_and_barriers"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="Enter bullet points (e.g. - IRB approved, - Data collection started) then click 'Draft with AI'..."
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[150px] resize-none"
+            />
+        </div>
+    );
+}
 
 export default function NewProjectPage() {
     const [isSaving, setIsSaving] = useState(false);
@@ -35,6 +82,7 @@ export default function NewProjectPage() {
             proponents: (formData.get('proponents') as string).split(',').map(s => s.trim()),
             lead_proponents: (formData.get('lead_proponents') as string).split(',').map(s => s.trim()),
             primary_outcome: formData.get('primary_outcome') as string,
+            updates_and_barriers: formData.get('updates_and_barriers') as string,
             last_updated_date: new Date().toISOString(),
         };
 
@@ -118,9 +166,11 @@ export default function NewProjectPage() {
                         <textarea
                             name="primary_outcome"
                             placeholder="e.g., Increase rate of counseling from 20% to 50%..."
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[120px] resize-none"
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[100px] resize-none"
                         />
                     </div>
+
+                    <AIUpdateSection initialValue="" />
                 </div>
 
                 <div className="flex justify-end pt-6 border-t border-slate-100">
