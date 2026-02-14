@@ -2,13 +2,15 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { BookOpen, CheckSquare, Lightbulb, ExternalLink } from "lucide-react";
+import { BookOpen, CheckSquare, Lightbulb, ExternalLink, Activity, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import QIHandbook from "@/components/QIHandbook";
 
 export default function ResourcesPage() {
     const router = useRouter();
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(true);
+    const [view, setView] = useState<'overview' | 'handbook'>('overview');
 
     useEffect(() => {
         async function checkAuth() {
@@ -26,6 +28,10 @@ export default function ResourcesPage() {
         return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
     }
 
+    if (view === 'handbook') {
+        return <QIHandbook onBack={() => setView('overview')} />;
+    }
+
     return (
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
@@ -39,11 +45,41 @@ export default function ResourcesPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                {/* NEW: Interactive Handbook Card (Primary Feature) */}
+                <div
+                    onClick={() => setView('handbook')}
+                    className="md:col-span-2 group relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-2xl text-white shadow-xl cursor-pointer hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
+                >
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div>
+                            <div className="flex items-center gap-2 mb-3 bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                                <Activity className="w-3 h-3" /> New Interactive Guide
+                            </div>
+                            <h2 className="text-3xl font-black mb-2 tracking-tight">The Residency QI Handbook</h2>
+                            <p className="text-blue-100 max-w-lg text-lg leading-relaxed">
+                                A complete interactive guide covering everything from "Project Selection" to "Publication".
+                                Includes an AI Toolkit, IRB Wizard, and interactive checklists.
+                            </p>
+                            <div className="mt-6 flex items-center gap-2 font-bold bg-white text-blue-700 px-5 py-3 rounded-xl w-fit shadow-lg group-hover:bg-blue-50 transition-colors">
+                                Access Handbook <ArrowRight className="w-4 h-4" />
+                            </div>
+                        </div>
+                        {/* Decorative Icon */}
+                        <div className="hidden md:block bg-white/10 p-6 rounded-2xl backdrop-blur-sm border border-white/10">
+                            <BookOpen className="w-16 h-16 text-white" />
+                        </div>
+                    </div>
+                    {/* Background decorations */}
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/30 blur-3xl -mr-32 -mt-32 rounded-full" />
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/30 blur-3xl -ml-20 -mb-20 rounded-full" />
+                </div>
+
                 {/* Resident Checklist */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-colors">
                     <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-6">
                         <CheckSquare className="w-5 h-5 text-green-600" />
-                        Resident QI Checklist
+                        Quick Checklist
                     </h2>
                     <ul className="space-y-4">
                         <CheckItem label="Project Charter Completed" active />
@@ -57,7 +93,7 @@ export default function ResourcesPage() {
                 </div>
 
                 {/* Lean Six Sigma */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-colors">
                     <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-6">
                         <Lightbulb className="w-5 h-5 text-amber-500" />
                         Lean Six Sigma Concepts
@@ -88,7 +124,7 @@ export default function ResourcesPage() {
                         <div className="flex flex-wrap justify-center gap-3">
                             <ExternalLinkBtn label="IHI Open School" href="https://www.ihi.org" />
                             <ExternalLinkBtn label="ACP Quality Hub" href="https://www.acponline.org" />
-                            <ExternalLinkBtn label="AdventHealth GME" href="#" />
+                            <ExternalLinkBtn label="Check the Handbook" href="#" onClick={(e) => { e.preventDefault(); setView('handbook'); }} />
                         </div>
                     </div>
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-3xl -mr-32 -mt-32 rounded-full" />
@@ -118,13 +154,14 @@ function ConceptItem({ title, description }: { title: string, description: strin
     )
 }
 
-function ExternalLinkBtn({ label, href }: { label: string, href: string }) {
+function ExternalLinkBtn({ label, href, onClick }: { label: string, href: string, onClick?: (e: React.MouseEvent) => void }) {
     return (
         <a
             href={href}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 px-4 py-2 rounded-lg text-sm font-bold transition-all"
+            onClick={onClick}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer"
         >
             {label}
             <ExternalLink className="w-3 h-3" />
