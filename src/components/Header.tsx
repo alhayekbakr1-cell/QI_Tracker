@@ -2,13 +2,15 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
-import { LogOut, LayoutDashboard, List, BookOpen, Activity } from 'lucide-react'
+import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X } from 'lucide-react'
 import Link from 'next/link'
+import { useState } from 'react'
 
 export default function Header({ userEmail, role }: { userEmail?: string, role?: string }) {
     const router = useRouter()
     const pathname = usePathname()
     const supabase = createClient()
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
@@ -42,7 +44,7 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
                             </div>
                         </Link>
 
-                        {/* Navigation */}
+                        {/* Desktop Navigation */}
                         <nav className="hidden md:flex items-center gap-1">
                             {navItems.map((item) => {
                                 const isActive = pathname === item.href
@@ -65,32 +67,81 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
                         </nav>
                     </div>
 
-                    {/* User Profile & Actions */}
-                    <div className="flex items-center gap-6">
-                        <div className="hidden lg:flex flex-col items-end">
-                            <span className="text-xs font-bold text-slate-700 leading-none mb-1">
-                                {userEmail?.split('@')[0]}
-                            </span>
-                            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${role === 'Operator'
+                    {/* Mobile Menu Toggle */}
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="md:hidden p-2 text-advent-navy hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        </button>
+
+                        {/* User Profile & Actions (Desktop) */}
+                        <div className="hidden md:flex items-center gap-6">
+                            <div className="flex flex-col items-end">
+                                <span className="text-xs font-bold text-slate-700 leading-none mb-1">
+                                    {userEmail?.split('@')[0]}
+                                </span>
+                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${role === 'Operator'
                                     ? 'bg-advent-cobalt/10 text-advent-cobalt border-advent-cobalt/20'
                                     : 'bg-slate-100 text-slate-500 border-slate-200'
-                                }`}>
-                                {role || 'Viewer'}
-                            </span>
+                                    }`}>
+                                    {role || 'Viewer'}
+                                </span>
+                            </div>
+                            <div className="h-8 w-px bg-slate-200 mx-2" />
+                            <button
+                                onClick={handleLogout}
+                                className="group flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
+                            >
+                                <LogOut className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                                <span>Logout</span>
+                            </button>
                         </div>
-
-                        <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block" />
-
-                        <button
-                            onClick={handleLogout}
-                            className="group flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
-                        >
-                            <LogOut className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-                            <span className="hidden sm:inline">Logout</span>
-                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Navigation Menu */}
+            {isMobileMenuOpen && (
+                <div className="md:hidden absolute top-16 left-0 w-full bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-xl p-4 flex flex-col gap-4 animate-in slide-in-from-top-2 duration-200">
+                    <nav className="flex flex-col gap-2">
+                        {navItems.map((item) => {
+                            const isActive = pathname === item.href
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    prefetch={false}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 transition-all
+                                        ${isActive
+                                            ? 'bg-advent-navy text-white shadow-md shadow-advent-navy/20'
+                                            : 'text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                >
+                                    <item.icon className={`w-5 h-5 ${isActive ? 'text-advent-green' : 'text-slate-400'}`} />
+                                    {item.label}
+                                </Link>
+                            )
+                        })}
+                    </nav>
+
+                    <div className="border-t border-slate-100 pt-4 mt-2">
+                        <div className="flex items-center justify-between px-2 mb-4">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Signed in as</span>
+                            <span className="text-sm font-bold text-advent-navy">{userEmail?.split('@')[0]}</span>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-100 transition-colors"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            )}
         </header>
     )
 }
