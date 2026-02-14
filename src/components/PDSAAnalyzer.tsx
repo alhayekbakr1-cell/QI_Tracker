@@ -19,9 +19,9 @@ export default function PDSAAnalyzer({ project, metrics }: PDSAAnalyzerProps) {
         try {
             const result = await analyzePDSA(project, metrics);
             setAnalysis(result);
-        } catch (error) {
+        } catch (error: any) {
             console.error("PDSA Analysis error:", error);
-            setAnalysis("Failed to generate analysis. Ensure the AI proxy is active and configured correctly.");
+            setAnalysis(`Error: ${error.message || "Unknown error"}. Check Supabase logs or GEMINI_API_KEY.`);
         } finally {
             setIsLoading(false);
         }
