@@ -1,36 +1,57 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  
-  /* AdventHealth Brand Colors */
-  --advent-blue: #005d91;
-  --advent-light-blue: #00a3e0;
-  --advent-green: #7ab800;
-  --advent-teal: #004b44;
-  --advent-dark-blue: #002f56;
+  /* AdventHealth Brand Core */
+  --advent-blue: #003E70;
+  /* Deep Navy */
+  --advent-green: #009639;
+  /* Vibrant Green */
+  --advent-cobalt: #005CAB;
+  /* Brighter Blue */
+  --advent-sky: #00A3E0;
+  /* Light Blue */
+
+  /* Modern UI Colors */
+  --background: #F4F6F8;
+  /* Cool Grey */
+  --foreground: #1E293B;
+  /* Slate 800 */
+  --card-bg: #FFFFFF;
+  --card-border: #E2E8F0;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #003E70 0%, #005CAB 100%);
+  --gradient-accent: linear-gradient(135deg, #7ab800 0%, #009639 100%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-advent-blue: var(--advent-blue);
-  --color-advent-lightblue: var(--advent-light-blue);
-  --color-advent-green: var(--advent-green);
-  --color-advent-teal: var(--advent-teal);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-/* Force light colors - ignore system preference for a clean clinical look */
-:root {
-  --background: #f8fafc;
-  --foreground: #171717;
+  --color-advent-navy: var(--advent-blue);
+  --color-advent-green: var(--advent-green);
+  --color-advent-cobalt: var(--advent-cobalt);
+  --color-advent-sky: var(--advent-sky);
+
+  --image-gradient-primary: var(--gradient-primary);
+  --image-gradient-accent: var(--gradient-accent);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-sm;
+}
+
+.glass-card {
+  @apply bg-white rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300;
 }

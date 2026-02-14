@@ -69,32 +69,36 @@ export default function Dashboard() {
   const recentProjects = projects.slice(0, 6);
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">System Dashboard</h1>
-          <p className="text-slate-500">Overview of all active Quality Improvement projects.</p>
+          <h1 className="text-4xl font-extrabold text-advent-navy tracking-tight mb-2">System Dashboard</h1>
+          <p className="text-slate-500 font-medium text-lg">Active Quality Improvement Initiatives</p>
         </div>
 
         <Link
           href="/projects/new"
           prefetch={false}
-          className="flex items-center gap-2 bg-advent-blue text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-advent-blue/20 hover:bg-advent-dark-blue transition-all active:scale-95"
+          className="group flex items-center gap-2 bg-gradient-to-r from-advent-navy to-advent-cobalt text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-advent-cobalt/20 hover:shadow-xl hover:scale-105 transition-all duration-300 active:scale-95"
         >
-          <Plus className="w-5 h-5" />
+          <div className="bg-white/20 p-1 rounded-lg group-hover:bg-white/30 transition-colors">
+            <Plus className="w-5 h-5" />
+          </div>
           <span>New Project</span>
         </Link>
       </div>
 
       <PHIWarning />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <StatCard label="Total Projects" value={stats.Total} color="bg-advent-blue" textColor="text-white" />
-        <StatCard label="Ideas" value={stats.Idea} color="bg-white" textColor="text-slate-900" />
-        <StatCard label="Pre-Interv." value={stats['Pre-Intervention']} color="bg-white" textColor="text-slate-900" />
-        <StatCard label="Ongoing" value={stats['Intervention Ongoing']} color="bg-white" textColor="text-slate-900" />
-        <StatCard label="Sustained" value={stats['Sustain the Gains']} valueColor="text-advent-green" color="bg-white" textColor="text-slate-900" />
+      {/* Stats Grid - Glassmorphism */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <StatCard label="Total Projects" value={stats.Total} variant="primary" />
+        <StatCard label="Ideas" value={stats.Idea} variant="default" />
+        <StatCard label="Pre-Interv." value={stats['Pre-Intervention']} variant="default" />
+        <StatCard label="Ongoing" value={stats['Intervention Ongoing']} variant="default" />
+        <StatCard label="Sustained" value={stats['Sustain the Gains']} variant="success" />
       </div>
 
       <DashboardCharts statusData={statusChartData} categoryData={categoryChartData} />
@@ -103,9 +107,12 @@ export default function Dashboard() {
         {/* Recent Updates */}
         <div className="lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">Recently Updated</h2>
-            <Link href="/projects" prefetch={false} className="text-sm font-bold text-advent-blue hover:text-advent-lightblue flex items-center gap-1 group">
-              View all Masterlist <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <h2 className="text-2xl font-bold text-advent-navy tracking-tight flex items-center gap-3">
+              <Activity className="w-6 h-6 text-advent-kobalt" />
+              Recently Updated
+            </h2>
+            <Link href="/projects" prefetch={false} className="text-sm font-bold text-advent-cobalt hover:text-advent-navy flex items-center gap-1 group transition-colors">
+              View Masterlist <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
@@ -115,8 +122,8 @@ export default function Dashboard() {
                 <ProjectCard key={project.id} project={project} />
               ))
             ) : (
-              <div className="col-span-2 py-20 text-center bg-white rounded-xl border border-dashed border-slate-300">
-                <p className="text-slate-400">No projects found. Start by importing or creating a new one.</p>
+              <div className="col-span-2 py-20 text-center bg-white/50 backdrop-blur-sm rounded-xl border border-dashed border-slate-300">
+                <p className="text-slate-400 font-medium">No projects found. Start by creating a new one.</p>
               </div>
             )}
           </div>
@@ -124,22 +131,22 @@ export default function Dashboard() {
 
         {/* Quick Actions / Filters */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Search className="w-4 h-4" />
+          <div className="glass p-6 rounded-2xl">
+            <h3 className="font-bold text-advent-navy mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5 text-advent-cobalt" />
               Quick Find
             </h3>
-            <div className="relative mb-4">
+            <div className="relative mb-6">
               <input
                 type="text"
                 placeholder="Search Title or Proponent..."
-                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-white/50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-advent-cobalt/20 focus:border-advent-cobalt outline-none transition-all placeholder:text-slate-400"
               />
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
             </div>
 
-            <h3 className="font-bold text-slate-800 mb-4 mt-8 flex items-center gap-2">
-              <Filter className="w-4 h-4" />
+            <h3 className="font-bold text-advent-navy mb-4 flex items-center gap-2">
+              <Filter className="w-5 h-5 text-advent-cobalt" />
               Filter by Status
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -148,7 +155,7 @@ export default function Dashboard() {
                   key={s}
                   href={`/projects?status=${s}`}
                   prefetch={false}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-md text-xs font-semibold text-slate-600 transition-colors"
+                  className="px-3 py-1.5 bg-white border border-slate-200 hover:border-advent-cobalt hover:text-advent-cobalt rounded-lg text-xs font-bold text-slate-500 transition-all duration-300 shadow-sm hover:shadow-md"
                 >
                   {s}
                 </Link>
@@ -156,16 +163,26 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-700 to-indigo-800 p-6 rounded-xl shadow-lg text-white">
-            <h3 className="font-bold mb-2">Metrics Snapshot</h3>
-            <p className="text-sm text-blue-100 mb-4">Track PDSA cycles and project outcomes across the department.</p>
-            <Link
-              href="/metrics"
-              prefetch={false}
-              className="inline-block bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm"
-            >
-              Go to departmental metrics
-            </Link>
+          <div className="relative overflow-hidden bg-gradient-to-br from-advent-navy to-advent-cobalt p-8 rounded-2xl shadow-xl text-white group cursor-pointer hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
+            <div className="relative z-10">
+              <h3 className="font-bold text-xl mb-2 flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Metrics Snapshot
+              </h3>
+              <p className="text-sm text-blue-100 mb-6 font-medium leading-relaxed opacity-90">
+                Track departmental PDSA cycles and project outcomes in real-time.
+              </p>
+              <Link
+                href="/metrics"
+                prefetch={false}
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 px-5 py-2.5 rounded-xl text-xs font-bold transition-all backdrop-blur-sm"
+              >
+                View Analytics <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            {/* Decorative background blobs */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-fullblur-2xl -mr-10 -mt-10" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-advent-green/20 rounded-full blur-xl -ml-10 -mb-10" />
           </div>
         </div>
       </div>
@@ -173,11 +190,34 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ label, value, color, textColor, valueColor }: { label: string, value: number, color: string, textColor: string, valueColor?: string }) {
+function StatCard({ label, value, variant }: { label: string, value: number, variant: 'primary' | 'success' | 'default' }) {
+  const styles = {
+    primary: 'bg-gradient-to-br from-advent-navy to-advent-cobalt text-white border-transparent',
+    success: 'bg-white text-slate-800 border-b-4 border-b-advent-green',
+    default: 'bg-white text-slate-800 border-slate-200'
+  }
+
+  const valueStyles = {
+    primary: 'text-white',
+    success: 'text-advent-green',
+    default: 'text-slate-900'
+  }
+
   return (
-    <div className={`${color} p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[120px]`}>
-      <span className={`text-[10px] uppercase font-black tracking-widest ${textColor} opacity-60 mb-2 text-center`}>{label}</span>
-      <span className={`text-4xl font-black ${valueColor || textColor}`}>{value}</span>
+    <div className={`${styles[variant]} p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 border flex flex-col items-center justify-center min-h-[120px] relative overflow-hidden`}>
+      <span className={`text-[10px] uppercase font-black tracking-widest opacity-70 mb-2 text-center z-10 ${variant === 'primary' ? 'text-blue-200' : 'text-slate-400'}`}>
+        {label}
+      </span>
+      <span className={`text-4xl font-extrabold z-10 ${valueStyles[variant]}`}>
+        {value}
+      </span>
+
+      {/* Subtle background decoration for primary card */}
+      {variant === 'primary' && (
+        <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-xl" />
+      )}
     </div>
   )
 }
+// Import Activity for header
+import { Activity } from 'lucide-react';

@@ -1,6 +1,6 @@
 import { Project } from "@/types";
 import { format } from "date-fns";
-import { Calendar, User, TrendingUp, ChevronRight } from "lucide-react";
+import { Calendar, User, ChevronRight } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import Link from "next/link";
 
@@ -9,34 +9,39 @@ export default function ProjectCard({ project }: { project: Project }) {
         <Link
             href={`/projects/view?id=${project.id}`}
             prefetch={false}
-            className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-advent-blue/30 transition-all flex flex-col h-full relative overflow-hidden"
+            className="group glass-card p-6 flex flex-col h-full relative overflow-hidden active:scale-[0.99]"
         >
             {/* Hover Indicator */}
-            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all">
-                <ChevronRight className="w-5 h-5 text-advent-blue" />
+            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all duration-300">
+                <ChevronRight className="w-5 h-5 text-advent-cobalt" />
             </div>
+
+            {/* Gradient Line on Hover */}
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-advent-navy to-advent-green transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
 
             <div className="flex items-center gap-2 mb-4">
                 <StatusBadge status={project.status} />
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    PDSA Cycle {project.pdsa_cycle}
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                    Cycle {project.pdsa_cycle}
                 </span>
             </div>
 
-            <h3 className="text-lg font-black text-slate-900 mb-3 leading-tight group-hover:text-advent-blue transition-colors line-clamp-2">
+            <h3 className="text-lg font-bold text-slate-800 mb-3 leading-tight group-hover:text-advent-navy transition-colors line-clamp-2">
                 {project.title}
             </h3>
 
-            <div className="mt-auto space-y-3">
+            <div className="mt-auto space-y-4">
                 <div className="flex items-center gap-2 text-slate-500">
-                    <User className="w-3.5 h-3.5" />
-                    <span className="text-xs font-bold truncate">Lead: {project.lead_proponents[0] || 'Unassigned'}</span>
+                    <User className="w-3.5 h-3.5 text-advent-cobalt/70" />
+                    <span className="text-xs font-semibold truncate text-slate-600">
+                        {project.lead_proponents[0] || 'Unassigned'}
+                    </span>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100/80">
                     <div className="flex items-center gap-2 text-slate-400">
                         <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">
+                        <span className="text-[10px] font-bold uppercase tracking-widest">
                             {format(new Date(project.last_updated_date), 'MMM d, yyyy')}
                         </span>
                     </div>
