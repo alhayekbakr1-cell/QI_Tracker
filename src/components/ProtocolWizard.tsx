@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     FileText, Sparkles, Loader2, ChevronRight, ChevronLeft,
     Save, Download, CheckCircle, Bot, HelpCircle
@@ -21,6 +21,7 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
     const [isSaving, setIsSaving] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
     const [aiAdvice, setAiAdvice] = useState<string | null>(null);
+    const [directory, setDirectory] = useState<{ name: string; email: string }[]>([]);
     const [formData, setFormData] = useState<ProtocolData>({
         title: projectTitle,
         setting: "",
@@ -28,6 +29,7 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
         coInvestigators: "",
         mentor: "",
         irbStatus: "",
+        // ... (remaining fields)
         problem: "",
         aim: "",
         intervention: "",
@@ -59,6 +61,14 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
     });
 
     const supabase = createClient();
+
+    useEffect(() => {
+        const fetchDirectory = async () => {
+            const { data } = await supabase.from('directory').select('name, email').order('name');
+            if (data) setDirectory(data);
+        };
+        fetchDirectory();
+    }, [supabase]);
 
     const handleNext = () => setStep(s => Math.min(s + 8, s + 1));
     const handlePrev = () => setStep(s => Math.max(1, s - 1));
@@ -154,7 +164,7 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
                             </div>
 
                             {/* Render Inputs based on Step */}
-                            {renderStep(step, formData, setFormData, askAI)}
+                            {renderStep(step, formData, setFormData, askAI, directory)}
 
                             {/* AI Advice Panel */}
                             {aiAdvice && (
@@ -221,16 +231,47 @@ function getStepTitle(s: number) {
     return titles[s - 1];
 }
 
-function renderStep(step: number, data: ProtocolData, setData: any, askAI: any) {
+function renderStep(step: number, data: ProtocolData, setData: any, askAI: any, directory: any[]) {
     const update = (field: keyof ProtocolData, val: any) => setData({ ...data, [field]: val });
+
+    const settings = ["Inpatient (General Wards)", "Inpatient (ICU)", "Outpatient (Clinic)", "Emergency Department", "Surgery / OR", "AdventHealth Imaging", "Other"];
+    const irbOptions = ["QI/Not Human Subjects Research", "IRB Review Needed", "IRB Approved (#)"];
 
     switch (step) {
         case 1:
             return (
                 <div className="space-y-6">
-                    <InputField label="Principal Investigator" value={data.pi} onChange={v => update("pi", v)} placeholder="Full Name, PGY-X" />
-                    <InputField label="Faculty Mentor" value={data.mentor} onChange={v => update("mentor", v)} placeholder="Attending Name" />
-                    <InputField label="Clinical Setting" value={data.setting} onChange={v => update("setting", v)} placeholder="e.g., ICU, Outpatient Clinic" />
+                    <DirectorySelect
+                        label="Principal Investigator (Resident)"
+                        value={data.pi}
+                        onChange={v => update("pi", v)}
+                        options={directory}
+                    />
+                    <DirectorySelect
+                        label="Co-Investigators (Residents/Students)"
+                        value={data.coInvestigators}
+                        onChange={v => update("coInvestigators", v)}
+                        options={directory}
+                        isMulti={true}
+                    />
+                    <DirectorySelect
+                        label="Faculty Mentor"
+                        value={data.mentor}
+                        onChange={v => update("mentor", v)}
+                        options={directory}
+                    />
+                    <SelectField
+                        label="Clinical Site / Setting"
+                        value={data.setting}
+                        options={settings}
+                        onChange={v => update("setting", v)}
+                    />
+                    <SelectField
+                        label="IRB / QI Determination"
+                        value={data.irbStatus}
+                        options={irbOptions}
+                        onChange={v => update("irbStatus", v)}
+                    />
                 </div>
             );
         case 2:
@@ -299,6 +340,45 @@ function InputField({ label, value, onChange, placeholder }: { label: string, va
                 placeholder={placeholder}
                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue font-bold text-slate-700 transition-all"
             />
+        </div>
+    );
+}
+
+function SelectField({ label, value, options, onChange }: { label: string, value: string, options: string[], onChange: (v: string) => void }) {
+    return (
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+            <select
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue font-bold text-slate-700 transition-all appearance-none"
+            >
+                <option value="">Select Option...</option>
+                {options.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                ))}
+            </select>
+        </div>
+    );
+}
+
+function DirectorySelect({ label, value, options, onChange, isMulti = false }: { label: string, value: string, options: any[], onChange: (v: string) => void, isMulti?: boolean }) {
+    return (
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+            <input
+                list={`list-${label.replace(/\s+/g, '')}`}
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                placeholder="Search name..."
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue font-bold text-slate-700 transition-all"
+            />
+            <datalist id={`list-${label.replace(/\s+/g, '')}`}>
+                {options.map(opt => (
+                    <option key={opt.email} value={opt.name}>{opt.email}</option>
+                ))}
+            </datalist>
+            {isMulti && <p className="text-[9px] font-medium text-slate-400 italic mt-1 ml-1">Separate multiple names with commas.</p>}
         </div>
     );
 }
