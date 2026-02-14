@@ -22,6 +22,7 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
         { href: '/', label: 'Overview', icon: LayoutDashboard },
         { href: '/projects', label: 'Projects', icon: List },
         { href: '/resources', label: 'Resources', icon: BookOpen },
+        ...(role === 'Admin' ? [{ href: '/admin', label: 'Admin', icon: Activity }] : []),
     ]
 
     return (

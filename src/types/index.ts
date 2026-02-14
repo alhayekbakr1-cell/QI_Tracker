@@ -1,5 +1,5 @@
 export type ProjectStatus = 'Idea' | 'Pre-Intervention' | 'Intervention Ongoing' | 'Sustain the Gains';
-export type UserRole = 'Operator' | 'Viewer';
+export type UserRole = 'Operator' | 'Viewer' | 'Admin';
 
 export interface Profile {
     id: string;
