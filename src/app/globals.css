@@ -1,34 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  /* AdventHealth Brand Core */
-  --advent-blue: #003E70;
-  /* Deep Navy */
-  --advent-green: #009639;
-  /* Vibrant Green */
-  --advent-cobalt: #005CAB;
-  /* Brighter Blue */
+  /* AdventHealth Brand Core (Official Palette) */
+  --advent-navy: #004F9F;
+  /* Deep Professional Blue */
+  --advent-green: #7AB800;
+  /* Leaf Green */
   --advent-sky: #00A3E0;
-  /* Light Blue */
+  /* Bright Sky Blue */
+  --advent-cobalt: #003057;
+  /* Deep Teal/Dark Navy */
 
-  /* Modern UI Colors */
-  --background: #F4F6F8;
-  /* Cool Grey */
-  --foreground: #1E293B;
-  /* Slate 800 */
+  /* Modern UI Colors - Academic Refinement */
+  --background: #F8FAFC;
+  /* Very light slate */
+  --foreground: #0F172A;
+  /* Dark slate 900 */
   --card-bg: #FFFFFF;
   --card-border: #E2E8F0;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #003E70 0%, #005CAB 100%);
-  --gradient-accent: linear-gradient(135deg, #7ab800 0%, #009639 100%);
+  --gradient-primary: linear-gradient(135deg, #004F9F 0%, #003057 100%);
+  --gradient-accent: linear-gradient(135deg, #7AB800 0%, #00843D 100%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --color-advent-navy: var(--advent-blue);
+  /* Tailwind Color Mapping */
+  --color-advent-blue: var(--advent-navy);
+  --color-advent-navy: var(--advent-navy);
   --color-advent-green: var(--advent-green);
   --color-advent-cobalt: var(--advent-cobalt);
   --color-advent-sky: var(--advent-sky);
@@ -36,8 +38,8 @@
   --image-gradient-primary: var(--gradient-primary);
   --image-gradient-accent: var(--gradient-accent);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, monospace;
 }
 
 body {
