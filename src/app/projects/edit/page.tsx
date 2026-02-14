@@ -25,9 +25,9 @@ function AIUpdateSection({ initialValue }: { initialValue: string }) {
         try {
             const drafted = await draftSummary(value);
             setValue(drafted);
-        } catch (error) {
+        } catch (error: any) {
             console.error("AI Drafting error:", error);
-            alert("AI Drafting failed. Ensure Supabase Edge Functions are deployed and GEMINI_API_KEY is set.");
+            alert(`AI Drafting failed: ${error.message || "Unknown error"}. Check Supabase or GEMINI_API_KEY.`);
         } finally {
             setIsDrafting(false);
         }
