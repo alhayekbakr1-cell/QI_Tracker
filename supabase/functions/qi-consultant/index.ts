@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.12.0"
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -25,8 +25,9 @@ serve(async (req) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
 
+        console.log('Generating content for prompt length:', prompt.length)
         const result = await model.generateContent(prompt)
         const responseText = result.response.text()
 
