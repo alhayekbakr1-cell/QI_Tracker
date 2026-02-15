@@ -1,37 +1,44 @@
 import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req: Request) {
     try {
         const { message, chapter } = await req.json();
+        const apiKey = process.env.GEMINI_API_KEY;
 
-        // In a production environment, you would call OpenAI/Anthropic here:
-        // const response = await openai.chat.completions.create({...})
-
-        // For this implementation, we provide a "Smart QI Simulator" that delivers 
-        // high-quality, context-aware advice based on the active handbook chapter.
-
-        let advice = "";
-
-        if (chapter === 'fundamentals') {
-            advice = "Your PDSA cycles should be small. When using the PDSA Worksheet, focus on one specific change (e.g., 'One nurse on 3 South'). Don't try to solve the whole problem in one cycle.";
-        } else if (chapter === 'team') {
-            advice = "For your Power/Interest grid, identify your 'Blockers' early. If you're struggling with the RACI matrix, remember: only ONE person can be 'A' (Accountable). Too many leaders lead to no one leading.";
-        } else if (chapter === 'design-tools') {
-            advice = "When using the 5 Whys tool, don't stop at the surface. If you end up at 'Human Error', ask Why again! The root cause is usually a system-process failure, not a person.";
-        } else if (chapter === 'analysis') {
-            advice = "Looking at your Pareto Chart? Focus on the 'Vital Few'. Addressing the first two categories often solves 80% of the defects. Don't waste time on the 'Useful Many' until the big issues are gone.";
-        } else if (chapter === 'timeline') {
-            advice = "The 'Valley of Despair' happens around month 4. If your Gantt chart shows you're behind, look at your PDSA cycles. Are they too big? Shrink the test to regain momentum.";
-        } else {
-            advice = "Focus on your SMART AIM. Use the IRB Determination tool early—it's much easier to get QI status than to retroactively fix research compliance issues.";
+        if (!apiKey) {
+            // Fallback to simulation if no API key is provided
+            return NextResponse.json({
+                message: `[System Notice]: LIVE AI is not yet configured. Please add GEMINI_API_KEY to .env.local to enable the real consultant. \n\n (Draft Mode): Focus on your SMART AIM for ${chapter || 'this project'}.`
+            });
         }
 
-        // Simulate AI thinking and return the advice
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `
+            You are the "AdventHealth QI Expert," a professional consultant designed to help Internal Medicine residents with Quality Improvement projects.
+            You are currently assisting a resident who is viewing the "${chapter || 'General'}" chapter of the QI Handbook.
+            
+            Guidelines:
+            1. Be encouraging but academically rigorous.
+            2. Reference standard QI tools like PDSA, 5 Whys, and Fishbone diagrams.
+            3. Keep advice clinical and practical for a hospital setting.
+            4. Do NOT ask for patient PHI.
+            
+            The resident says: "${message}"
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
         return NextResponse.json({
-            message: `[AI Consultant]: Regarding your question on ${chapter || 'QI'}... ${advice} \n\n(Note: This is a context-aware simulation using AdventHealth QI Guidelines. LIVE LLM connection available in Settings.)`
+            message: text
         });
 
     } catch (error) {
+        console.error('AI Route Error:', error);
         return NextResponse.json({ error: 'Failed to process AI request' }, { status: 500 });
     }
 }

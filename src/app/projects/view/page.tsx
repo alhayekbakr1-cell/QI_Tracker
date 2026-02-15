@@ -33,6 +33,7 @@ import QualityAudit from "@/components/QualityAudit";
 import ProjectTags from "@/components/ProjectTags";
 import ProtocolWizard from "@/components/ProtocolWizard";
 import ConferenceMatcher from "@/components/ConferenceMatcher";
+import ProjectReportGenerator from "@/components/ProjectReportGenerator";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -128,6 +129,7 @@ export default function ProjectDetailPage() {
                         </div>
 
                         <div className="flex items-center gap-3">
+                            <ProjectReportGenerator project={project} metrics={metrics} />
                             <NudgeButton project={project} variant="full" />
                             <Link
                                 href={`/projects/edit?id=${id}`}
