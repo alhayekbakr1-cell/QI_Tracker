@@ -21,6 +21,7 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
     const navItems = [
         { href: '/', label: 'Overview', icon: LayoutDashboard },
         { href: '/projects', label: 'Projects', icon: List },
+        { href: '/portfolio', label: 'My Portfolio', icon: BookOpen },
         { href: '/resources', label: 'Resources', icon: BookOpen },
         ...(role === 'Admin' ? [{ href: '/admin', label: 'Admin', icon: Activity }] : []),
     ]
