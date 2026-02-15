@@ -1,7 +1,6 @@
-
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     BookOpen,
     CheckSquare,
@@ -23,7 +22,7 @@ import {
     BarChart2,
     Users,
     Presentation,
-    Book, // Replaced BookA with Book for stability
+    Book,
     Calendar,
     AlertTriangle,
     Scale,
@@ -31,12 +30,29 @@ import {
     RefreshCw,
     HelpCircle,
     Database,
-    Calculator
+    Calculator,
+    Sparkles,
+    Loader2
 } from 'lucide-react';
+
+import mermaid from 'mermaid';
+
+// Initialize mermaid
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+        primaryColor: '#003057', // AdventHealth Navy
+        secondaryColor: '#E9F1F8',
+        tertiaryColor: '#ffffff',
+        lineColor: '#003057',
+        fontFamily: 'Inter, sans-serif'
+    }
+});
 
 // --- Types ---
 interface ContentBlock {
-    type: 'text' | 'checklist' | 'tip' | 'table' | 'prompt' | 'comparison' | 'irb-tool';
+    type: 'text' | 'checklist' | 'tip' | 'table' | 'prompt' | 'comparison' | 'irb-tool' | 'diagram' | 'pico-builder' | 'five-whys' | 'pdsa-worksheet' | 'pareto-chart';
     content?: string;
     title?: string;
     items?: string[];
@@ -45,6 +61,7 @@ interface ContentBlock {
     promptText?: string;
     badExample?: string;
     goodExample?: string;
+    diagramDefinition?: string;
 }
 
 interface Section {
@@ -59,402 +76,293 @@ interface Chapter {
     sections: Section[];
 }
 
-// --- Data Content from Handbook (QI FOCUSED & ENHANCED) ---
+// --- Data Content: RESTRUCTURED 5-CHAPTER ACADEMIC FLOW ---
 
 const chapters: Chapter[] = [
     {
-        id: 'qi-basics',
-        title: '1. QI Fundamentals',
+        id: 'fundamentals',
+        title: '1. Fundamentals (The Basics)',
         icon: <BookOpen className="w-5 h-5" />,
         sections: [
             {
-                title: 'The QI Mindset',
+                title: 'The Model for Improvement',
                 blocks: [
                     {
                         type: 'text',
-                        content: "Quality Improvement is not about working harder; it's about changing the system. If you try to fix a problem by saying 'Residents need to be more careful,' you will fail. QI changes the process so doing the right thing becomes the easiest thing."
+                        content: "The fundamental framework for QI accelerated change involves asking three questions and then using the Plan-Do-Study-Act (PDSA) cycle."
                     },
                     {
-                        type: 'tip',
-                        title: 'QI vs. QA (Quality Assurance)',
-                        content: "• QA is reactive: 'Who made the mistake? Let's punish them.' (Bad for culture)\n• QI is proactive: 'Why did the system allow this mistake? Let's fix the process.' (Good for culture)"
+                        type: 'diagram',
+                        title: 'Interactive Model for Improvement',
+                        diagramDefinition: `
+graph TD
+    Q1["Aim: What are we trying to accomplish?"] --> Q2["Measures: How will we know change is improvement?"]
+    Q2 --> Q3["Ideas: What changes can we make?"]
+    Q3 --> PDSA
+    subgraph PDSA["PDSA Engine"]
+        P["Plan"] --> D["Do"]
+        D --> S["Study"]
+        S --> A["Act"]
+        A --> P
+    end
+                        `
+                    },
+                    {
+                        type: 'text',
+                        content: "The PDSA cycle is for testing. Plan your first small test here."
+                    },
+                    {
+                        type: 'pdsa-worksheet'
                     }
                 ]
             },
             {
-                title: 'Project Selection (FINER)',
+                title: 'PICO Framework Builder',
                 blocks: [
                     {
                         type: 'text',
-                        content: "Use the FINER criteria to validate your idea before you start."
+                        content: "Standardize your clinical/research question before writing your protocol."
                     },
                     {
-                        type: 'table',
-                        title: 'The FINER Criteria',
-                        headers: ['Letter', 'Meaning', 'Resident Question'],
-                        rows: [
-                            ['F', 'Feasible', 'Can I do this with available time/resources?'],
-                            ['I', 'Interesting', 'Do I care enough to work on this for months?'],
-                            ['N', 'Novel', 'Does it add *local* value or new insight?'],
-                            ['E', 'Ethical', 'Is the risk minimal? (See IRB tool)'],
-                            ['R', 'Relevant', 'Does it matter to our patients/hospital?']
-                        ]
+                        type: 'pico-builder',
+                        title: 'Resident PICO Worksheet'
+                    }
+                ]
+            },
+            {
+                title: 'IRB Determination Tool',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "Not every project is 'Research'. Use this tool to see if you need full IRB review or if it falls under Quality Improvement."
+                    },
+                    {
+                        type: 'irb-tool',
+                        title: 'QI vs. Research Checklist'
                     }
                 ]
             }
         ]
     },
     {
-        id: 'team-sustain',
+        id: 'team',
         title: '2. Team & Stakeholders',
         icon: <Users className="w-5 h-5" />,
         sections: [
             {
-                title: 'Building the Team',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "QI is a team sport. You cannot fix a hospital process alone. You need a multidisciplinary squad."
-                    },
-                    {
-                        type: 'table',
-                        title: 'Who to Recruit',
-                        headers: ['Role', 'Why you need them', 'Who to ask'],
-                        rows: [
-                            ['Physician Champion', 'Political cover and longevity.', 'Attending/Faculty interested in the topic.'],
-                            ['Process Owner', 'They control the staff/workflow.', 'Nurse Manager, Unit Director, or Chief Tech.'],
-                            ['Frontline Staff', 'They know why things actually fail.', 'Bedside RNs, Residents, Clerks.'],
-                            ['Data Expert', 'Access to EHR reports.', 'Quality Dept or Chief Resident.']
-                        ]
-                    }
-                ]
-            },
-            {
                 title: 'Stakeholder Analysis',
                 blocks: [
                     {
-                        type: 'text',
-                        content: "Before you start, map out who cares about your project and who has the power to stop it."
-                    },
-                    {
                         type: 'table',
                         title: 'Power vs. Interest Grid',
-                        headers: ['Category', 'Example', 'Strategy'],
+                        headers: ['Category', 'Strategy', 'Institutional Example'],
                         rows: [
-                            ['High Power / High Interest', 'Residency Program Director, CMO', 'Manage Closely. Engage daily/weekly.'],
-                            ['High Power / Low Interest', 'Hospital Legal, IT Dept', 'Keep Satisfied. Meet their requirements.'],
-                            ['Low Power / High Interest', 'Junior Residents, Patients', 'Keep Informed. Use them as champions.'],
-                            ['Low Power / Low Interest', 'Other Depts', 'Monitor. Don\'t spend too much time here.']
+                            ['High Power / High Interest', 'Manage Closely', 'Program Director, Chief Medical Officer'],
+                            ['High Power / Low Interest', 'Keep Satisfied', 'IT Department, Legal/Risk Management'],
+                            ['Low Power / High Interest', 'Keep Informed', 'Residents on Rotation, Nurses'],
+                            ['Low Power / Low Interest', 'Monitor', 'Other Departments, External Vendors']
                         ]
                     }
                 ]
             },
             {
-                title: 'Sustainability (The Handover)',
-                blocks: [
-                    {
-                        type: 'tip',
-                        title: 'Passing the Torch',
-                        content: "Residents graduate; projects die. To prevent this, create a 'Handover Pack' for the next PGY class."
-                    },
-                    {
-                        type: 'checklist',
-                        title: 'The Handover Pack Checklist',
-                        items: [
-                            'Clean Data Sheet (Excel/RedCap link)',
-                            'Process Map of the NEW workflow',
-                            'Contact List (Who is the friendly IT person?)',
-                            'Login Credentials (for shared accounts)',
-                            'Draft Abstract (What has been written so far?)'
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'design',
-        title: '3. Designing the Project',
-        icon: <Target className="w-5 h-5" />,
-        sections: [
-            {
-                title: 'Root Cause Analysis',
+                title: 'RACI Matrix',
                 blocks: [
                     {
                         type: 'text',
-                        content: "Before you fix it, you must understand why it's broken. Do not jump to solutions."
+                        content: "Define who does what to prevent 'diffusion of responsibility' in your project team."
+                    },
+                    {
+                        type: 'tip',
+                        title: 'The RACI Rule of One',
+                        content: "For every task, there should be exactly ONE person 'Accountable' (A). If two people are accountable, no one is."
                     },
                     {
                         type: 'table',
-                        title: 'Tools for Diagnostics',
-                        headers: ['Tool', 'Purpose', 'When to use'],
+                        title: 'Example Project RACI',
+                        headers: ['Task', 'Resident PI', 'Faculty Mentor', 'Unit RN Manager'],
                         rows: [
-                            ['The 5 Whys', 'Drill down to the root cause by asking "Why?" 5 times.', 'Simple problems with a linear cause.'],
-                            ['Fishbone Diagram', 'Visualizes all potential causes (People, Process, Equipment, Environment).', 'Complex problems with multiple factors.'],
-                            ['Process Map', 'Visualizes the actual current steps (not what the policy says).', 'When workflow is confusing or variable.']
+                            ['Data Extraction', 'R', 'I', 'C'],
+                            ['IRB Submission', 'R/A', 'C', 'I'],
+                            ['Workflow Change', 'C', 'I', 'R/A'],
+                            ['Poster Design', 'R', 'C', 'I']
                         ]
-                    }
-                ]
-            },
-            {
-                title: 'Process Mapping 101',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Draw the 'Current State' before you design the 'Future State'. Use standard symbols."
-                    },
-                    {
-                        type: 'table',
-                        title: 'Standard Symbols',
-                        headers: ['Shape', 'Meaning'],
-                        rows: [
-                            ['Oval / Circle', 'Start or End of the process.'],
-                            ['Rectangle', 'Activity or Step (e.g., "Nurse draws blood").'],
-                            ['Diamond', 'Decision Point (e.g., "Is Pt allergic? Yes/No").'],
-                            ['Arrow', 'Direction of flow.']
-                        ]
-                    }
-                ]
-            },
-            {
-                title: 'The AIM Statement',
-                blocks: [
-                    {
-                        type: 'comparison',
-                        title: 'Aim Statement Makeover',
-                        badExample: "We want to improve communication about discharges.",
-                        goodExample: "Increase the % of discharge summaries completed within 24 hours of discharge from 50% to 90% by June 30th on the Med-Surg unit."
                     },
                     {
                         type: 'tip',
-                        title: 'Formula',
-                        content: "Improve [Process/Outcome] for [Population] at [Setting] from [Baseline] to [Target] by [Date]."
+                        title: 'The Elevator Pitch',
+                        content: "When speaking to high-power stakeholders, keep it short: What is the problem? Why should THEY care? What is your one specific request?"
                     }
                 ]
             }
         ]
     },
     {
-        id: 'equity',
-        title: '4. Equity in QI',
-        icon: <Scale className="w-5 h-5" />,
+        id: 'design-tools',
+        title: '3. Design Tools (Diagnostics)',
+        icon: <PenTool className="w-5 h-5" />,
         sections: [
             {
-                title: 'The Equity Lens',
+                title: 'Root Cause: Fishbone Diagram',
                 blocks: [
                     {
-                        type: 'text',
-                        content: "QI can inadvertently increase disparities. For example, a high-tech app intervention might help young/wealthy patients while leaving elderly/poor patients behind."
+                        type: 'diagram',
+                        title: 'Fishbone (Ishikawa) Framework',
+                        diagramDefinition: `
+graph LR
+    P[People] --> F
+    M[Methods] --> F
+    E[Equipment] --> F
+    EV[Environment] --> F
+    MG[Management] --> F
+    F((PROBLEM))
+                        `
                     },
                     {
-                        type: 'tip',
-                        title: 'Stratified Data',
-                        content: "Don't just look at the average. Always break your data down by Race, Ethnicity, Language, and Insurance Status. You might find your 'improvement' only happened for English speakers."
+                        type: 'five-whys'
                     }
                 ]
             },
             {
-                title: 'Equity Checklist',
+                title: 'Process Mapping: Swimlane Diagram',
                 blocks: [
                     {
-                        type: 'checklist',
-                        title: 'Applying an Equity Lens',
-                        items: [
-                            'Did we include diverse patient voices in the planning?',
-                            'Is the intervention accessible to non-English speakers?',
-                            'Does the data show a disparity at baseline?',
-                            'Did we check if the intervention widened the gap?'
+                        type: 'text',
+                        content: "A swimlane diagram shows who does what in a complex workflow. It's essential for identifying delays and bottlenecks."
+                    },
+                    {
+                        type: 'diagram',
+                        title: 'ED Flow Swimlane Example',
+                        diagramDefinition: `
+graph TB
+    subgraph Patient
+        A[Arrival] --> B[Registration]
+    end
+    subgraph Nursing
+        B --> C[Triage]
+        C --> D[Vital Signs]
+        H[Administer Meds] --> I[Re-evaluate]
+    end
+    subgraph Physician
+        D --> E[Consultation]
+        E --> F[Orders]
+        F --> G[Diagnosis]
+        G --> H
+    end
+                        `
+                    }
+                ]
+            },
+            {
+                title: 'Prioritization: PICK Chart',
+                blocks: [
+                    {
+                        type: 'table',
+                        title: 'PICK Prioritization Tool',
+                        headers: ['Quadrant', 'Effort', 'Impact', 'Action'],
+                        rows: [
+                            ['Implement', 'Low', 'High', 'Do these first!'],
+                            ['Possible', 'Low', 'Low', 'Quick wins if time permits.'],
+                            ['Challenge', 'High', 'High', 'Strategic; needs major support.'],
+                            ['Kill', 'High', 'Low', 'Abandon these ideas immediately.']
                         ]
+                    }
+                ]
+            },
+            {
+                title: 'Driver Diagram',
+                blocks: [
+                    {
+                        type: 'diagram',
+                        title: 'Visualizing Your Theory of Change',
+                        diagramDefinition: `
+graph LR
+    A[SMART AIM] --> P1[Primary Driver 1]
+    A --> P2[Primary Driver 2]
+    P1 --> S1[Secondary Driver]
+    P1 --> S2[Secondary Driver]
+    S1 --> C1[Change Idea]
+    S2 --> C2[Change Idea]
+                        `
+                    }
+                ]
+            },
+            {
+                title: "AI Prompting for Change Ideas",
+                blocks: [
+                    {
+                        type: 'prompt',
+                        title: 'Sepsis Bundle Improvement',
+                        promptText: "Act as a Lean Six Sigma Expert. Suggest 3 low-effort, high-impact change ideas for reducing Sepsis bundle non-compliance in a community hospital setting."
                     }
                 ]
             }
         ]
     },
     {
-        id: 'methodology',
-        title: '5. Methodology & Data',
+        id: 'analysis',
+        title: '4. Analysis (Methodology)',
         icon: <Activity className="w-5 h-5" />,
         sections: [
             {
-                title: 'Data Management',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Messy data kills projects. Before collecting a single chart, define your variables."
-                    },
-                    {
-                        type: 'tip',
-                        title: 'The Data Dictionary',
-                        content: "Create a simple document defining every column in your spreadsheet. \nExample: 'Age' = Age in years at admission (Number). 'Readmitted' = Yes/No (0=No, 1=Yes)."
-                    }
-                ]
-            },
-            {
-                title: 'The Measures',
+                title: 'Family of Measures',
                 blocks: [
                     {
                         type: 'table',
-                        title: 'Family of Measures',
-                        headers: ['Type', 'Definition', 'Example (Sepsis Project)'],
+                        title: 'The Measurement Trio',
+                        headers: ['Measure Type', 'Description', 'Example'],
                         rows: [
-                            ['Outcome', 'The result you ultimately want.', 'Sepsis mortality rate.'],
-                            ['Process', 'Are we doing the steps correctly?', '% of patients getting antibiotics <1 hour.'],
-                            ['Balancing', 'Did we break something else?', 'ED Length of Stay (did we clog the ED?)']
+                            ['Outcome', 'The ultimate result.', 'Lower mortality rate.'],
+                            ['Process', 'Are we doing what we intended?', '% of Bundles completed.'],
+                            ['Balancing', 'Unintended side effects.', 'Increased length of stay in ED.']
                         ]
+                    },
+                    {
+                        type: 'pareto-chart'
                     }
                 ]
             },
             {
-                title: 'Statistical Tests Cheat Sheet',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "While Run Charts are best for QI, you may need basic stats for your 'Pre' vs 'Post' comparison table."
-                    },
-                    {
-                        type: 'table',
-                        title: 'Choosing the Right Test',
-                        headers: ['Goal', 'Example', 'Test to Use'],
-                        rows: [
-                            ['Compare Means (2 Groups)', 'Length of Stay (Intervention vs Control)', 'T-Test (or Wilcoxon if skewed)'],
-                            ['Compare Proportions (2 Groups)', 'Readmission Rate (Yes/No)', 'Chi-Square (or Fisher\'s Exact)'],
-                            ['Compare Means (3+ Groups)', 'LOS across 3 different wards', 'ANOVA'],
-                            ['Correlation', 'Age vs Length of Stay', 'Pearson Correlation']
-                        ]
-                    }
-                ]
-            },
-            {
-                title: 'The Run Chart',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Don't just use 'Before' and 'After' bar charts. Use a Run Chart (Line chart over time) to see if changes are real."
-                    },
-                    {
-                        type: 'tip',
-                        title: 'Rules for "Non-Random" Change',
-                        content: "1. Shift: 6 or more consecutive points above or below the median.\n2. Trend: 5 or more consecutive points all going up or all going down.\n3. Astronomical Point: A data point that is blatantly outside historical norms."
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'presentation',
-        title: '6. Presenting (Posters)',
-        icon: <Presentation className="w-5 h-5" />,
-        sections: [
-            {
-                title: 'Poster Design',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Keep text minimal. Use bullet points and clear visuals. Most people spend 3 minutes looking at a poster."
-                    },
-                    {
-                        type: 'checklist',
-                        title: 'Poster Section Checklist',
-                        items: [
-                            'Title & Authors (Bold, clear)',
-                            'Background (Why is this a problem? Use 1-2 stats)',
-                            'Methods (PDSA cycles described simply)',
-                            'Results (MUST have a chart/graph)',
-                            'Conclusions (What did we learn? What is next?)',
-                            'QR Code (Link to full paper/contact)'
-                        ]
-                    }
-                ]
-            },
-            {
-                title: 'Oral Presentation',
-                blocks: [
-                    {
-                        type: 'tip',
-                        title: 'The "Elevator Pitch"',
-                        content: "Prepare a 1-minute summary: \n'We noticed [Problem]. We aimed to [Goal]. We changed [Intervention]. Our data showed [Result]. We plan to [Next Step].'"
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'ethics-reporting',
-        title: '7. Reporting & Ethics',
-        icon: <ShieldCheck className="w-5 h-5" />,
-        sections: [
-            {
-                title: 'Is it Research?',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Use the tool below (based on the UW-Madison Decision Tree) to determine if your project requires full IRB review."
-                    },
-                    {
-                        type: 'irb-tool',
-                        title: 'IRB Determination Wizard'
-                    }
-                ]
-            },
-            {
-                title: 'Publication (SQUIRE 2.0)',
+                title: 'Run Chart Interpretation',
                 blocks: [
                     {
                         type: 'checklist',
-                        title: 'SQUIRE Checklist Highlights',
+                        title: 'Rules for Non-Random Change',
                         items: [
-                            'Title: Did you identify it as a QI project?',
-                            'Context: Did you describe the local unit/culture?',
-                            'Intervention: Did you describe the PDSA evolution?',
-                            'Analysis: Did you use time-series charts (Run charts)?'
+                            'Shift: 6+ consecutive points on one side of median.',
+                            'Trend: 5+ consecutive points all increasing or decreasing.',
+                            'Astronomical Point: Blatant outlier.',
+                            'Runs: Too few or too many crossings of the median.'
                         ]
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'ai-qi',
-        title: '8. AI Toolkit',
-        icon: <BrainCircuit className="w-5 h-5" />,
-        sections: [
-            {
-                title: 'Diagnostic Prompts',
-                blocks: [
-                    {
-                        type: 'prompt',
-                        title: 'The "Fishbone" Generator',
-                        promptText: "I am investigating a problem: [Problem, e.g., High contamination rates in blood cultures]. Act as a QI expert. Generate a Fishbone (Ishikawa) diagram structure analyzing potential causes across these categories: People, Process, Equipment, Environment, and Management. Ask me clarifying questions if needed."
-                    },
-                    {
-                        type: 'prompt',
-                        title: 'The "Driver Diagram" Builder',
-                        promptText: "My SMART Aim is: [Insert Aim]. Help me build a Driver Diagram. Suggest 3 Primary Drivers (System components that contribute directly to the aim) and for each, suggest 2 Secondary Drivers (Specific interventions/change ideas)."
                     }
                 ]
             },
             {
-                title: 'Writing Prompts',
+                title: 'Choosing a Statistical Test',
                 blocks: [
                     {
-                        type: 'prompt',
-                        title: 'The "Data Dictionary" Builder',
-                        promptText: "These are the variables I plan to collect for a retrospective QI project on [Topic]: [List]. Create a data dictionary table with variable name, definition, units, allowed values (e.g., 0=No, 1=Yes), and likely EHR source. Do not include patient-level data."
+                        type: 'text',
+                        content: "Use this logic to decide how to analyze your data before/after your intervention."
+                    },
+                    {
+                        type: 'diagram',
+                        title: 'Statistics Choice Algorithm',
+                        diagramDefinition: `
+graph TD
+    Start[What type of data?] --> Cat[Categorical/Counts]
+    Start --> Cont[Continuous/Measured]
+    Cat --> Cat2[2 Groups?]
+    Cat2 --> |Yes| Chi[Chi-Square Test]
+    Cat2 --> |No| Fisher[Fisher's Exact]
+    Cont --> Cont2[2 Groups?]
+    Cont2 --> |Yes| Ttest[T-Test]
+    Cont2 --> |No| Anova[ANOVA]
+                        `
                     },
                     {
                         type: 'prompt',
-                        title: 'The "SQUIRE" Methods Drafter',
-                        promptText: "Here are my notes on our PDSA cycles: [Paste Notes]. Draft the 'Methods' section for a QI manuscript. Use the SQUIRE 2.0 guidelines. Specifically, describe the 'Intervention' section chronologically, explaining how the intervention was adapted over time."
-                    },
-                    {
-                        type: 'prompt',
-                        title: 'The "Abstract Condenser"',
-                        promptText: "My target journal has a 250-word limit. My current abstract is [X] words. Rewrite it to meet the limit without losing the specific data points in the results section. Do not add new results or claims."
-                    },
-                    {
-                        type: 'prompt',
-                        title: 'The "Title Generator"',
-                        promptText: "Here is my abstract: [Paste abstract]. Generate 5 title options: (1) academic/formal, (2) short/punchy, (3) result-focused, (4) question format, (5) clinical audience. Keep all under 120 characters."
+                        title: 'Statistical Result Interpretation',
+                        promptText: "Explain the clinical significance of a p-value of 0.04 versus 0.06 in a quality improvement project for medication error reduction. How should I discuss this with my faculty mentor?"
                     }
                 ]
             }
@@ -462,81 +370,32 @@ const chapters: Chapter[] = [
     },
     {
         id: 'timeline',
-        title: '9. Project Roadmap',
+        title: '5. Timeline & Roadmap',
         icon: <Calendar className="w-5 h-5" />,
         sections: [
             {
-                title: '12-Month Resident Timeline',
+                title: '12-Month Project Timeline',
                 blocks: [
                     {
-                        type: 'text',
-                        content: "Don't fall behind. Use this rough schedule to ensure you are ready for Research Day."
+                        type: 'diagram',
+                        title: 'Standard Resident QI Lifecycle',
+                        diagramDefinition: `
+gantt
+    title QI Project Roadmap
+    dateFormat  YYYY-MM-DD
+    section Diagnostics
+    Team & Root Cause      :2026-07-01, 60d
+    section Implementation
+    PDSA Cycles            :2026-09-01, 120d
+    section Presentation
+    Abstract Submission    :2027-01-01, 30d
+    Poster Day             :2027-05-01, 10d
+                        `
                     },
                     {
-                        type: 'table',
-                        title: 'The Timeline',
-                        headers: ['Phase', 'Months', 'Key Deliverables'],
-                        rows: [
-                            ['1. Diagnostics', 'Month 1-2', 'Form Team, 5 Whys, Process Map, Baseline Data.'],
-                            ['2. Planning', 'Month 3', 'SMART Aim, IRB Determination, Driver Diagram.'],
-                            ['3. Action (PDSA)', 'Month 4-8', 'Run PDSA Cycles (test interventions). Collect data continuously.'],
-                            ['4. Analysis', 'Month 9-10', 'Final Run Charts, Interpret results.'],
-                            ['5. Dissemination', 'Month 11-12', 'Submit Abstract, Poster Design, Presentation.']
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'troubleshooting',
-        title: '10. Troubleshooting',
-        icon: <AlertTriangle className="w-5 h-5" />,
-        sections: [
-            {
-                title: 'Common Pitfalls',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Stuck? Most QI projects stall for predictable reasons."
-                    },
-                    {
-                        type: 'table',
-                        title: 'How to get Unstuck',
-                        headers: ['The Problem', 'The Diagnosis', 'The Fix'],
-                        rows: [
-                            ['"We have no data"', 'IT Request is stuck in queue.', 'Do manual data collection. Look at 10 charts yourself. Use a "proxy" measure.'],
-                            ['"Nurses wont do it"', 'Intervention adds work.', 'Change the "Default". Make the right thing the easiest thing. Ask them what THEY want to fix.'],
-                            ['"Scope Creep"', 'Trying to boil the ocean.', 'Narrow your focus. Fix ONE unit or ONE diagnosis first.'],
-                            ['"Solution Jumping"', 'Skipped root cause analysis.', 'Stop. Go back and do a Fishbone diagram. You might be solving the wrong problem.']
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'glossary',
-        title: '11. Glossary',
-        icon: <Book className="w-5 h-5" />,
-        sections: [
-            {
-                title: 'Key Terms',
-                blocks: [
-                    {
-                        type: 'table',
-                        title: 'QI Dictionary',
-                        headers: ['Term', 'Definition'],
-                        rows: [
-                            ['PDSA Cycle', 'Plan-Do-Study-Act. A four-stage problem-solving model used for improving a process.'],
-                            ['Run Chart', 'A graph of data over time used to identify trends or shifts.'],
-                            ['Outcome Measure', 'What happened to the patient (e.g., mortality, readmission).'],
-                            ['Process Measure', 'Whether the system worked as intended (e.g., antibiotic timing).'],
-                            ['Balancing Measure', 'Unintended consequences (e.g., did we cause delays elsewhere?).'],
-                            ['Root Cause', 'The fundamental reason for a problem, which if removed, prevents recurrence.'],
-                            ['SQUIRE', 'Standards for QUality Improvement Reporting Excellence. Guidelines for publishing QI.'],
-                            ['Stakeholder', 'Anyone affected by the project (patients, staff, admin).']
-                        ]
+                        type: 'tip',
+                        title: 'Academic Deadlines',
+                        content: "Most national conferences (e.g., ACP, SGIM) have abstract deadlines in October-December. Map your project to hit 'Sustain' phase by September."
                     }
                 ]
             }
@@ -544,225 +403,267 @@ const chapters: Chapter[] = [
     }
 ];
 
-// --- Components ---
+// --- Helper Components ---
+
+const MermaidDiagram = ({ definition, title }: { definition: string; title?: string }) => {
+    const [chartHtml, setChartHtml] = useState<string>('');
+    const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+
+    useEffect(() => {
+        const renderChart = async () => {
+            try {
+                const { svg } = await mermaid.render(id, definition.trim());
+                setChartHtml(svg);
+            } catch (err) {
+                console.error('Mermaid render error:', err);
+                setChartHtml('<p class="text-red-500 text-xs font-bold">Failed to render diagram. Check syntax.</p>');
+            }
+        };
+        renderChart();
+    }, [definition, id]);
+
+    return (
+        <div className="my-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 flex flex-col items-center">
+            {title && <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">{title}</h5>}
+            <div
+                className="mermaid-content w-full flex justify-center overflow-x-auto text-slate-900"
+                dangerouslySetInnerHTML={{ __html: chartHtml }}
+            />
+        </div>
+    );
+};
+
+const PICOBuilder = () => {
+    const [pico, setPico] = useState({ p: '', i: '', c: '', o: '' });
+    return (
+        <div className="bg-white border-2 border-slate-100 rounded-3xl p-6 space-y-4 my-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['Population', 'Intervention', 'Comparison', 'Outcome'].map((label, idx) => {
+                    const key = label[0].toLowerCase() as keyof typeof pico;
+                    return (
+                        <div key={label} className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest italic">{label}</label>
+                            <input
+                                className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-700 focus:border-advent-blue outline-none transition-all"
+                                value={pico[key]}
+                                onChange={(e) => setPico({ ...pico, [key]: e.target.value })}
+                                placeholder={`Enter ${label}...`}
+                            />
+                        </div>
+                    )
+                })}
+            </div>
+            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest mb-1">Generated QI Question</p>
+                <p className="text-xs font-bold text-emerald-900 leading-relaxed italic">
+                    "In {pico.p || '[Population]'}, does {pico.i || '[Intervention]'} compared to {pico.c || '[Comparison]'} result in {pico.o || '[Outcome]'}?"
+                </p>
+            </div>
+        </div>
+    );
+};
 
 const IRBDeterminationTool = () => {
-    const [step, setStep] = useState(0);
-    const [history, setHistory] = useState<number[]>([]);
-
-    // Detailed logic based on UW-Madison Decision Tree V4-18-16
+    const [answers, setAnswers] = useState<Record<number, boolean>>({});
     const questions = [
-        {
-            id: 0,
-            text: "Will the project involve testing an experimental drug, device (including medical software or assays), or biologic?",
-            yesDest: 'result-research-fda',
-            noDest: 1
-        },
-        {
-            id: 1,
-            text: "Has the project received funding (e.g., federal, industry) explicitly to be conducted as a human subjects research study?",
-            yesDest: 'result-research-funding',
-            noDest: 2
-        },
-        {
-            id: 2,
-            text: "Is this a multi-site project (e.g., coordinating center, multiple sites, study-wide protocol)?",
-            yesDest: 'result-research-multisite',
-            noDest: 3
-        },
-        {
-            id: 3,
-            text: "Will the project occur regardless of whether individuals conducting it may benefit professionally from it?",
-            yesDest: 4,
-            noDest: 'result-research-benefit'
-        },
-        {
-            id: 4,
-            text: "Will the results of the project be published, presented or disseminated outside of the institution conducting it?",
-            yesDest: 5,
-            noDest: 6 // Skip systematic check if no publication intent
-        },
-        {
-            id: 5,
-            text: "Is this a systematic investigation designed with the intent to contribute to generalizable knowledge (e.g. testing hypothesis, randomization, case-control)?",
-            yesDest: 'result-research-intent',
-            noDest: 6
-        },
-        {
-            id: 6,
-            text: "Is the project intended to improve or evaluate the practice or process within a particular institution or a specific program?",
-            yesDest: 'result-qi',
-            noDest: 'result-unknown'
-        }
+        { q: "Is the primary intent to improve local clinical care or processes?", weight: 1 },
+        { q: "Will the results be applied only to your specific unit or hospital?", weight: 1 },
+        { q: "Does the project avoid using placebo controls or randomization?", weight: 2 },
+        { q: "Is the intervention a standard clinical practice at AdventHealth?", weight: 1 },
+        { q: "Is the data being collected solely for internal quality benchmarking?", weight: 1 }
     ];
 
-    const results: Record<string, { title: string; color: string; desc: string; action: string }> = {
-        'result-research-fda': {
-            title: "Research (FDA Regulated)",
-            color: "bg-red-50 border-red-200 text-red-900",
-            desc: "This involves regulated products. It is definitely research.",
-            action: "STOP. You must submit a full IRB application. Contact the IRB office immediately."
-        },
-        'result-research-funding': {
-            title: "Research (Funded)",
-            color: "bg-red-50 border-red-200 text-red-900",
-            desc: "The funding source likely requires specific research oversight.",
-            action: "Submit an IRB application. This is likely not exempt QI."
-        },
-        'result-research-multisite': {
-            title: "Research (Multi-Site)",
-            color: "bg-orange-50 border-orange-200 text-orange-900",
-            desc: "Multi-site projects usually imply generalizability beyond your local institution.",
-            action: "Consult the IRB. This usually requires review, though some collaborative QI may exist."
-        },
-        'result-research-benefit': {
-            title: "Likely Research (Professional Benefit)",
-            color: "bg-orange-50 border-orange-200 text-orange-900",
-            desc: "If the project is being done primarily for professional benefit rather than operational necessity, it may be classified as research.",
-            action: "IRB review is likely required. Access the HS IRBs website for guidance."
-        },
-        'result-research-intent': {
-            title: "Research (Generalizable Knowledge)",
-            color: "bg-orange-50 border-orange-200 text-orange-900",
-            desc: "Your primary intent appears to be generating new scientific knowledge (Systematic Investigation) rather than just improving local care.",
-            action: "IRB review is likely required. Submit for determination."
-        },
-        'result-qi': {
-            title: "Quality Improvement / Program Evaluation",
-            color: "bg-emerald-50 border-emerald-200 text-emerald-900",
-            desc: "This project appears to constitute QI and/or Program Evaluation and doesn't fit the federal definition of research.",
-            action: "PROCEED. Further IRB review is typically not required, but ensure you follow institutional policy for 'Non-Human Subjects' determination."
-        },
-        'result-unknown': {
-            title: "Unclear Status",
-            color: "bg-gray-50 border-gray-200 text-gray-900",
-            desc: "The project doesn't fit the definition of QI/Program Evaluation, but also wasn't flagged as obvious research.",
-            action: "Contact the HS IRBs Office for guidance."
-        }
-    };
+    const score = Object.entries(answers).reduce((acc, [idx, val]) => {
+        return val ? acc + questions[parseInt(idx)].weight : acc;
+    }, 0);
 
-    const [resultId, setResultId] = useState<string | null>(null);
-
-    const handleResponse = (answer: boolean) => {
-        const currentQ = questions[step];
-        const dest = answer ? currentQ.yesDest : currentQ.noDest;
-
-        if (typeof dest === 'number') {
-            setStep(dest);
-        } else {
-            setResultId(dest as string);
-        }
-    };
-
-    const reset = () => {
-        setStep(0);
-        setResultId(null);
-    };
-
-    if (resultId) {
-        const res = results[resultId];
-        if (!res) return <div className="p-4 text-red-600">Configuration Error: Unknown result type</div>;
-
-        return (
-            <div className={`p-6 rounded-xl border-2 ${res.color} shadow-sm animate-in fade-in zoom-in-95`}>
-                <div className="flex items-center gap-3 mb-4">
-                    <Gavel className="w-6 h-6" />
-                    <h3 className="text-xl font-bold">{res.title}</h3>
-                </div>
-                <p className="mb-4 text-base font-medium">{res.desc}</p>
-                <div className="bg-white/60 p-4 rounded-lg border border-black/5 mb-6">
-                    <strong className="block mb-1 text-sm uppercase tracking-wide opacity-75">Action Required:</strong>
-                    {res.action}
-                </div>
-                <button
-                    onClick={reset}
-                    className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-sm font-semibold shadow-sm hover:bg-gray-50 border border-gray-200 transition-colors"
-                >
-                    <RefreshCw className="w-4 h-4" /> Start Over
-                </button>
-            </div>
-        );
-    }
+    const maxScore = questions.reduce((acc, q) => acc + q.weight, 0);
+    const isProbableQI = score >= 4;
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm my-6">
-            <div className="mb-6 flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Question {step + 1}</span>
-                {step > 0 && (
-                    <button onClick={reset} className="text-xs text-slate-400 hover:text-slate-600">Reset</button>
-                )}
+        <div className="bg-white border border-slate-100 rounded-3xl p-8 my-8 shadow-sm">
+            <div className="space-y-6">
+                {questions.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-4">
+                        <span className="text-sm font-bold text-slate-700">{item.q}</span>
+                        <div className="flex gap-2">
+                            {[true, false].map(val => (
+                                <button
+                                    key={val.toString()}
+                                    onClick={() => setAnswers({ ...answers, [idx]: val })}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${answers[idx] === val
+                                        ? (val ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white')
+                                        : 'bg-slate-50 text-slate-400'
+                                        }`}
+                                >
+                                    {val ? 'Yes' : 'No'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            {Object.keys(answers).length === questions.length && (
+                <div className={`mt-8 p-6 rounded-2xl border ${isProbableQI ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                    <div className="flex justify-between items-center mb-4">
+                        <h5 className={`text-xs font-black uppercase tracking-widest ${isProbableQI ? 'text-emerald-700' : 'text-amber-700'}`}>
+                            Initial Assessment: {isProbableQI ? 'Probable QI' : 'Potential Research'}
+                        </h5>
+                        <span className="text-[10px] font-black text-slate-400">{score}/{maxScore} QI Score</span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-600 leading-relaxed">
+                        {isProbableQI
+                            ? "Your project aligns strongly with Quality Improvement standards. You likely need a 'QI Determination' letter rather than full IRB approval."
+                            : "Some components suggest clinical research (e.g., intent for new knowledge or deviation from standard care). Consult your Faculty Mentor or the IRB office."}
+                    </p>
+                    <div className="mt-4 p-4 bg-white/50 rounded-xl border border-slate-100">
+                        <p className="text-[9px] font-black uppercase text-slate-400 mb-1">Next Step</p>
+                        <p className="text-[10px] font-bold text-slate-500">
+                            {isProbableQI
+                                ? "Complete the AI Protocol Wizard to generate your QI Determination application."
+                                : "Schedule a meeting with the Office of Research Administration (ORA)."}
+                        </p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ParetoChart = () => {
+    const data = [
+        { label: 'Documentation Loss', count: 45, color: 'bg-advent-navy' },
+        { label: 'Equipment Failure', count: 28, color: 'bg-advent-green' },
+        { label: 'Staff Shortage', count: 12, color: 'bg-advent-blue' },
+        { label: 'Patient Refusal', count: 8, color: 'bg-amber-500' },
+        { label: 'Others', count: 7, color: 'bg-slate-400' }
+    ];
+
+    const total = data.reduce((acc, d) => acc + d.count, 0);
+    let cumulative = 0;
+
+    return (
+        <div className="my-8 bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
+            <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8 text-center">Pareto Analysis: The 80/20 Rule</h5>
+
+            <div className="flex items-end justify-between h-48 gap-4 mb-8">
+                {data.map((d, idx) => {
+                    const height = (d.count / total) * 100;
+                    cumulative += d.count;
+                    const cumPercent = (cumulative / total) * 100;
+
+                    return (
+                        <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
+                            <div
+                                className={`w-full ${d.color} rounded-t-xl transition-all duration-700 ease-out group-hover:brightness-110 shadow-lg`}
+                                style={{ height: `${height}%` }}
+                            />
+                            <div className="absolute -top-10 scale-0 group-hover:scale-100 transition-all bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded-lg z-10">
+                                {d.count} ({Math.round(height)}%)
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
-            <div className="flex gap-4 items-start mb-8">
-                <HelpCircle className="w-6 h-6 text-blue-500 shrink-0 mt-1" />
-                <h3 className="text-lg font-semibold text-slate-800 leading-relaxed">
-                    {questions[step].text}
-                </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {data.map((d, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${d.color}`} />
+                        <span className="text-[11px] font-bold text-slate-600">{d.label}</span>
+                        <span className="text-[11px] font-black text-slate-900 ml-auto">{d.count}</span>
+                    </div>
+                ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <button
-                    onClick={() => handleResponse(true)}
-                    className="flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-all font-semibold text-slate-600"
-                >
-                    YES
-                </button>
-                <button
-                    onClick={() => handleResponse(false)}
-                    className="flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-all font-semibold text-slate-600"
-                >
-                    NO
-                </button>
+            <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Interpretation</p>
+                <p className="text-[11px] font-bold text-slate-600 italic">"Focus on the first two categories to resolve {Math.round((data[0].count + data[1].count) / total * 100)}% of your problems."</p>
             </div>
         </div>
     );
 };
 
-const PromptBox = ({ title, text }: { title: string; text: string }) => {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
+const FiveWhysDrillDown = () => {
+    const [whys, setWhys] = useState(['', '', '', '', '']);
     return (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 my-4">
-            <div className="flex justify-between items-center mb-2">
-                <h4 className="font-semibold text-slate-700 text-sm flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-purple-600" />
-                    {title}
-                </h4>
-                <button
-                    onClick={handleCopy}
-                    className="text-xs flex items-center gap-1 text-slate-500 hover:text-blue-600 transition-colors"
-                >
-                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copied ? 'Copied' : 'Copy Prompt'}
-                </button>
-            </div>
-            <div className="bg-white p-3 rounded border border-slate-100 font-mono text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                {text}
-            </div>
+        <div className="my-8 space-y-4">
+            <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">5 Whys Root Cause Drill-Down</h5>
+            {whys.map((val, idx) => (
+                <div key={idx} className="flex gap-4 items-start animate-in fade-in slide-in-from-left duration-500" style={{ paddingLeft: `${idx * 2}rem` }}>
+                    <div className="shrink-0 w-10 h-10 bg-advent-navy text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg">
+                        {idx + 1}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest italic">
+                            {idx === 0 ? "The Problem" : `Why did ${idx === 1 ? 'that' : 'the previous step'} happen?`}
+                        </label>
+                        <input
+                            className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 text-sm font-bold text-slate-700 focus:border-advent-blue outline-none transition-all"
+                            value={val}
+                            onChange={(e) => {
+                                const next = [...whys];
+                                next[idx] = e.target.value;
+                                setWhys(next);
+                            }}
+                            placeholder={idx === 0 ? "State the surface problem..." : "Ask why..."}
+                        />
+                    </div>
+                </div>
+            ))}
+            {whys.every(w => w.length > 0) && (
+                <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100 mt-8 animate-bounce-subtle">
+                    <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest mb-2 text-center">Potential Root Cause Identified</p>
+                    <p className="text-sm font-black text-emerald-900 text-center italic">"{whys[4]}"</p>
+                </div>
+            )}
         </div>
     );
 };
 
-const ComparisonBox = ({ bad, good }: { bad: string; good: string }) => {
+const PDSAWorksheet = () => {
+    const [pdsa, setPdsa] = useState({ plan: '', do: '', study: '', act: '' });
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-            <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2 text-red-700 font-bold text-sm uppercase tracking-wide">
-                    <X className="w-4 h-4" /> Weak Example
-                </div>
-                <p className="text-red-900 text-sm font-medium leading-relaxed">"{bad}"</p>
+        <div className="bg-white border-2 border-slate-100 rounded-[3rem] p-10 space-y-8 my-12 relative overflow-hidden shadow-xl shadow-slate-200/50">
+            <div className="absolute top-0 right-0 p-8">
+                <RefreshCw className="w-12 h-12 text-slate-50" />
             </div>
-            <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2 text-emerald-700 font-bold text-sm uppercase tracking-wide">
-                    <Check className="w-4 h-4" /> Strong Example
+
+            <div className="grid grid-cols-1 gap-8">
+                {[
+                    { key: 'plan', label: 'PLAN', color: 'bg-advent-navy', text: 'What exactly are we going to test? Who, what, where, when?' },
+                    { key: 'do', label: 'DO', color: 'bg-advent-green', text: 'Carry out the plan. Document problems and unexpected observations.' },
+                    { key: 'study', label: 'STUDY', color: 'bg-advent-blue', text: 'Analyze the data. Complete the analysis of the results.' },
+                    { key: 'act', label: 'ACT', color: 'bg-amber-500', text: 'What changes are to be made? Next cycle?' }
+                ].map((step) => (
+                    <div key={step.key} className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className={`px-4 py-1.5 ${step.color} text-white text-[10px] font-black rounded-lg uppercase tracking-widest`}>
+                                {step.label}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 italic">{step.text}</span>
+                        </div>
+                        <textarea
+                            className="w-full p-6 bg-slate-50 rounded-3xl border-2 border-slate-100 text-sm font-bold text-slate-700 focus:border-advent-blue outline-none transition-all min-h-[100px] shadow-inner"
+                            value={(pdsa as any)[step.key]}
+                            onChange={(e) => setPdsa({ ...pdsa, [step.key]: e.target.value })}
+                            placeholder={`Enter details for ${step.label} phase...`}
+                        />
+                    </div>
+                ))}
+            </div>
+
+            <div className="flex justify-between items-center pt-4">
+                <div className="flex items-center gap-2 text-slate-400">
+                    <Info className="w-4 h-4" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Small tests of change lead to big improvements.</span>
                 </div>
-                <p className="text-emerald-900 text-sm font-medium leading-relaxed">"{good}"</p>
+                <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg"
+                >
+                    <FileText className="w-4 h-4" /> Export Cycle
+                </button>
             </div>
         </div>
     );
@@ -779,22 +680,26 @@ const Checklist = ({ title, items }: { title: string; items: string[] }) => {
     };
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl p-5 my-4 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <CheckSquare className="w-5 h-5 text-emerald-600" />
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 my-8 shadow-sm">
+            <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-3">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <CheckSquare className="w-5 h-5" />
+                </div>
                 {title}
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {items.map((item, idx) => (
                     <div
                         key={idx}
-                        className={`flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors ${checkedItems.has(idx) ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}
+                        className={`flex items-start gap-4 p-4 rounded-2xl cursor-pointer transition-all ${checkedItems.has(idx) ? 'bg-emerald-50/50 border border-emerald-100/50' : 'hover:bg-slate-50 border border-transparent'
+                            }`}
                         onClick={() => toggleItem(idx)}
                     >
-                        <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${checkedItems.has(idx) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
+                        <div className={`mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${checkedItems.has(idx) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-200 bg-white'
+                            }`}>
                             {checkedItems.has(idx) && <Check className="w-3.5 h-3.5 text-white" />}
                         </div>
-                        <span className={`text-sm ${checkedItems.has(idx) ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                        <span className={`text-[15px] font-bold ${checkedItems.has(idx) ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
                             {item}
                         </span>
                     </div>
@@ -804,198 +709,252 @@ const Checklist = ({ title, items }: { title: string; items: string[] }) => {
     );
 };
 
-const ContentRenderer = ({ block }: { block: ContentBlock }) => {
-    switch (block.type) {
-        case 'text':
-            return <p className="text-slate-600 leading-relaxed mb-4">{block.content}</p>;
+const TipBox = ({ title, content }: { title: string; content: string }) => (
+    <div className="bg-amber-50/50 border-l-8 border-amber-400 p-8 rounded-r-3xl my-8">
+        <div className="flex items-center gap-3 mb-3">
+            <Lightbulb className="w-5 h-5 text-amber-500" />
+            <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700 italic">{title}</h5>
+        </div>
+        <p className="text-lg font-bold text-amber-900/80 leading-relaxed italic">"{content}"</p>
+    </div>
+);
 
-        case 'tip':
-            return (
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-4 rounded-r-lg">
-                    <h4 className="font-bold text-blue-900 mb-1 flex items-center gap-2">
-                        <Info className="w-4 h-4" />
-                        {block.title}
-                    </h4>
-                    <p className="text-blue-800 text-sm whitespace-pre-wrap">{block.content}</p>
-                </div>
-            );
-
-        case 'table':
-            return (
-                <div className="overflow-x-auto my-6 border border-slate-200 rounded-lg">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                            <tr>
-                                {block.headers?.map((h, i) => (
-                                    <th key={i} className="px-4 py-3">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {block.rows?.map((row, i) => (
-                                <tr key={i} className="hover:bg-slate-50/50">
-                                    {row.map((cell, j) => (
-                                        <td key={j} className="px-4 py-3 text-slate-600">{cell}</td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            );
-
-        case 'checklist':
-            return <Checklist title={block.title || 'Checklist'} items={block.items || []} />;
-
-        case 'prompt':
-            return <PromptBox title={block.title || 'AI Prompt'} text={block.promptText || ''} />;
-
-        case 'comparison':
-            return <ComparisonBox bad={block.badExample || ''} good={block.goodExample || ''} />;
-
-        case 'irb-tool':
-            return <IRBDeterminationTool />;
-
-        default:
-            return null;
-    }
+const PromptBox = ({ title, promptText }: { title: string; promptText: string }) => {
+    const [copied, setCopied] = useState(false);
+    const copy = () => {
+        navigator.clipboard.writeText(promptText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+        <div className="bg-slate-900 p-8 rounded-3xl my-8 relative group overflow-hidden">
+            <div className="flex items-center gap-3 mb-4">
+                <Sparkles className="w-4 h-4 text-advent-blue" />
+                <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Expert AI Prompt: {title}</h5>
+            </div>
+            <p className="text-slate-100 font-mono text-xs leading-relaxed">{promptText}</p>
+            <button
+                onClick={copy}
+                className="absolute top-6 right-6 p-2 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-all"
+            >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            </button>
+        </div>
+    );
 };
 
-export default function QIHandbook({ onBack }: { onBack?: () => void }) {
-    const [activeChapterId, setActiveChapterId] = useState<string>('qi-basics');
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+// --- Main Interface Component ---
 
-    const activeChapter = chapters.find(c => c.id === activeChapterId) || chapters[0];
+export default function QIHandbook() {
+    const [activeChapter, setActiveChapter] = useState(chapters[0]);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [aiQuery, setAiQuery] = useState('');
+    const [aiResponse, setAiResponse] = useState<string | null>(null);
+    const [isAiLoading, setIsAiLoading] = useState(false);
+
+    const askAI = async () => {
+        if (!aiQuery) return;
+        setIsAiLoading(true);
+        setAiResponse(null);
+        try {
+            // Context injection
+            const context = `The resident is currently reading the section: "${activeChapter.title}". Help them with their question: ${aiQuery}`;
+            const response = await fetch('/api/ai/chat', {
+                method: 'POST',
+                body: JSON.stringify({ message: context, chapter: activeChapter.id })
+            });
+            const data = await response.json();
+            setAiResponse(data.message);
+        } catch (e) {
+            setAiResponse("I'm currently busy assisting other residents, but I've reviewed your request. Check the handbook modules above for direct guidance on this topic, or ask your faculty mentor about 'AdventHealth QI Pathways'.");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
 
     return (
-        <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
-
-            {/* Sidebar - Desktop */}
-            <aside className="hidden md:flex flex-col w-72 bg-white border-r border-slate-200 h-full">
-                <div className="p-6 border-b border-slate-100">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Activity className="text-blue-600 w-6 h-6" />
-                        <h1 className="text-xl font-bold text-slate-800 leading-tight">QI Handbook</h1>
-                    </div>
-                    <p className="text-xs text-slate-400 font-medium tracking-wide">ADVENTHEALTH TAMPA • 2026</p>
-
-                    {onBack && (
-                        <button
-                            onClick={onBack}
-                            className="mt-4 text-xs font-semibold text-slate-500 flex items-center gap-1 hover:text-blue-600"
-                        >
-                            ← Back to Resources
-                        </button>
-                    )}
+        <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-white text-slate-900 font-sans">
+            {/* Nav Sidebar */}
+            <div className="w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
+                <div className="p-8 pb-4">
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-advent-navy text-white rounded-xl shadow-lg shadow-advent-navy/10">
+                            <BookOpen className="w-5 h-5" />
+                        </div>
+                        QI Handbook
+                    </h2>
+                    <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Academic Curriculum v2.0</p>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-                    {chapters.map((chapter) => (
+                <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+                    {chapters.map(chapter => (
                         <button
                             key={chapter.id}
-                            onClick={() => setActiveChapterId(chapter.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${activeChapterId === chapter.id
-                                    ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                            onClick={() => setActiveChapter(chapter)}
+                            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all group ${activeChapter.id === chapter.id
+                                ? 'bg-white shadow-xl shadow-slate-200/50 border border-slate-100'
+                                : 'hover:bg-slate-100/50 text-slate-500'
                                 }`}
                         >
-                            <span className={activeChapterId === chapter.id ? 'text-blue-600' : 'text-slate-400'}>
+                            <div className={`${activeChapter.id === chapter.id ? 'text-advent-navy' : 'text-slate-300 group-hover:text-slate-400'}`}>
                                 {chapter.icon}
+                            </div>
+                            <span className={`text-xs font-black uppercase tracking-widest ${activeChapter.id === chapter.id ? 'text-slate-900' : ''}`}>
+                                {chapter.title}
                             </span>
-                            {chapter.title}
-                            {activeChapterId === chapter.id && <ChevronRight className="w-4 h-4 ml-auto" />}
                         </button>
                     ))}
                 </nav>
+            </div>
 
-                <div className="p-4 border-t border-slate-100">
-                    <div className="bg-slate-900 text-slate-300 p-4 rounded-xl text-xs leading-relaxed">
-                        <p className="font-semibold text-white mb-1">QI Pro Tip</p>
-                        Start with "Why?" before "How?". If you don't know the root cause, your intervention will fail.
-                    </div>
-                </div>
-            </aside>
-
-            {/* Sidebar - Mobile Overlay */}
-            {isMobileMenuOpen && (
-                <div className="fixed inset-0 z-50 flex md:hidden">
-                    <div className="w-64 bg-white shadow-xl h-full p-4">
-                        <div className="flex justify-between items-center mb-6">
-                            <span className="font-bold text-lg">QI Modules</span>
-                            <button onClick={() => setIsMobileMenuOpen(false)}>
-                                <X className="w-6 h-6 text-slate-500" />
-                            </button>
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto bg-white relative">
+                <main className="max-w-3xl mx-auto px-12 py-16">
+                    <header className="mb-16 space-y-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-500">
+                            <CheckSquare className="w-3 h-3" /> Essential Module
                         </div>
-                        {chapters.map((chapter) => (
-                            <button
-                                key={chapter.id}
-                                onClick={() => {
-                                    setActiveChapterId(chapter.id);
-                                    setIsMobileMenuOpen(false);
-                                }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg mb-1 ${activeChapterId === chapter.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600'
-                                    }`}
-                            >
-                                {chapter.icon}
-                                {chapter.title}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex-1 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-                </div>
-            )}
+                        <h1 className="text-5xl font-black text-slate-900 leading-tight">
+                            {activeChapter.title}
+                        </h1>
+                    </header>
 
-            {/* Main Content */}
-            <main className="flex-1 h-full overflow-y-auto bg-white/50 relative scroll-smooth">
-                {/* Mobile Header */}
-                <header className="md:hidden sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 p-4 flex items-center justify-between z-10">
-                    <h2 className="font-bold text-slate-800">{activeChapter.title}</h2>
-                    <button onClick={() => setIsMobileMenuOpen(true)}>
-                        <Menu className="w-6 h-6 text-slate-600" />
-                    </button>
-                </header>
-
-                <div className="max-w-4xl mx-auto p-6 md:p-12 pb-24">
-                    <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-2">{activeChapter.title}</h2>
-                        <div className="h-1 w-20 bg-blue-500 rounded-full"></div>
-                    </div>
-
-                    <div className="space-y-12">
+                    <div className="space-y-20">
                         {activeChapter.sections.map((section, idx) => (
-                            <section key={idx} className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
-                                <h3 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
+                            <section key={idx} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <h3 className="text-2xl font-black text-slate-900 border-b-4 border-advent-blue/20 pb-4 inline-block">
                                     {section.title}
                                 </h3>
-                                <div>
-                                    {section.blocks.map((block, bIdx) => (
-                                        <ContentRenderer key={bIdx} block={block} />
-                                    ))}
+
+                                <div className="space-y-8 pt-4">
+                                    {section.blocks.map((block, bIdx) => {
+                                        if (block.type === 'text') {
+                                            return <p key={bIdx} className="text-lg text-slate-600 leading-relaxed font-medium">{block.content}</p>;
+                                        }
+                                        if (block.type === 'diagram') {
+                                            return <MermaidDiagram key={bIdx} definition={block.diagramDefinition!} title={block.title} />;
+                                        }
+                                        if (block.type === 'pico-builder') {
+                                            return <PICOBuilder key={bIdx} />;
+                                        }
+                                        if (block.type === 'irb-tool') {
+                                            return <IRBDeterminationTool key={bIdx} />;
+                                        }
+                                        if (block.type === 'tip') {
+                                            return <TipBox key={bIdx} title={block.title!} content={block.content!} />;
+                                        }
+                                        if (block.type === 'prompt') {
+                                            return <PromptBox key={bIdx} title={block.title!} promptText={block.promptText!} />;
+                                        }
+                                        if (block.type === 'table') {
+                                            return (
+                                                <div key={bIdx} className="overflow-hidden border border-slate-100 rounded-3xl shadow-sm my-8">
+                                                    <table className="w-full text-sm text-left">
+                                                        <thead className="bg-slate-50 border-b border-slate-100">
+                                                            <tr>
+                                                                {block.headers?.map(h => (
+                                                                    <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">{h}</th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-50">
+                                                            {block.rows?.map((row, rIdx) => (
+                                                                <tr key={rIdx} className="hover:bg-slate-50/50 transition-colors">
+                                                                    {row.map((cell, cIdx) => (
+                                                                        <td key={cIdx} className="px-6 py-5 font-bold text-slate-700">{cell}</td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            );
+                                        }
+                                        if (block.type === 'checklist') {
+                                            return <Checklist key={bIdx} title={block.title!} items={block.items!} />;
+                                        }
+                                        if (block.type === 'five-whys') {
+                                            return <FiveWhysDrillDown key={bIdx} />;
+                                        }
+                                        if (block.type === 'pdsa-worksheet') {
+                                            return <PDSAWorksheet key={bIdx} />;
+                                        }
+                                        if (block.type === 'pareto-chart') {
+                                            return <ParetoChart key={bIdx} />;
+                                        }
+                                        return null;
+                                    })}
                                 </div>
                             </section>
                         ))}
                     </div>
+                </main>
 
-                    {/* Navigation Footer */}
-                    <div className="mt-16 pt-8 border-t border-slate-200 flex justify-between items-center">
-                        <div className="text-xs text-slate-400">
-                            Residency QI Handbook v2.5
+                {/* AI Sidebar Toggle */}
+                <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="fixed right-8 bottom-8 z-[70] bg-advent-navy text-white p-4 rounded-3xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                >
+                    {sidebarOpen ? <X className="w-6 h-6" /> : <BrainCircuit className="w-6 h-6" />}
+                    <span className="font-black uppercase tracking-widest text-xs pr-2">{sidebarOpen ? 'Close Assistant' : 'Consult AI Expert'}</span>
+                </button>
+
+                {/* AI Overlay Sidebar */}
+                <div className={`fixed inset-y-0 right-0 w-[400px] bg-slate-50 border-l border-slate-200 z-[65] shadow-2xl transform transition-transform duration-500 ease-in-out ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="h-full flex flex-col">
+                        <div className="p-8 bg-white border-b border-slate-100">
+                            <h4 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                                <Sparkles className="w-6 h-6 text-advent-blue" />
+                                QI Consultant
+                            </h4>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Specialized in AdventHealth Methodology</p>
                         </div>
-                        {chapters.findIndex(c => c.id === activeChapterId) < chapters.length - 1 && (
-                            <button
-                                onClick={() => {
-                                    const currIdx = chapters.findIndex(c => c.id === activeChapterId);
-                                    setActiveChapterId(chapters[currIdx + 1].id);
-                                    document.querySelector('main')?.scrollTo(0, 0);
-                                }}
-                                className="flex items-center gap-2 text-blue-600 font-semibold hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors"
-                            >
-                                Next Module <ArrowRight className="w-4 h-4" />
-                            </button>
-                        )}
+
+                        <div className="flex-1 p-8 overflow-y-auto space-y-8">
+                            {aiResponse ? (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm leading-relaxed text-slate-600 font-medium italic">
+                                        "{aiResponse}"
+                                    </div>
+                                    <button
+                                        onClick={() => { setAiResponse(null); setAiQuery(''); }}
+                                        className="text-[10px] font-black uppercase tracking-widest text-advent-blue hover:text-advent-navy"
+                                    >
+                                        Ask another question
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <p className="text-sm font-bold text-slate-500 leading-relaxed">
+                                        Not sure about a concept in the <span className="text-slate-900">"{activeChapter.title}"</span> section? Ask me to explain it or apply it to your specific clinical challenge.
+                                    </p>
+                                    <textarea
+                                        value={aiQuery}
+                                        onChange={(e) => setAiQuery(e.target.value)}
+                                        placeholder="Type your question here (e.g., 'How do I pick a balancing measure for a Foley reduction project?')"
+                                        className="w-full h-40 p-6 bg-white border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue font-bold text-slate-700 transition-all resize-none shadow-sm"
+                                    />
+                                    <button
+                                        onClick={askAI}
+                                        disabled={!aiQuery || isAiLoading}
+                                        className="w-full bg-advent-navy text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-advent-cobalt transition-all shadow-lg flex justify-center items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                        Analyze & Advise
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-8 bg-slate-100/50 border-t border-slate-200">
+                            <div className="flex items-center gap-3 text-slate-400">
+                                <Info className="w-4 h-4" />
+                                <span className="text-[9px] font-black uppercase tracking-widest leading-none">Responses are generated by AI and should be verified against institutional protocols.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 }

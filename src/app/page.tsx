@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import PHIWarning from "@/components/PHIWarning";
 import ProjectCard from "@/components/ProjectCard";
 import { Project, ProjectStatus } from "@/types";
-import { Plus, Search, Filter, ArrowRight } from "lucide-react";
+import { Plus, Search, Filter, ArrowRight, List, LayoutPanelLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import DashboardCharts from "@/components/DashboardCharts";
+import ConferenceMatcher from "@/components/ConferenceMatcher";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -121,8 +122,11 @@ export default function Dashboard() {
               </div>
               Recently Updated
             </h2>
+            <Link href="/projects/kanban" prefetch={false} className="text-xs font-black uppercase tracking-widest text-advent-green hover:text-advent-navy flex items-center gap-2 group transition-all">
+              Visual Pipeline <LayoutPanelLeft className="w-4 h-4" />
+            </Link>
             <Link href="/projects" prefetch={false} className="text-xs font-black uppercase tracking-widest text-advent-navy hover:text-advent-green flex items-center gap-2 group transition-all">
-              View All Projects <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              View All <List className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
@@ -178,6 +182,8 @@ export default function Dashboard() {
                 ))}
               </div>
             </section>
+
+            <ConferenceMatcher />
           </div>
 
           {/* Quick Analytics Card - Professional Accent */}

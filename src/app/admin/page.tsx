@@ -4,12 +4,14 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Profile, UserRole } from "@/types";
-import { Shield, Users, Check, X, Loader2 } from "lucide-react";
+import { Shield, Users, Check, X, Loader2, Search } from "lucide-react";
 import PHIWarning from "@/components/PHIWarning";
 import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
+import BulkPersonnelImport from "@/components/BulkPersonnelImport";
 
 export default function AdminPage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -95,6 +97,11 @@ export default function AdminPage() {
 
     if (currentUserRole !== "Admin") return null; // Should have redirected
 
+    const filteredProfiles = profiles.filter(p =>
+        p.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p as any).email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <div className="flex items-center gap-4 border-b border-slate-200 pb-6">
@@ -109,15 +116,32 @@ export default function AdminPage() {
                 </div>
             </div>
 
-            <ExecutiveReportCenter />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    <ExecutiveReportCenter />
+                </div>
+                <div>
+                    <BulkPersonnelImport />
+                </div>
+            </div>
             <PHIWarning />
 
             <div className="glass rounded-2xl overflow-hidden shadow-lg border-0 ring-1 ring-slate-200/50">
                 <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
                     <h2 className="font-bold text-slate-700 flex items-center gap-2">
                         <Users className="w-5 h-5 text-advent-cobalt" />
-                        Registered Users ({profiles.length})
+                        Registered Users ({filteredProfiles.length})
                     </h2>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search names or emails..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-advent-navy/10 outline-none w-64 transition-all"
+                        />
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -131,11 +155,16 @@ export default function AdminPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {profiles.map((profile) => (
+                            {filteredProfiles.map((profile) => (
                                 <tr key={profile.id} className="hover:bg-slate-50/80 transition-colors">
                                     <td className="px-6 py-4 font-medium text-slate-900">
                                         {(profile as any).email || profile.full_name || "Unknown User"}
-                                        <div className="text-xs text-slate-400 font-normal mt-0.5">{profile.id}</div>
+                                        {profile.full_name && (profile as any).email && (
+                                            <div className="text-[10px] text-slate-400 font-normal mt-0.5">{profile.full_name}</div>
+                                        )}
+                                        {!profile.full_name && (
+                                            <div className="text-[10px] text-slate-400 font-normal mt-0.5 italic">Name not synced from directory</div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wide
@@ -175,6 +204,6 @@ export default function AdminPage() {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

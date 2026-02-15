@@ -20,7 +20,8 @@ import {
     Plus,
     Edit3,
     FileText,
-    Presentation
+    Presentation,
+    Trophy
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -31,6 +32,7 @@ import MetricSuggester from "@/components/MetricSuggester";
 import QualityAudit from "@/components/QualityAudit";
 import ProjectTags from "@/components/ProjectTags";
 import ProtocolWizard from "@/components/ProtocolWizard";
+import ConferenceMatcher from "@/components/ConferenceMatcher";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -301,12 +303,31 @@ export default function ProjectDetailPage() {
                             )}
                         </div>
 
-                        <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 pt-6 border-t border-slate-100 text-[10px] uppercase tracking-[0.2em]">
-                            <History className="w-4 h-4" />
-                            History
-                        </h3>
                         <div className="space-y-4">
                             <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />
+                        </div>
+
+                        <div className="pt-6 border-t border-slate-100">
+                            <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+                                <Trophy className="w-4 h-4 text-amber-500" />
+                                Targeting Conference
+                            </h3>
+                            {project.target_conference ? (
+                                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                                    <p className="text-xs font-black text-amber-800 uppercase tracking-tight mb-1">{project.target_conference}</p>
+                                    <button
+                                        onClick={async () => {
+                                            await supabase.from('projects').update({ target_conference: null }).eq('id', project.id);
+                                            router.refresh(); // Refresh to show changes
+                                        }}
+                                        className="text-[9px] font-black uppercase text-amber-600 hover:text-red-600 transition-colors"
+                                    >
+                                        Remove Target
+                                    </button>
+                                </div>
+                            ) : (
+                                <p className="text-[10px] font-bold text-slate-400 italic">No conference targeted yet.</p>
+                            )}
                         </div>
                     </div>
                 </div>

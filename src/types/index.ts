@@ -27,6 +27,7 @@ export interface Project {
     updated_by: string | null;
     protocol_url: string | null;
     presentation_url: string | null;
+    target_conference: string | null;
 }
 
 export interface Comment {
@@ -52,5 +53,6 @@ export interface DirectoryEntry {
     id: string;
     name: string;
     email: string;
+    role: UserRole;
     created_at: string;
 }
