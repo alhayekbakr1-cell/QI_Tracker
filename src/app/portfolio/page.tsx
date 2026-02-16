@@ -29,22 +29,47 @@ export default function PortfolioPage() {
             if (!user) return;
 
             setUserEmail(user.email ?? null);
-            const userIdentifer = user.email?.split('@')[0] || user.id;
+
+            // Fetch profile for better name matching fallback
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .single();
+
+            const userFullName = profile?.full_name?.toLowerCase() || "";
+            const emailPrefix = user.email?.split('@')[0].toLowerCase() || "";
+            const emailParts = emailPrefix.split('.');
 
             // Fetch projects where user is proponent or lead_proponent
-            // We now filter by IDs for accuracy
+            // Priority 1: UUID Linkage, Priority 2: Lenient Name Matching
             const { data: projects } = await supabase
                 .from('projects')
                 .select('*');
 
             if (projects) {
-                const filtered = projects.filter(p =>
-                    (p.lead_proponent_ids && p.lead_proponent_ids.includes(user.id)) ||
-                    (p.proponent_ids && p.proponent_ids.includes(user.id)) ||
-                    // Fallback for names if IDs not yet populated
-                    p.lead_proponents.some((lp: string) => lp.toLowerCase().includes(user.email?.split('@')[0].toLowerCase() || '')) ||
-                    p.proponents.some((pr: string) => pr.toLowerCase().includes(user.email?.split('@')[0].toLowerCase() || ''))
-                );
+                const filtered = projects.filter(p => {
+                    // Check ID linkage first
+                    const isIdMatch = (p.lead_proponent_ids && p.lead_proponent_ids.includes(user.id)) ||
+                        (p.proponent_ids && p.proponent_ids.includes(user.id));
+                    if (isIdMatch) return true;
+
+                    // Fallback to lenient name matching
+                    const nameMatch = (name: string) => {
+                        const lowName = name.toLowerCase();
+                        // 1. Check direct profile name match
+                        if (userFullName && lowName.includes(userFullName)) return true;
+                        // 2. Check full email prefix match
+                        if (lowName.includes(emailPrefix)) return true;
+                        // 3. Check significant parts of email (e.g. "bakr" and "alhayek")
+                        return emailParts.every(part =>
+                            part.length > 2 ? lowName.includes(part) : true
+                        );
+                    };
+
+                    return (p.lead_proponents && p.lead_proponents.some(nameMatch)) ||
+                        (p.proponents && p.proponents.some(nameMatch));
+                });
                 setMyProjects(filtered as Project[]);
             }
             setIsLoading(false);
