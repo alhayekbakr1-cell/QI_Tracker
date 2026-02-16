@@ -145,6 +145,7 @@ export default function EditProjectPage() {
             proponent_ids: selectedProponentIds,
             lead_proponent_ids: selectedLeadIds,
             updates_and_barriers: formData.get('updates_and_barriers') as string,
+            target_conference: formData.get('target_conference') as string || null,
             last_updated_date: new Date().toISOString(),
         };
 
@@ -323,6 +324,21 @@ export default function EditProjectPage() {
                         />
                     </div>
 
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Targeting Conference</label>
+                        <select
+                            name="target_conference"
+                            defaultValue={project.target_conference || ""}
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                        >
+                            <option value="">-- No Conference Targeted --</option>
+                            <option value="ACP National (Internal Medicine)">ACP National (Internal Medicine)</option>
+                            <option value="SHM Converge (Hospital Medicine)">SHM Converge (Hospital Medicine)</option>
+                            <option value="SGIM Annual Meeting">SGIM Annual Meeting</option>
+                            <option value="AdventHealth Research Day">AdventHealth Research Day</option>
+                        </select>
+                    </div>
+
                     <AIUpdateSection initialValue={project.updates_and_barriers || ''} />
 
                     <div className="space-y-6 pt-10 border-t border-slate-100">
@@ -385,7 +401,7 @@ export default function EditProjectPage() {
                         {isSaving ? "Saving..." : "Save Changes"}
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     )
 }
