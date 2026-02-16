@@ -37,18 +37,20 @@ import {
 
 import mermaid from 'mermaid';
 
-// Initialize mermaid
-mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    themeVariables: {
-        primaryColor: '#003057', // AdventHealth Navy
-        secondaryColor: '#E9F1F8',
-        tertiaryColor: '#ffffff',
-        lineColor: '#003057',
-        fontFamily: 'Inter, sans-serif'
-    }
-});
+// Initialize mermaid only once on the client
+if (typeof window !== 'undefined') {
+    mermaid.initialize({
+        startOnLoad: false, // Control rendering manually
+        theme: 'base',
+        themeVariables: {
+            primaryColor: '#003057', // AdventHealth Navy
+            secondaryColor: '#E9F1F8',
+            tertiaryColor: '#ffffff',
+            lineColor: '#003057',
+            fontFamily: 'Inter, sans-serif'
+        }
+    });
+}
 
 // --- Types ---
 interface ContentBlock {
@@ -80,48 +82,79 @@ interface Chapter {
 
 const chapters: Chapter[] = [
     {
-        id: 'fundamentals',
-        title: '1. Fundamentals (The Basics)',
+        id: 'overview',
+        title: '1. Project Overview',
         icon: <BookOpen className="w-5 h-5" />,
         sections: [
             {
-                title: 'The Model for Improvement',
+                title: 'The Elevator Pitch',
                 blocks: [
                     {
                         type: 'text',
-                        content: "The fundamental framework for QI accelerated change involves asking three questions and then using the Plan-Do-Study-Act (PDSA) cycle."
+                        content: "Briefly summarize the problem, the aim, and what you will change. Every QI project starts with a clear focus."
                     },
                     {
-                        type: 'diagram',
-                        title: 'Interactive Model for Improvement',
-                        diagramDefinition: `
-graph TD
-    Q1["Aim: What are we trying to accomplish?"] --> Q2["Measures: How will we know change is improvement?"]
-    Q2 --> Q3["Ideas: What changes can we make?"]
-    Q3 --> PDSA
-    subgraph PDSA["PDSA Engine"]
-        P["Plan"] --> D["Do"]
-        D --> S["Study"]
-        S --> A["Act"]
-        A --> P
-    end
-                        `
+                        type: 'tip',
+                        title: 'The 3-Question Rule',
+                        content: "1. What are we trying to accomplish? 2. How will we know change is improvement? 3. What changes can we make?"
                     },
                     {
-                        type: 'text',
-                        content: "The PDSA cycle is for testing. Plan your first small test here."
-                    },
-                    {
-                        type: 'pdsa-worksheet'
+                        type: 'table',
+                        title: 'Executive Summary Components',
+                        headers: ['Item', 'Response Requirement'],
+                        rows: [
+                            ['Problem Statement', '1-2 sentences on the gap in care.'],
+                            ['SMART Aim', 'Specific, Measurable, Time-bound goal.'],
+                            ['Proposed Intervention', 'What exactly will you do?'],
+                            ['Primary Outcome', 'Your main success metric.']
+                        ]
                     }
                 ]
-            },
+            }
+        ]
+    },
+    {
+        id: 'background',
+        title: '2. Background & Evidence',
+        icon: <FileText className="w-5 h-5" />,
+        sections: [
+            {
+                title: 'Building the Case',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "Describe why this matters. Include national context and local baseline data."
+                    },
+                    {
+                        type: 'tip',
+                        title: 'The Why Change?',
+                        content: "When speaking to stakeholders, align your 'Why' with patient safety, clinical outcomes, or provider experience."
+                    },
+                    {
+                        type: 'checklist',
+                        title: 'Evidence Gathering Checklist',
+                        items: [
+                            'Identify current institutional practice/standard.',
+                            'Search for at least 3 peer-reviewed citations.',
+                            'Document baseline metrics (e.g., last 12 months).',
+                            'Identify gaps in current workflow.'
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'outcomes',
+        title: '3. Outcomes & Aim Statements',
+        icon: <Target className="w-5 h-5" />,
+        sections: [
             {
                 title: 'PICO Framework Builder',
                 blocks: [
                     {
                         type: 'text',
-                        content: "Standardize your clinical/research question before writing your protocol."
+                        content: "Standardize your clinical question before writing your protocol."
                     },
                     {
                         type: 'pico-builder',
@@ -130,81 +163,32 @@ graph TD
                 ]
             },
             {
-                title: 'IRB Determination Tool',
+                title: 'Defining SMART Aims',
                 blocks: [
                     {
-                        type: 'text',
-                        content: "Not every project is 'Research'. Use this tool to see if you need full IRB review or if it falls under Quality Improvement."
-                    },
-                    {
-                        type: 'irb-tool',
-                        title: 'QI vs. Research Checklist'
+                        type: 'tip',
+                        title: 'SMART Criteria',
+                        content: "Specific, Measurable, Achievable, Relevant, Time-bound. Example: 'Increase hand hygiene compliance from 60% to 90% by Dec 2026 on Ward 4A.'"
                     }
                 ]
             }
         ]
     },
     {
-        id: 'team',
-        title: '2. Team & Stakeholders',
-        icon: <Users className="w-5 h-5" />,
-        sections: [
-            {
-                title: 'Stakeholder Analysis',
-                blocks: [
-                    {
-                        type: 'table',
-                        title: 'Power vs. Interest Grid',
-                        headers: ['Category', 'Strategy', 'Institutional Example'],
-                        rows: [
-                            ['High Power / High Interest', 'Manage Closely', 'Program Director, Chief Medical Officer'],
-                            ['High Power / Low Interest', 'Keep Satisfied', 'IT Department, Legal/Risk Management'],
-                            ['Low Power / High Interest', 'Keep Informed', 'Residents on Rotation, Nurses'],
-                            ['Low Power / Low Interest', 'Monitor', 'Other Departments, External Vendors']
-                        ]
-                    }
-                ]
-            },
-            {
-                title: 'RACI Matrix',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Define who does what to prevent 'diffusion of responsibility' in your project team."
-                    },
-                    {
-                        type: 'tip',
-                        title: 'The RACI Rule of One',
-                        content: "For every task, there should be exactly ONE person 'Accountable' (A). If two people are accountable, no one is."
-                    },
-                    {
-                        type: 'table',
-                        title: 'Example Project RACI',
-                        headers: ['Task', 'Resident PI', 'Faculty Mentor', 'Unit RN Manager'],
-                        rows: [
-                            ['Data Extraction', 'R', 'I', 'C'],
-                            ['IRB Submission', 'R/A', 'C', 'I'],
-                            ['Workflow Change', 'C', 'I', 'R/A'],
-                            ['Poster Design', 'R', 'C', 'I']
-                        ]
-                    },
-                    {
-                        type: 'tip',
-                        title: 'The Elevator Pitch',
-                        content: "When speaking to high-power stakeholders, keep it short: What is the problem? Why should THEY care? What is your one specific request?"
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'design-tools',
-        title: '3. Design Tools (Diagnostics)',
+        id: 'methods',
+        title: '4. Methods & Design',
         icon: <PenTool className="w-5 h-5" />,
         sections: [
             {
-                title: 'Root Cause: Fishbone Diagram',
+                title: 'Choose Your Framework',
                 blocks: [
+                    {
+                        type: 'text',
+                        content: "Specify your QI framework (PDSA, Lean, Six Sigma) and why it fits your project."
+                    },
+                    {
+                        type: 'pdsa-worksheet'
+                    },
                     {
                         type: 'diagram',
                         title: 'Fishbone (Ishikawa) Framework',
@@ -217,96 +201,23 @@ graph LR
     MG[Management] --> F
     F((PROBLEM))
                         `
-                    },
-                    {
-                        type: 'five-whys'
-                    }
-                ]
-            },
-            {
-                title: 'Process Mapping: Swimlane Diagram',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "A swimlane diagram shows who does what in a complex workflow. It's essential for identifying delays and bottlenecks."
-                    },
-                    {
-                        type: 'diagram',
-                        title: 'ED Flow Swimlane Example',
-                        diagramDefinition: `
-graph TB
-    subgraph Patient
-        A[Arrival] --> B[Registration]
-    end
-    subgraph Nursing
-        B --> C[Triage]
-        C --> D[Vital Signs]
-        H[Administer Meds] --> I[Re-evaluate]
-    end
-    subgraph Physician
-        D --> E[Consultation]
-        E --> F[Orders]
-        F --> G[Diagnosis]
-        G --> H
-    end
-                        `
-                    }
-                ]
-            },
-            {
-                title: 'Prioritization: PICK Chart',
-                blocks: [
-                    {
-                        type: 'table',
-                        title: 'PICK Prioritization Tool',
-                        headers: ['Quadrant', 'Effort', 'Impact', 'Action'],
-                        rows: [
-                            ['Implement', 'Low', 'High', 'Do these first!'],
-                            ['Possible', 'Low', 'Low', 'Quick wins if time permits.'],
-                            ['Challenge', 'High', 'High', 'Strategic; needs major support.'],
-                            ['Kill', 'High', 'Low', 'Abandon these ideas immediately.']
-                        ]
-                    }
-                ]
-            },
-            {
-                title: 'Driver Diagram',
-                blocks: [
-                    {
-                        type: 'diagram',
-                        title: 'Visualizing Your Theory of Change',
-                        diagramDefinition: `
-graph LR
-    A[SMART AIM] --> P1[Primary Driver 1]
-    A --> P2[Primary Driver 2]
-    P1 --> S1[Secondary Driver]
-    P1 --> S2[Secondary Driver]
-    S1 --> C1[Change Idea]
-    S2 --> C2[Change Idea]
-                        `
-                    }
-                ]
-            },
-            {
-                title: "AI Prompting for Change Ideas",
-                blocks: [
-                    {
-                        type: 'prompt',
-                        title: 'Sepsis Bundle Improvement',
-                        promptText: "Act as a Lean Six Sigma Expert. Suggest 3 low-effort, high-impact change ideas for reducing Sepsis bundle non-compliance in a community hospital setting."
                     }
                 ]
             }
         ]
     },
     {
-        id: 'analysis',
-        title: '4. Analysis (Methodology)',
+        id: 'measures',
+        title: '5. Measures & Data Collection',
         icon: <Activity className="w-5 h-5" />,
         sections: [
             {
-                title: 'Family of Measures',
+                title: 'The Family of Measures',
                 blocks: [
+                    {
+                        type: 'text',
+                        content: "List outcome, process, and balancing measures with operational definitions."
+                    },
                     {
                         type: 'table',
                         title: 'The Measurement Trio',
@@ -314,67 +225,92 @@ graph LR
                         rows: [
                             ['Outcome', 'The ultimate result.', 'Lower mortality rate.'],
                             ['Process', 'Are we doing what we intended?', '% of Bundles completed.'],
-                            ['Balancing', 'Unintended side effects.', 'Increased length of stay in ED.']
+                            ['Balancing', "Unintended side effects.", "ED Length of Stay."]
                         ]
                     },
                     {
-                        type: 'pareto-chart'
-                    }
-                ]
-            },
-            {
-                title: 'Run Chart Interpretation',
-                blocks: [
-                    {
-                        type: 'checklist',
-                        title: 'Rules for Non-Random Change',
-                        items: [
-                            'Shift: 6+ consecutive points on one side of median.',
-                            'Trend: 5+ consecutive points all increasing or decreasing.',
-                            'Astronomical Point: Blatant outlier.',
-                            'Runs: Too few or too many crossings of the median.'
-                        ]
-                    }
-                ]
-            },
-            {
-                title: 'Choosing a Statistical Test',
-                blocks: [
-                    {
-                        type: 'text',
-                        content: "Use this logic to decide how to analyze your data before/after your intervention."
-                    },
-                    {
-                        type: 'diagram',
-                        title: 'Statistics Choice Algorithm',
-                        diagramDefinition: `
-graph TD
-    Start[What type of data?] --> Cat[Categorical/Counts]
-    Start --> Cont[Continuous/Measured]
-    Cat --> Cat2[2 Groups?]
-    Cat2 --> |Yes| Chi[Chi-Square Test]
-    Cat2 --> |No| Fisher[Fisher's Exact]
-    Cont --> Cont2[2 Groups?]
-    Cont2 --> |Yes| Ttest[T-Test]
-    Cont2 --> |No| Anova[ANOVA]
-                        `
-                    },
-                    {
-                        type: 'prompt',
-                        title: 'Statistical Result Interpretation',
-                        promptText: "Explain the clinical significance of a p-value of 0.04 versus 0.06 in a quality improvement project for medication error reduction. How should I discuss this with my faculty mentor?"
+                        type: 'tip',
+                        title: 'Operational Definitions',
+                        content: "Be specific. Instead of 'On time', use 'Departure within 15 minutes of scheduled time'."
                     }
                 ]
             }
         ]
     },
     {
-        id: 'timeline',
-        title: '5. Timeline & Roadmap',
-        icon: <Calendar className="w-5 h-5" />,
+        id: 'hippa',
+        title: '6. Management, HIPAA & Security',
+        icon: <ShieldCheck className="w-5 h-5" />,
         sections: [
             {
-                title: '12-Month Project Timeline',
+                title: 'Data Security Standards',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "Store data in HIPAA-compliant locations (OneDrive/SharePoint). Never on personal devices."
+                    },
+                    {
+                        type: 'checklist',
+                        title: 'Security Compliance',
+                        items: [
+                            'Use MRN only (Avoid names/addresses).',
+                            'Maintain re-identification key separately.',
+                            'Store on AdventHealth Microsoft 365.',
+                            'Retain records for 7 years.'
+                        ]
+                    },
+                    {
+                        type: 'tip',
+                        title: 'Zero-PHI Rule',
+                        content: "When using AI tools or this dashboard, ensure you are only entering aggregate metadata, never patient-identifiable details."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'team-roles',
+        title: '7. Team & Timeline',
+        icon: <Users className="w-5 h-5" />,
+        sections: [
+            {
+                title: 'Stakeholder Analysis',
+                blocks: [
+                    {
+                        type: 'table',
+                        title: 'Power vs. Interest Grid',
+                        headers: ['Category', 'Strategy', 'Institutional Example'],
+                        rows: [
+                            ['High Power / High Interest', 'Manage Closely', 'Program Director, CMO'],
+                            ['High Power / Low Interest', 'Keep Satisfied', 'IT, Risk Management'],
+                            ['Low Power / High Interest', 'Keep Informed', 'Residents, Nurses'],
+                            ['Low Power / Low Interest', 'Monitor', 'External Vendors']
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'RACI Matrix',
+                blocks: [
+                    {
+                        type: 'tip',
+                        title: 'The RACI Rule',
+                        content: "Exactly ONE person per task should be 'Accountable' (A)."
+                    },
+                    {
+                        type: 'table',
+                        title: 'Example Project RACI',
+                        headers: ['Task', 'Resident PI', 'Faculty Mentor', 'Unit RN'],
+                        rows: [
+                            ['Data Extraction', 'R', 'I', 'C'],
+                            ['Workflow Change', 'C', 'I', 'R/A'],
+                            ['Poster Design', 'R', 'C', 'I']
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Project Roadmap',
                 blocks: [
                     {
                         type: 'diagram',
@@ -391,11 +327,152 @@ gantt
     Abstract Submission    :2027-01-01, 30d
     Poster Day             :2027-05-01, 10d
                         `
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'analysis',
+        title: '8. Analysis Plan',
+        icon: <BarChart2 className="w-5 h-5" />,
+        sections: [
+            {
+                title: 'Improvement Science Metrics',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "In QI, we focus on 'Run Charts' and 'Control Charts' rather than just p-values. We are looking for non-random variation over time."
+                    },
+                    {
+                        type: 'pareto-chart'
+                    },
+                    {
+                        type: 'checklist',
+                        title: 'Data Validation Steps',
+                        items: [
+                            'Check for missing data (empty rows in Excel).',
+                            'Verify the primary measure matches the SMART Aim.',
+                            'Define the median baseline (usually first 8-12 points).',
+                            'Check for shifts or trends in your run chart.'
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Choosing the Right Statistical Test',
+                blocks: [
+                    {
+                        type: 'diagram',
+                        title: 'Statistics Choice Algorithm',
+                        diagramDefinition: `
+graph TD
+    Start[What type of data?] --> Cat[Categorical/Counts]
+    Start --> Cont[Continuous/Measured]
+    Cat --> Cat2[2 Groups?]
+    Cat2 --> |Yes| Chi[Chi-Square Test]
+    Cat2 --> |No| Fisher[Fisher's Exact]
+    Cont --> Cont2[2 Groups?]
+    Cont2 --> |Yes| Ttest[T-Test]
+    Cont2 --> |No| Anova[ANOVA]
+                        `
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'results',
+        title: '9. Results Reporting',
+        icon: <Presentation className="w-5 h-5" />,
+        sections: [
+            {
+                title: 'The SQUIRE 2.0 Standards',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "Follow the SQUIRE guidelines (Standards for QUality Improvement Reporting Excellence) for high-impact publication."
+                    },
+                    {
+                        type: 'table',
+                        title: 'Result Section Requirements',
+                        headers: ['Section', 'What to Include'],
+                        rows: [
+                            ['N Value', 'Total patients/events in the study period.'],
+                            ['Intervention Effect', 'Comparison of baseline vs post-intervention.'],
+                            ['Process Metrics', 'Data showing if the intervention was actually used.'],
+                            ['Unintended Consequences', 'Did any balancing measures shift negatively?']
+                        ]
                     },
                     {
                         type: 'tip',
-                        title: 'Academic Deadlines',
-                        content: "Most national conferences (e.g., ACP, SGIM) have abstract deadlines in October-December. Map your project to hit 'Sustain' phase by September."
+                        title: 'The 5-Minute Pitch',
+                        content: "Focus on your SMART Aim, your PDSAs, and your biggest run chart shift. Leadership cares about sustainability."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'sustainability',
+        title: '10. Discussion & Sustainability',
+        icon: <RefreshCw className="w-5 h-5" />,
+        sections: [
+            {
+                title: 'Sustain & Spread',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "QI fails most often at the 'Sustainability' phase. How will your change last after the residents graduate?"
+                    },
+                    {
+                        type: 'checklist',
+                        title: 'Sustainability Pillars',
+                        items: [
+                            'Standard Operating Procedure (SOP) written.',
+                            'EMR Integration (Epic SmartPhrases or SmartSets).',
+                            'Ownership: Unit Manager or Medical Director notified.',
+                            'Monitoring: Ongoing dashboard or manual monthly audit.'
+                        ]
+                    },
+                    {
+                        type: 'tip',
+                        title: 'Sustainability Plan',
+                        content: "Include handoffs, EMR tools, and a clear owner for the process moving forward."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'ethical',
+        title: '11. Ethical Considerations (IRB)',
+        icon: <Gavel className="w-5 h-5" />,
+        sections: [
+            {
+                title: 'Institutional Determination',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "At AdventHealth, all QI projects must undergo a determination process to confirm they are not Human Subjects Research."
+                    },
+                    {
+                        type: 'irb-tool'
+                    },
+                    {
+                        type: 'checklist',
+                        title: 'IRB Preparation',
+                        items: [
+                            'Obtain Faculty Mentor sign-off.',
+                            'Complete CITI Training (if doing formal research).',
+                            'Upload Protocol to IRBNet/Institutional Portal.',
+                            'Receive Determination Letter before starting data collection.'
+                        ]
+                    },
+                    {
+                        type: 'prompt',
+                        title: 'Institutional Ethics Advice',
+                        promptText: "Explain the difference between QI and Research for a residency graduation project at AdventHealth, focusing on the intent and the scope of the findings."
                     }
                 ]
             }
@@ -406,29 +483,50 @@ gantt
 // --- Helper Components ---
 
 const MermaidDiagram = ({ definition, title }: { definition: string; title?: string }) => {
-    const [chartHtml, setChartHtml] = useState<string>('');
-    const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [renderError, setRenderError] = useState(false);
+    const id = React.useMemo(() => `mermaid-${Math.random().toString(36).substr(2, 9)}`, []);
 
     useEffect(() => {
+        let isMounted = true;
         const renderChart = async () => {
+            if (!containerRef.current) return;
             try {
-                const { svg } = await mermaid.render(id, definition.trim());
-                setChartHtml(svg);
+                // Clear previous content
+                containerRef.current.innerHTML = '';
+                const { svg } = await mermaid.render(id + '-svg', definition.trim());
+                if (isMounted && containerRef.current) {
+                    containerRef.current.innerHTML = svg;
+                    setRenderError(false);
+                }
             } catch (err) {
                 console.error('Mermaid render error:', err);
-                setChartHtml('<p class="text-red-500 text-xs font-bold">Failed to render diagram. Check syntax.</p>');
+                if (isMounted) setRenderError(true);
             }
         };
-        renderChart();
+
+        // Small delay to ensure DOM is ready
+        const timer = setTimeout(renderChart, 100);
+        return () => {
+            isMounted = false;
+            clearTimeout(timer);
+        };
     }, [definition, id]);
 
     return (
-        <div className="my-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 flex flex-col items-center">
+        <div className="my-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 flex flex-col items-center min-h-[100px] justify-center">
             {title && <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">{title}</h5>}
-            <div
-                className="mermaid-content w-full flex justify-center overflow-x-auto text-slate-900"
-                dangerouslySetInnerHTML={{ __html: chartHtml }}
-            />
+            {renderError ? (
+                <div className="flex flex-col items-center gap-2 p-4 text-center">
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                    <p className="text-[10px] font-bold text-slate-400 tracking-tight">Failed to render diagram. Check Mermaid syntax.</p>
+                </div>
+            ) : (
+                <div
+                    ref={containerRef}
+                    className="mermaid-content w-full flex justify-center overflow-x-auto text-slate-900"
+                />
+            )}
         </div>
     );
 };
@@ -745,12 +843,26 @@ const PromptBox = ({ title, promptText }: { title: string; promptText: string })
 
 // --- Main Interface Component ---
 
-export default function QIHandbook() {
+export default function QIHandbook({ onBack }: { onBack: () => void }) {
     const [activeChapter, setActiveChapter] = useState(chapters[0]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [aiQuery, setAiQuery] = useState('');
     const [aiResponse, setAiResponse] = useState<string | null>(null);
     const [isAiLoading, setIsAiLoading] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    // Hydration guard
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Scroll to top on chapter change
+    useEffect(() => {
+        const main = document.querySelector('main');
+        if (main) main.scrollTo(0, 0);
+    }, [activeChapter]);
+
+    if (!isMounted) return null;
 
     const askAI = async () => {
         if (!aiQuery) return;
@@ -777,6 +889,13 @@ export default function QIHandbook() {
             {/* Nav Sidebar */}
             <div className="w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
                 <div className="p-8 pb-4">
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-advent-blue transition-colors mb-6 group"
+                    >
+                        <ArrowRight className="w-3 h-3 rotate-180 group-hover:-translate-x-1 transition-transform" />
+                        Back to Resources
+                    </button>
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                         <div className="p-2 bg-advent-navy text-white rounded-xl shadow-lg shadow-advent-navy/10">
                             <BookOpen className="w-5 h-5" />

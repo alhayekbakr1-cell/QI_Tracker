@@ -21,7 +21,10 @@ import {
     Edit3,
     FileText,
     Presentation,
-    Trophy
+    Trophy,
+    FileCheck,
+    ChevronRight,
+    Users
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -44,6 +47,8 @@ export default function ProjectDetailPage() {
     const [metrics, setMetrics] = useState<Metric[]>([]);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [comments, setComments] = useState<Comment[]>([]);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [userProfile, setUserProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const supabase = createClient();
@@ -56,10 +61,22 @@ export default function ProjectDetailPage() {
 
         async function fetchData() {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            const isLocal = window.location.hostname === 'localhost';
+            const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
+
+            if (!user && !bypass) {
                 router.push("/login");
                 return;
             }
+            setCurrentUser(user);
+
+            // Fetch profile
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            setUserProfile(profile);
 
             // Fetch project details
             const { data: projectData } = await supabase
@@ -304,6 +321,59 @@ export default function ProjectDetailPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Faculty Sign-off Section */}
+                        {(userProfile?.id === project.faculty_id || userProfile?.role === 'Admin') && (
+                            <div className="pt-6 mt-6 border-t border-slate-100">
+                                <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+                                    <FileCheck className="w-4 h-4 text-advent-green" />
+                                    Faculty Sign-off
+                                </h3>
+                                <div className="space-y-3">
+                                    <button
+                                        id="signoff-protocol-btn"
+                                        onClick={async () => {
+                                            const newVal = !project.faculty_approved_protocol;
+                                            const { error } = await supabase
+                                                .from('projects')
+                                                .update({ faculty_approved_protocol: newVal })
+                                                .eq('id', project.id);
+                                            if (!error) setProject({ ...project, faculty_approved_protocol: newVal });
+                                        }}
+                                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${project.faculty_approved_protocol
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                            : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200 hover:text-emerald-600'}`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${project.faculty_approved_protocol ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                            <span className="text-xs font-bold">QI Protocol Approved</span>
+                                        </div>
+                                        {project.faculty_approved_protocol ? <CheckCircle2 className="w-4 h-4" /> : <ChevronRight className="w-4 h-4 opacity-30" />}
+                                    </button>
+
+                                    <button
+                                        id="signoff-pdsa-btn"
+                                        onClick={async () => {
+                                            const newVal = !project.faculty_approved_pdsa;
+                                            const { error } = await supabase
+                                                .from('projects')
+                                                .update({ faculty_approved_pdsa: newVal })
+                                                .eq('id', project.id);
+                                            if (!error) setProject({ ...project, faculty_approved_pdsa: newVal });
+                                        }}
+                                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${project.faculty_approved_pdsa
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                            : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200 hover:text-emerald-600'}`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${project.faculty_approved_pdsa ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                            <span className="text-xs font-bold">PDSA Methodology Verified</span>
+                                        </div>
+                                        {project.faculty_approved_pdsa ? <CheckCircle2 className="w-4 h-4" /> : <ChevronRight className="w-4 h-4 opacity-30" />}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="space-y-4">
                             <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />

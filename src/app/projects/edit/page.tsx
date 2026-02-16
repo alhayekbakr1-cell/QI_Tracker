@@ -63,6 +63,7 @@ export default function EditProjectPage() {
     const id = searchParams.get("id");
 
     const [project, setProject] = useState<Project | null>(null);
+    const [facultyProfiles, setFacultyProfiles] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
@@ -93,6 +94,14 @@ export default function EditProjectPage() {
             }
 
             setProject(data as Project);
+
+            // Fetch faculty profiles
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, full_name, email')
+                .eq('role', 'Faculty');
+            setFacultyProfiles(profiles || []);
+
             setIsLoading(false);
         }
 
@@ -109,7 +118,8 @@ export default function EditProjectPage() {
             title: formData.get('title') as string,
             status: formData.get('status') as any,
             category: formData.get('category') as string,
-            faculty: formData.get('faculty') as string,
+            faculty: formData.get('faculty_name') as string,
+            faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
             primary_outcome: formData.get('primary_outcome') as string,
             proponents: (formData.get('proponents') as string).split(',').map(s => s.trim()),
             lead_proponents: (formData.get('lead_proponents') as string).split(',').map(s => s.trim()),
@@ -195,11 +205,27 @@ export default function EditProjectPage() {
 
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
-                            <input
-                                name="faculty"
-                                defaultValue={project.faculty || ''}
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
-                            />
+                            <div className="flex flex-col gap-2">
+                                <input
+                                    name="faculty_name"
+                                    placeholder="Enter mentor's full name..."
+                                    defaultValue={project.faculty || ''}
+                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                />
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1 italic">Link to Registered User (Required for Portal Access)</label>
+                                    <select
+                                        name="faculty_id"
+                                        defaultValue={project.faculty_id || ""}
+                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-advent-blue/10 text-xs font-bold text-slate-600 cursor-pointer"
+                                    >
+                                        <option value="">-- [None Selected] --</option>
+                                        {facultyProfiles.map(p => (
+                                            <option key={p.id} value={p.id}>{p.full_name} ({p.email})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

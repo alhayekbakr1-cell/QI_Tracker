@@ -28,6 +28,9 @@ export interface Project {
     protocol_url: string | null;
     presentation_url: string | null;
     target_conference: string | null;
+    faculty_id: string | null;
+    faculty_approved_protocol: boolean;
+    faculty_approved_pdsa: boolean;
 }
 
 export interface Comment {

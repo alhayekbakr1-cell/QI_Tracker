@@ -1,6 +1,6 @@
 import { Project } from "@/types";
 import { format, differenceInDays } from "date-fns";
-import { Calendar, User, ChevronRight, AlertTriangle } from "lucide-react";
+import { Calendar, User, ChevronRight, AlertTriangle, FileCheck } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import Link from "next/link";
 
@@ -16,8 +16,8 @@ export default function ProjectCard({ project }: { project: Project }) {
             href={`/projects/view?id=${project.id}`}
             prefetch={false}
             className={`group glass-card p-6 flex flex-col h-full relative overflow-hidden active:scale-[0.99] transition-all duration-500 ${isRed ? 'ring-2 ring-red-500/50 bg-red-50/10' :
-                    isYellow ? 'ring-2 ring-amber-400/50 bg-amber-50/10' :
-                        'hover:border-advent-navy'
+                isYellow ? 'ring-2 ring-amber-400/50 bg-amber-50/10' :
+                    'hover:border-advent-navy'
                 }`}
         >
             {/* Stale Warning Ribbon */}
@@ -44,6 +44,12 @@ export default function ProjectCard({ project }: { project: Project }) {
                 <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
                     Cycle {project.pdsa_cycle}
                 </span>
+                {project.faculty_approved_protocol && project.faculty_approved_pdsa && (
+                    <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-100 animate-in fade-in zoom-in duration-500">
+                        <FileCheck className="w-3 h-3" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Signed Off</span>
+                    </div>
+                )}
             </div>
 
             <h3 className="text-lg font-bold text-slate-800 mb-3 leading-tight group-hover:text-advent-navy transition-colors line-clamp-2">

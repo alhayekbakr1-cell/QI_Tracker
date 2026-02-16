@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
-import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X } from 'lucide-react'
+import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -23,6 +23,7 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
         { href: '/projects', label: 'Projects', icon: List },
         { href: '/portfolio', label: 'My Portfolio', icon: BookOpen },
         { href: '/resources', label: 'Resources', icon: BookOpen },
+        ...(role === 'Faculty' ? [{ href: '/faculty', label: 'Faculty Portal', icon: Users }] : []),
         ...(role === 'Admin' ? [{ href: '/admin', label: 'Admin', icon: Activity }] : []),
     ]
 

@@ -64,7 +64,8 @@ export default function LoginPage() {
             options: {
                 data: {
                     full_name: fullName.trim(),
-                }
+                },
+                emailRedirectTo: `${window.location.origin}/QI_Tracker/login`
             }
         })
 
