@@ -25,23 +25,34 @@ export default function LoginPage() {
         setError(null)
         setSuccess(null)
 
-        const response = await fetch('/QI_Tracker/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email }),
-        })
+        try {
+            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
 
-        const result = await response.json()
+            if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+                throw new Error("Supabase configuration is missing. Please check your environment variables.")
+            }
 
-        if (!response.ok) {
-            setError(result.error || "Login failed. Please try again.")
+            const { error: loginError } = await supabase.auth.signInWithPassword({
+                email: email.trim().toLowerCase(),
+                password: institutionalPass,
+            })
+
+            if (loginError) {
+                setError(loginError.message === "Invalid login credentials"
+                    ? "User not found or not registered. Did you register first?"
+                    : loginError.message)
+                setIsLoading(false)
+            } else {
+                router.push('/')
+                // For static sites, we might need a small delay or a force reload
+                setTimeout(() => {
+                    window.location.href = '/QI_Tracker/'
+                }, 500)
+            }
+        } catch (err: any) {
+            console.error("Login catch block:", err)
+            setError(err.message || "An unexpected error occurred during login.")
             setIsLoading(false)
-        } else {
-            // Success! Login handled by cookie in API route
-            router.push('/')
-            router.refresh()
         }
     }
 
@@ -51,52 +62,56 @@ export default function LoginPage() {
         setError(null)
         setSuccess(null)
 
-        if (!validateDomain(email)) {
-            setError("Registration is restricted to @adventhealth.com email addresses.")
-            setIsLoading(false)
-            return
-        }
+        try {
+            if (!validateDomain(email)) {
+                setError("Registration is restricted to @adventhealth.com email addresses.")
+                setIsLoading(false)
+                return
+            }
 
-        if (!fullName.trim()) {
-            setError("Please enter your full name.")
-            setIsLoading(false)
-            return
-        }
+            if (!fullName.trim()) {
+                setError("Please enter your full name.")
+                setIsLoading(false)
+                return
+            }
 
-        const response = await fetch('/QI_Tracker/api/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email,
-                fullName: fullName.trim(),
-            }),
-        })
+            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
 
-        const result = await response.json()
+            if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+                throw new Error("Supabase configuration is missing.")
+            }
 
-        if (!response.ok) {
-            setError(result.error || "Registration failed. Please try again.")
-            setIsLoading(false)
-        } else {
-            // Success! Now log in automatically
-            const loginResp = await fetch('/QI_Tracker/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
+            const { error: signUpError } = await supabase.auth.signUp({
+                email: email.trim().toLowerCase(),
+                password: institutionalPass,
+                options: {
+                    data: {
+                        full_name: fullName.trim(),
+                    }
+                }
             })
 
-            if (!loginResp.ok) {
-                setError("Account created, but automatic login failed. Please sign in manually.")
-                setIsSignup(false)
+            if (signUpError) {
+                setError(signUpError.message)
                 setIsLoading(false)
             } else {
-                router.push('/')
-                router.refresh()
+                const { error: loginError } = await supabase.auth.signInWithPassword({
+                    email: email.trim().toLowerCase(),
+                    password: institutionalPass,
+                })
+
+                if (loginError) {
+                    setSuccess("Account created! Please try to Access Portal now.")
+                    setIsSignup(false)
+                    setIsLoading(false)
+                } else {
+                    window.location.href = '/QI_Tracker/'
+                }
             }
+        } catch (err: any) {
+            console.error("Signup catch block:", err)
+            setError(err.message || "An unexpected error occurred during registration.")
+            setIsLoading(false)
         }
     }
 
