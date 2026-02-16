@@ -7,7 +7,6 @@ import { ShieldAlert, Mail, Lock, User, Info, Loader2, ArrowRight } from "lucide
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
     const [fullName, setFullName] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [isSignup, setIsSignup] = useState(false)
@@ -26,15 +25,21 @@ export default function LoginPage() {
         setError(null)
         setSuccess(null)
 
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+        const response = await fetch('/QI_Tracker/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
         })
 
-        if (loginError) {
-            setError(loginError.message)
+        const result = await response.json()
+
+        if (!response.ok) {
+            setError(result.error || "Login failed. Please try again.")
             setIsLoading(false)
         } else {
+            // Success! Login handled by cookie in API route
             router.push('/')
             router.refresh()
         }
@@ -58,23 +63,40 @@ export default function LoginPage() {
             return
         }
 
-        const { error: signupError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: fullName.trim(),
-                },
-                emailRedirectTo: `${window.location.origin}/QI_Tracker/login`
-            }
+        const response = await fetch('/QI_Tracker/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email,
+                fullName: fullName.trim(),
+            }),
         })
 
-        if (signupError) {
-            setError(signupError.message)
+        const result = await response.json()
+
+        if (!response.ok) {
+            setError(result.error || "Registration failed. Please try again.")
             setIsLoading(false)
         } else {
-            setSuccess("Verification email sent! Please check your inbox.")
-            setIsLoading(false)
+            // Success! Now log in automatically
+            const loginResp = await fetch('/QI_Tracker/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            })
+
+            if (!loginResp.ok) {
+                setError("Account created, but automatic login failed. Please sign in manually.")
+                setIsSignup(false)
+                setIsLoading(false)
+            } else {
+                router.push('/')
+                router.refresh()
+            }
         }
     }
 
@@ -167,23 +189,6 @@ export default function LoginPage() {
                                         Invalid Domain
                                     </div>
                                 )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
-                                Security Password
-                            </label>
-                            <div className="relative group">
-                                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors" />
-                                <input
-                                    className="w-full rounded-2xl pl-12 pr-6 py-4.5 bg-slate-50 border border-slate-200 focus:border-advent-navy focus:ring-4 focus:ring-advent-navy/5 outline-none transition-all placeholder:text-slate-300 font-bold"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    required
-                                />
                             </div>
                         </div>
 
