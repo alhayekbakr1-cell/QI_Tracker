@@ -318,6 +318,49 @@ export default function NewProjectPage() {
                     </div>
 
                     <AIUpdateSection initialValue="" />
+
+                    <div className="space-y-6 pt-10 border-t border-slate-100">
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Project Depot (Protocols)</h3>
+                            <p className="text-slate-500 text-sm font-medium mt-1">Institutional templates & AI assistance for your protocol.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Template</span>
+                                </div>
+                                <div className="space-y-3">
+                                    <p className="text-xs text-slate-500 font-medium italic">Download the IM GME Tampa template to your OneDrive first.</p>
+                                    <a
+                                        href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
+                                        download
+                                        className="flex items-center justify-center gap-2 w-full py-3 bg-white border border-slate-200 text-advent-navy rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
+                                    >
+                                        <Save className="w-3 h-3" />
+                                        Download Template
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Protocol AI Assistant</span>
+                                </div>
+                                <div className="space-y-3">
+                                    <p className="text-xs text-emerald-800 font-medium italic">Use the standardized wizard to draft your protocol with AI.</p>
+                                    <button
+                                        type="button"
+                                        className="flex items-center justify-center gap-2 w-full py-3 bg-white border border-emerald-200 text-emerald-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
+                                        onClick={() => alert("The Protocol AI Wizard is available immediately after creating the project. Please save the project details first.")}
+                                    >
+                                        <Sparkles className="w-3 h-3 text-emerald-500" />
+                                        Protocol AI Wizard
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex justify-end pt-6 border-t border-slate-100">

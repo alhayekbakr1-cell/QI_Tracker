@@ -9,6 +9,7 @@ import QIConsultantChat from '@/components/QIConsultantChat'
 export default function AppShell({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<any>(null)
     const [role, setRole] = useState<string>('Viewer')
+    const [fullName, setFullName] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const router = useRouter()
     const supabase = createClient()
@@ -21,10 +22,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
             if (user) {
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('role')
+                    .select('role, full_name')
                     .eq('id', user.id)
                     .single()
-                if (profile) setRole(profile.role)
+                if (profile) {
+                    setRole(profile.role)
+                    setFullName(profile.full_name)
+                }
             }
             setIsLoading(false)
         }
@@ -46,7 +50,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
     return (
         <>
-            {user && <Header userEmail={user.email} role={role} />}
+            {user && <Header userEmail={user.email} role={role} fullName={fullName} />}
             <main className="flex-1 flex flex-col">
                 {children}
             </main>

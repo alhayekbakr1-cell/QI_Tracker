@@ -6,11 +6,29 @@ import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X, Users } fro
 import Link from 'next/link'
 import { useState } from 'react'
 
-export default function Header({ userEmail, role }: { userEmail?: string, role?: string }) {
+interface HeaderProps {
+    userEmail?: string;
+    role?: string;
+    fullName?: string | null;
+}
+
+export default function Header({ userEmail, role, fullName }: HeaderProps) {
     const router = useRouter()
     const pathname = usePathname()
     const supabase = createClient()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+    const formatName = (email?: string, name?: string | null) => {
+        if (name) return name;
+        if (!email) return "User";
+        // Clean dots and capitalize parts for dot-formatted emails
+        return email.split('@')[0]
+            .split('.')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+    };
+
+    const displayName = formatName(userEmail, fullName);
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
@@ -82,8 +100,8 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
                         {/* User Profile & Actions (Desktop) */}
                         <div className="hidden md:flex items-center gap-6">
                             <div className="flex flex-col items-end">
-                                <span className="text-xs font-bold text-slate-700 leading-none mb-1">
-                                    {userEmail?.split('@')[0]}
+                                <span className="text-[11px] font-black text-slate-800 tracking-tight leading-none mb-1">
+                                    {displayName}
                                 </span>
                                 <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${role === 'Admin'
                                     ? 'bg-rose-500/10 text-rose-600 border-rose-200'
