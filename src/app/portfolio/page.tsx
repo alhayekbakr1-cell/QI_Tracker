@@ -32,16 +32,18 @@ export default function PortfolioPage() {
             const userIdentifer = user.email?.split('@')[0] || user.id;
 
             // Fetch projects where user is proponent or lead_proponent
-            // Note: Since multi-select is stored as JSONB/Array, 
-            // we'll filter client-side for simplicity in this prototype
+            // We now filter by IDs for accuracy
             const { data: projects } = await supabase
                 .from('projects')
                 .select('*');
 
             if (projects) {
                 const filtered = projects.filter(p =>
-                    p.lead_proponents.some((lp: string) => lp.toLowerCase().includes(userIdentifer.toLowerCase())) ||
-                    p.proponents.some((pr: string) => pr.toLowerCase().includes(userIdentifer.toLowerCase()))
+                    (p.lead_proponent_ids && p.lead_proponent_ids.includes(user.id)) ||
+                    (p.proponent_ids && p.proponent_ids.includes(user.id)) ||
+                    // Fallback for names if IDs not yet populated
+                    p.lead_proponents.some((lp: string) => lp.toLowerCase().includes(user.email?.split('@')[0].toLowerCase() || '')) ||
+                    p.proponents.some((pr: string) => pr.toLowerCase().includes(user.email?.split('@')[0].toLowerCase() || ''))
                 );
                 setMyProjects(filtered as Project[]);
             }

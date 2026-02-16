@@ -63,7 +63,9 @@ export default function EditProjectPage() {
     const id = searchParams.get("id");
 
     const [project, setProject] = useState<Project | null>(null);
-    const [facultyProfiles, setFacultyProfiles] = useState<any[]>([]);
+    const [allProfiles, setAllProfiles] = useState<any[]>([]);
+    const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+    const [selectedProponentIds, setSelectedProponentIds] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
@@ -75,7 +77,7 @@ export default function EditProjectPage() {
             return;
         }
 
-        async function fetchProject() {
+        async function fetchData() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 router.push("/login");
@@ -93,20 +95,26 @@ export default function EditProjectPage() {
                 return;
             }
 
-            setProject(data as Project);
+            const proj = data as Project;
+            setProject(proj);
+            setSelectedLeadIds(proj.lead_proponent_ids || []);
+            setSelectedProponentIds(proj.proponent_ids || []);
 
-            // Fetch faculty profiles
+            // Fetch all profiles
             const { data: profiles } = await supabase
                 .from('profiles')
-                .select('id, full_name, email')
-                .eq('role', 'Faculty');
-            setFacultyProfiles(profiles || []);
+                .select('id, full_name, email, role')
+                .order('full_name');
+            setAllProfiles(profiles || []);
 
             setIsLoading(false);
         }
 
-        fetchProject();
+        fetchData();
     }, [id, supabase, router]);
+
+    const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin');
+    const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin');
 
     const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -114,6 +122,17 @@ export default function EditProjectPage() {
         setIsSaving(true);
 
         const formData = new FormData(e.currentTarget);
+
+        // Combine manual names and linked profiles for labels
+        const proponentsText = formData.get('proponents_text') as string;
+        const leadProponentsText = formData.get('lead_proponents_text') as string;
+
+        const manualProponents = proponentsText ? proponentsText.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const manualLeads = leadProponentsText ? leadProponentsText.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+        const linkedProponentNames = allProfiles.filter(p => selectedProponentIds.includes(p.id)).map(p => p.full_name);
+        const linkedLeadNames = allProfiles.filter(p => selectedLeadIds.includes(p.id)).map(p => p.full_name);
+
         const updates = {
             title: formData.get('title') as string,
             status: formData.get('status') as any,
@@ -121,8 +140,10 @@ export default function EditProjectPage() {
             faculty: formData.get('faculty_name') as string,
             faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
             primary_outcome: formData.get('primary_outcome') as string,
-            proponents: (formData.get('proponents') as string).split(',').map(s => s.trim()),
-            lead_proponents: (formData.get('lead_proponents') as string).split(',').map(s => s.trim()),
+            proponents: Array.from(new Set([...manualProponents, ...linkedProponentNames])),
+            lead_proponents: Array.from(new Set([...manualLeads, ...linkedLeadNames])),
+            proponent_ids: selectedProponentIds,
+            lead_proponent_ids: selectedLeadIds,
             updates_and_barriers: formData.get('updates_and_barriers') as string,
             last_updated_date: new Date().toISOString(),
         };
@@ -221,7 +242,7 @@ export default function EditProjectPage() {
                                     >
                                         <option value="">-- [None Selected] --</option>
                                         {facultyProfiles.map(p => (
-                                            <option key={p.id} value={p.id}>{p.full_name} ({p.email})</option>
+                                            <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
                                         ))}
                                     </select>
                                 </div>
@@ -231,21 +252,65 @@ export default function EditProjectPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead(s) (comma separated)</label>
-                            <input
-                                name="lead_proponents"
-                                defaultValue={project.lead_proponents.join(', ')}
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
-                            />
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead(s)</label>
+                            <div className="space-y-2">
+                                <input
+                                    name="lead_proponents_text"
+                                    placeholder="Manual names (if not in system)..."
+                                    defaultValue={project.lead_proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedLeadIds.includes(p.id))).join(', ')}
+                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 text-xs font-bold transition-all mb-2"
+                                />
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-h-40 overflow-y-auto">
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 italic">Link Registered Members:</p>
+                                    <div className="grid grid-cols-1 gap-1">
+                                        {residentProfiles.map(p => (
+                                            <label key={p.id} className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-advent-navy cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedLeadIds.includes(p.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) setSelectedLeadIds([...selectedLeadIds, p.id]);
+                                                        else setSelectedLeadIds(selectedLeadIds.filter(id => id !== p.id));
+                                                    }}
+                                                    className="w-3 h-3 rounded text-advent-navy"
+                                                />
+                                                {p.full_name}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Proponents (comma separated)</label>
-                            <input
-                                name="proponents"
-                                defaultValue={project.proponents.join(', ')}
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
-                            />
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Proponents</label>
+                            <div className="space-y-2">
+                                <input
+                                    name="proponents_text"
+                                    placeholder="Manual names (if not in system)..."
+                                    defaultValue={project.proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedProponentIds.includes(p.id))).join(', ')}
+                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 text-xs font-bold transition-all mb-2"
+                                />
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-h-40 overflow-y-auto">
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 italic">Link Registered Members:</p>
+                                    <div className="grid grid-cols-1 gap-1">
+                                        {residentProfiles.map(p => (
+                                            <label key={p.id} className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-advent-navy cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedProponentIds.includes(p.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) setSelectedProponentIds([...selectedProponentIds, p.id]);
+                                                        else setSelectedProponentIds(selectedProponentIds.filter(id => id !== p.id));
+                                                    }}
+                                                    className="w-3 h-3 rounded text-advent-navy"
+                                                />
+                                                {p.full_name}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

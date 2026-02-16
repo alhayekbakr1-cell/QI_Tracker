@@ -59,11 +59,14 @@ export default function AdminPage() {
     }, [supabase, router]);
 
     const toggleRole = async (profileId: string, currentRole: UserRole) => {
-        if (updatingId) return; // Prevent double comments
+        if (updatingId) return;
         setUpdatingId(profileId);
 
-        // Logic: Viewer -> Operator -> Viewer. Admin stays Admin (manually set in DB for safety)
-        const newRole: UserRole = currentRole === "Viewer" ? "Operator" : "Viewer";
+        // Rotation: Viewer -> Operator -> Faculty -> Viewer
+        let newRole: UserRole = "Viewer";
+        if (currentRole === "Viewer") newRole = "Operator";
+        else if (currentRole === "Operator") newRole = "Faculty";
+        else if (currentRole === "Faculty") newRole = "Viewer";
 
         if (currentRole === "Admin") {
             alert("Cannot demote Admin via UI for safety.");
@@ -169,10 +172,11 @@ export default function AdminPage() {
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wide
                                             ${profile.role === 'Admin' ? 'bg-red-100 text-red-700 border border-red-200' :
-                                                profile.role === 'Operator' ? 'bg-advent-green/10 text-advent-green border border-advent-green/20' :
-                                                    'bg-slate-100 text-slate-500 border border-slate-200'}
+                                                profile.role === 'Faculty' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                                                    profile.role === 'Operator' ? 'bg-advent-green/10 text-advent-green border border-advent-green/20' :
+                                                        'bg-slate-100 text-slate-500 border border-slate-200'}
                                         `}>
-                                            {profile.role}
+                                            {profile.role === 'Admin' ? 'Overseer' : profile.role}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-slate-500 font-mono text-xs">
@@ -193,7 +197,8 @@ export default function AdminPage() {
                                                 {updatingId === profile.id ? (
                                                     <Loader2 className="w-3 h-3 animate-spin mx-auto" />
                                                 ) : (
-                                                    profile.role === 'Viewer' ? 'Make Operator' : 'Revoke Access'
+                                                    profile.role === 'Viewer' ? 'Promote to Op' :
+                                                        profile.role === 'Operator' ? 'Promote to Faculty' : 'Reset to Viewer'
                                                 )}
                                             </button>
                                         )}

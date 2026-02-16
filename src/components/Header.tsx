@@ -85,11 +85,15 @@ export default function Header({ userEmail, role }: { userEmail?: string, role?:
                                 <span className="text-xs font-bold text-slate-700 leading-none mb-1">
                                     {userEmail?.split('@')[0]}
                                 </span>
-                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${role === 'Operator'
-                                    ? 'bg-advent-cobalt/10 text-advent-cobalt border-advent-cobalt/20'
-                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${role === 'Admin'
+                                    ? 'bg-rose-500/10 text-rose-600 border-rose-200'
+                                    : role === 'Faculty'
+                                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
+                                        : role === 'Operator'
+                                            ? 'bg-advent-cobalt/10 text-advent-cobalt border-advent-cobalt/20'
+                                            : 'bg-slate-100 text-slate-500 border-slate-200'
                                     }`}>
-                                    {role || 'Viewer'}
+                                    {role === 'Admin' ? 'Overseer' : role || 'Viewer'}
                                 </span>
                             </div>
                             <div className="h-8 w-px bg-slate-200 mx-2" />

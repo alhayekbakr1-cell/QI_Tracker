@@ -186,10 +186,25 @@ export default function ProjectDetailPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8 border-b border-slate-200">
                         <DetailItem label="Category" value={project.category} icon={<Info className="w-4 h-4" />} />
                         <DetailItem label="Subcategory" value={project.subcategory} icon={<Info className="w-4 h-4" />} />
-                        <DetailItem label="Faculty Mentor" value={project.faculty} icon={<Info className="w-4 h-4" />} />
+                        <DetailItem
+                            label="Faculty Mentor"
+                            value={project.faculty}
+                            icon={<Users className="w-4 h-4 text-emerald-500" />}
+                            isLinked={!!project.faculty_id}
+                        />
                         <DetailItem label="PDSA Cycle" value={`Cycle ${project.pdsa_cycle}`} icon={<TrendingUp className="w-4 h-4 text-advent-green" />} />
-                        <DetailItem label="Lead(s)" value={project.lead_proponents.join(', ')} icon={<Info className="w-4 h-4" />} />
-                        <DetailItem label="Proponents" value={project.proponents.join(', ')} icon={<Info className="w-4 h-4" />} />
+                        <DetailItem
+                            label="Lead(s)"
+                            value={project.lead_proponents.join(', ')}
+                            icon={<Users className="w-4 h-4 text-advent-navy" />}
+                            isLinked={(project.lead_proponent_ids?.length || 0) > 0}
+                        />
+                        <DetailItem
+                            label="Proponents"
+                            value={project.proponents.join(', ')}
+                            icon={<Users className="w-4 h-4 text-slate-400" />}
+                            isLinked={(project.proponent_ids?.length || 0) > 0}
+                        />
                     </div>
 
                     <div className="space-y-12">
@@ -415,12 +430,17 @@ export default function ProjectDetailPage() {
     );
 }
 
-function DetailItem({ label, value, icon }: { label: string, value: string | null, icon: React.ReactNode }) {
+function DetailItem({ label, value, icon, isLinked }: { label: string, value: string | null, icon: React.ReactNode, isLinked?: boolean }) {
     return (
         <div className="flex gap-3">
             <div className="flex-shrink-0 mt-1 text-slate-300">{icon}</div>
             <div>
-                <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</dt>
+                <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    {label}
+                    {isLinked && (
+                        <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded text-[7px] border border-emerald-100 uppercase tracking-tighter">Linked</span>
+                    )}
+                </dt>
                 <dd className="text-sm font-semibold text-slate-800">{value || '—'}</dd>
             </div>
         </div>

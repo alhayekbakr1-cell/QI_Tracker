@@ -1,11 +1,12 @@
 export type ProjectStatus = 'Idea' | 'Pre-Intervention' | 'Intervention Ongoing' | 'Sustain the Gains';
-export type UserRole = 'Operator' | 'Viewer' | 'Admin';
+export type UserRole = 'Operator' | 'Viewer' | 'Admin' | 'Faculty';
 
 export interface Profile {
     id: string;
     full_name: string | null;
     role: UserRole;
     created_at: string;
+    email?: string;
 }
 
 export interface Project {
@@ -18,7 +19,10 @@ export interface Project {
     pdsa_cycle: number;
     proponents: string[];
     lead_proponents: string[];
+    proponent_ids: string[]; // UUIDs
+    lead_proponent_ids: string[]; // UUIDs
     faculty: string | null;
+    faculty_id: string | null;
     updates_and_barriers: string | null;
     internal_notes: string | null;
     last_updated_date: string;
@@ -28,7 +32,6 @@ export interface Project {
     protocol_url: string | null;
     presentation_url: string | null;
     target_conference: string | null;
-    faculty_id: string | null;
     faculty_approved_protocol: boolean;
     faculty_approved_pdsa: boolean;
 }
