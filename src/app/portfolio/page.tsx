@@ -20,29 +20,53 @@ import Link from "next/link";
 export default function PortfolioPage() {
     const [myProjects, setMyProjects] = useState<Project[]>([]);
     const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [userProfile, setUserProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 
     useEffect(() => {
         async function fetchMyData() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            // Check for simulated profile first (for browser testing)
+            const simulated = localStorage.getItem('simulatedUserProfile');
+            const isLocal = window.location.hostname === 'localhost';
+            const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
 
-            setUserEmail(user.email ?? null);
+            let user: any = null;
+            let profile: any = null;
 
-            // Fetch profile for better name matching fallback
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('full_name')
-                .eq('id', user.id)
-                .single();
+            if (simulated) {
+                profile = JSON.parse(simulated);
+                user = { id: profile.id, email: profile.email || "simulated@example.com" };
+                setUserProfile(profile);
+                setUserEmail(user.email);
+            } else {
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (!authUser && !bypass) return;
+                user = authUser;
+                setUserEmail(user?.email ?? "Guest");
 
+                if (user) {
+                    const { data: profileData } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+                    profile = profileData;
+                    setUserProfile(profile);
+                }
+            }
+
+            if (!user && !profile) {
+                setIsLoading(false);
+                return;
+            }
+
+            const userId = user?.id || profile?.id;
             const userFullName = profile?.full_name?.toLowerCase() || "";
-            const emailPrefix = user.email?.split('@')[0].toLowerCase() || "";
+            const emailPrefix = user?.email?.split('@')[0].toLowerCase() || "";
             const emailParts = emailPrefix.split('.');
 
-            // Fetch projects where user is proponent or lead_proponent
-            // Priority 1: UUID Linkage, Priority 2: Lenient Name Matching
+            // Fetch projects where user is proponent, lead_proponent, OR faculty
             const { data: projects } = await supabase
                 .from('projects')
                 .select('*');
@@ -50,25 +74,25 @@ export default function PortfolioPage() {
             if (projects) {
                 const filtered = projects.filter(p => {
                     // Check ID linkage first
-                    const isIdMatch = (p.lead_proponent_ids && p.lead_proponent_ids.includes(user.id)) ||
-                        (p.proponent_ids && p.proponent_ids.includes(user.id));
+                    const isIdMatch =
+                        (p.lead_proponent_ids && p.lead_proponent_ids.includes(userId)) ||
+                        (p.proponent_ids && p.proponent_ids.includes(userId)) ||
+                        (p.faculty_id === userId);
+
                     if (isIdMatch) return true;
 
-                    // Fallback to lenient name matching
+                    // Fallback to name matching
                     const nameMatch = (name: string) => {
+                        if (!name) return false;
                         const lowName = name.toLowerCase();
-                        // 1. Check direct profile name match
                         if (userFullName && lowName.includes(userFullName)) return true;
-                        // 2. Check full email prefix match
                         if (lowName.includes(emailPrefix)) return true;
-                        // 3. Check significant parts of email (e.g. "bakr" and "alhayek")
-                        return emailParts.every(part =>
-                            part.length > 2 ? lowName.includes(part) : true
-                        );
+                        return emailParts.every(part => part.length > 2 ? lowName.includes(part) : true);
                     };
 
                     return (p.lead_proponents && p.lead_proponents.some(nameMatch)) ||
-                        (p.proponents && p.proponents.some(nameMatch));
+                        (p.proponents && p.proponents.some(nameMatch)) ||
+                        (p.faculty && nameMatch(p.faculty));
                 });
                 setMyProjects(filtered as Project[]);
             }
@@ -104,45 +128,86 @@ export default function PortfolioPage() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Graduation Tracker Card */}
+                {/* Dynamic Tracker Card (Graduation vs Mentorship) */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-advent-navy text-white p-8 rounded-[2.5rem] shadow-2xl shadow-advent-navy/20 relative overflow-hidden group">
-                        <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                            <GraduationCap className="w-32 h-32" />
-                        </div>
-
-                        <div className="relative z-10">
-                            <h2 className="text-sm font-black uppercase tracking-[0.3em] text-white/60 mb-6">Graduation Status</h2>
-                            <div className="flex items-end gap-2 mb-2">
-                                <span className="text-5xl font-black">{progressPercent}%</span>
-                                <span className="text-xs font-bold text-white/60 mb-2 uppercase tracking-widest">Complete</span>
+                    {userProfile?.role === 'Operator' || userProfile?.role === 'Faculty' ? (
+                        /* Faculty Mentorship Impact View */
+                        <div className="bg-advent-navy text-white p-8 rounded-[2.5rem] shadow-2xl shadow-advent-navy/20 relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                                <Award className="w-32 h-32" />
                             </div>
 
-                            <div className="w-full h-2 bg-white/10 rounded-full mt-4 overflow-hidden border border-white/5">
-                                <div
-                                    className="h-full bg-advent-green shadow-[0_0_15px_rgba(74,222,128,0.5)] transition-all duration-1000"
-                                    style={{ width: `${progressPercent}%` }}
-                                />
-                            </div>
-
-                            <div className="mt-8 space-y-4">
-                                {requirements.map((req, idx) => (
-                                    <div key={idx} className="flex items-center justify-between group/item">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-lg ${req.status ? 'bg-advent-green/20 text-advent-green' : 'bg-white/5 text-white/30'}`}>
-                                                <req.icon className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <p className={`text-xs font-bold leading-none ${req.status ? 'text-white' : 'text-white/40'}`}>{req.label}</p>
-                                                {req.sub && <p className="text-[9px] font-black uppercase tracking-widest mt-1 text-white/30">{req.sub}</p>}
-                                            </div>
-                                        </div>
-                                        {req.status ? <CheckCircle2 className="w-4 h-4 text-advent-green" /> : <Circle className="w-4 h-4 text-white/10" />}
+                            <div className="relative z-10">
+                                <h2 className="text-sm font-black uppercase tracking-[0.3em] text-white/60 mb-6">Mentorship Impact</h2>
+                                <div className="grid grid-cols-2 gap-4 mb-8">
+                                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Projects Guided</p>
+                                        <p className="text-3xl font-black">{myProjects.length}</p>
                                     </div>
-                                ))}
+                                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">PDSAs Mentored</p>
+                                        <p className="text-3xl font-black">{myProjects.reduce((sum, p) => sum + p.pdsa_cycle, 0)}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="w-4 h-4 text-emerald-400" />
+                                            <span className="text-xs font-bold">Approved Protocols</span>
+                                        </div>
+                                        <span className="text-sm font-black">{myProjects.filter(p => p.faculty_approved_protocol).length}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <TrendingUp className="w-4 h-4 text-amber-400" />
+                                            <span className="text-xs font-bold">Ongoing Interventions</span>
+                                        </div>
+                                        <span className="text-sm font-black">{myProjects.filter(p => p.status === 'Intervention Ongoing').length}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        /* Resident Graduation Status View */
+                        <div className="bg-advent-navy text-white p-8 rounded-[2.5rem] shadow-2xl shadow-advent-navy/20 relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                                <GraduationCap className="w-32 h-32" />
+                            </div>
+
+                            <div className="relative z-10">
+                                <h2 className="text-sm font-black uppercase tracking-[0.3em] text-white/60 mb-6">Graduation Status</h2>
+                                <div className="flex items-end gap-2 mb-2">
+                                    <span className="text-5xl font-black">{progressPercent}%</span>
+                                    <span className="text-xs font-bold text-white/60 mb-2 uppercase tracking-widest">Complete</span>
+                                </div>
+
+                                <div className="w-full h-2 bg-white/10 rounded-full mt-4 overflow-hidden border border-white/5">
+                                    <div
+                                        className="h-full bg-advent-green shadow-[0_0_15px_rgba(74,222,128,0.5)] transition-all duration-1000"
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+                                </div>
+
+                                <div className="mt-8 space-y-4">
+                                    {requirements.map((req, idx) => (
+                                        <div key={idx} className="flex items-center justify-between group/item">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2 rounded-lg ${req.status ? 'bg-advent-green/20 text-advent-green' : 'bg-white/5 text-white/30'}`}>
+                                                    <req.icon className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className={`text-xs font-bold leading-none ${req.status ? 'text-white' : 'text-white/40'}`}>{req.label}</p>
+                                                    {req.sub && <p className="text-[9px] font-black uppercase tracking-widest mt-1 text-white/30">{req.sub}</p>}
+                                                </div>
+                                            </div>
+                                            {req.status ? <CheckCircle2 className="w-4 h-4 text-advent-green" /> : <Circle className="w-4 h-4 text-white/10" />}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="bg-white p-6 rounded-3xl border border-slate-200">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
