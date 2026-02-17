@@ -1,11 +1,38 @@
 "use client"
 
-import React from 'react';
-import { Calendar, Clock, Trophy, ExternalLink, ChevronRight } from 'lucide-react';
-import { CONFERENCES, getNextDeadline } from '@/constants/conferences';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, Trophy, ExternalLink, ChevronRight, Loader2 } from 'lucide-react';
+import { DEFAULT_CONFERENCES, fetchRegistry, Conference, getNextDeadline } from '@/constants/conferences';
 import { format, differenceInDays } from 'date-fns';
 
 export default function ConferenceMatcher() {
+    const [registry, setRegistry] = useState<Conference[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const data = await fetchRegistry();
+                setRegistry(data);
+            } catch (error) {
+                console.error('Failed to load conference registry:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        load();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex items-center justify-center min-h-[200px]">
+                <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+            </div>
+        );
+    }
+
+    const conferences = registry.length > 0 ? registry : DEFAULT_CONFERENCES;
+
     return (
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
             <div className="flex items-center gap-3">
@@ -19,7 +46,7 @@ export default function ConferenceMatcher() {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-                {CONFERENCES.map((conf, idx) => {
+                {conferences.map((conf, idx) => {
                     const deadline = getNextDeadline(conf);
                     const daysLeft = differenceInDays(deadline, new Date());
                     const isUrgent = daysLeft < 30;
@@ -36,9 +63,6 @@ export default function ConferenceMatcher() {
                             <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400">
                                 <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" /> {format(deadline, 'MMM dd, yyyy')}
-                                </span>
-                                <span className="flex items-center gap-1 uppercase tracking-widest">
-                                    {/* Location removed from registry to prioritize minimalism */}
                                 </span>
                             </div>
 

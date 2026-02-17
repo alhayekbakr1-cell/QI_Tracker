@@ -1,21 +1,42 @@
-"use client"
-
-import { CONFERENCES, getNextDeadline } from "@/constants/conferences";
+import React, { useState, useEffect } from "react";
+import { DEFAULT_CONFERENCES, fetchRegistry, getNextDeadline, Conference } from "@/constants/conferences";
 import { formatDistanceToNow } from "date-fns";
-import { Trophy, Calendar, ExternalLink } from "lucide-react";
+import { Trophy, Calendar, ExternalLink, Loader2 } from "lucide-react";
 
 interface ConferenceCountdownProps {
     targetConferenceId?: string | null;
 }
 
 export default function ConferenceCountdown({ targetConferenceId }: ConferenceCountdownProps) {
+    const [registry, setRegistry] = useState<Conference[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function load() {
+            if (!targetConferenceId) return;
+            const data = await fetchRegistry();
+            setRegistry(data);
+            setIsLoading(false);
+        }
+        load();
+    }, [targetConferenceId]);
+
     if (!targetConferenceId) return null;
 
-    const conf = CONFERENCES.find(c => c.id === targetConferenceId);
+    if (isLoading) {
+        return (
+            <div className="bg-gradient-to-br from-indigo-500/50 to-purple-600/50 rounded-xl p-6 flex items-center justify-center min-h-[140px]">
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+            </div>
+        );
+    }
+
+    const conferences = registry.length > 0 ? registry : DEFAULT_CONFERENCES;
+    const conf = conferences.find(c => c.id === targetConferenceId);
     if (!conf) return null;
 
     const deadlineDate = getNextDeadline(conf);
-    const isPast = false; // With getNextDeadline, it's never "past" globally, it just points to the next year
+    const isPast = false;
 
     return (
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group">

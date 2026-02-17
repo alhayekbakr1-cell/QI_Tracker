@@ -25,9 +25,12 @@ serve(async (req) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.0-flash",
+            tools: [{ googleSearch: {} }]
+        })
 
-        console.log('Generating content for prompt length:', prompt.length)
+        console.log('Generating content with Google Search for prompt length:', prompt.length)
         const result = await model.generateContent(prompt)
         const responseText = result.response.text()
 

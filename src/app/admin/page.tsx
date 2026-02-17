@@ -4,14 +4,19 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Profile, UserRole } from "@/types";
-import { Shield, Users, Check, X, Loader2, Search, Layout } from "lucide-react";
+import { Shield, Users, Check, X, Loader2, Search, Layout, RefreshCw } from "lucide-react";
 import PHIWarning from "@/components/PHIWarning";
 import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
 import BulkPersonnelImport from "@/components/BulkPersonnelImport";
 import Link from "next/link";
+import { DEFAULT_CONFERENCES, fetchRegistry, Conference } from "@/constants/conferences";
+import LiveConferenceVerify from "@/components/LiveConferenceVerify";
+import { runRegistryScout } from "@/utils/scout";
 
 export default function AdminPage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
+    const [registry, setRegistry] = useState<Conference[]>([]);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -61,11 +66,33 @@ export default function AdminPage() {
             } else {
                 setProfiles((allProfiles || []) as Profile[]);
             }
+
+            // Fetch Conference Registry
+            const registryData = await fetchRegistry();
+            setRegistry(registryData);
+
             setIsLoading(false);
         }
 
         fetchAdminData();
     }, [supabase, router]);
+
+    const handleSyncRegistry = async () => {
+        if (!confirm("This will trigger the AI to search the web for every conference in the registry. It may take 1-2 minutes. Proceed?")) return;
+
+        setIsSyncing(true);
+        try {
+            await runRegistryScout();
+            const updated = await fetchRegistry();
+            setRegistry(updated);
+            alert("Registry sync complete!");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to sync registry. See console.");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const toggleRole = async (profileId: string, currentRole: UserRole) => {
         if (updatingId) return;
@@ -143,6 +170,53 @@ export default function AdminPage() {
                 </div>
             </div>
             <PHIWarning />
+
+            {/* Conference Registry Live Check */}
+            <div className="glass rounded-2xl overflow-hidden shadow-lg border-0 ring-1 ring-slate-200/50">
+                <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h2 className="font-bold text-slate-700 flex items-center gap-2">
+                            <Layout className="w-5 h-5 text-amber-500" />
+                            Conference Registry Live Intelligence
+                        </h2>
+                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1">Cross-check academic deadlines with web-searching AI</p>
+                    </div>
+                    <button
+                        onClick={handleSyncRegistry}
+                        disabled={isSyncing}
+                        className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50"
+                    >
+                        {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        {isSyncing ? "Syncing All..." : "Sync All via AI"}
+                    </button>
+                </div>
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {(registry.length > 0 ? registry : DEFAULT_CONFERENCES).map((conf) => (
+                            <div key={conf.id} className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col gap-3 group hover:border-amber-200 transition-all">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="text-xs font-black text-advent-navy uppercase tracking-tight">{conf.name}</h3>
+                                        <p className="text-[9px] text-slate-400 font-medium line-clamp-1">{conf.fullName}</p>
+                                    </div>
+                                    <div className="p-1.5 bg-slate-50 rounded-lg text-slate-300">
+                                        <RefreshCw className="w-3 h-3" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between mt-1">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-slate-500">Registry: Annual</span>
+                                        {conf.last_ai_check && (
+                                            <span className="text-[8px] text-slate-400 italic">Last Sync: {new Date(conf.last_ai_check).toLocaleDateString()}</span>
+                                        )}
+                                    </div>
+                                    <LiveConferenceVerify conferenceName={conf.name} currentDeadline="Annual Rollover" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
             <div className="glass rounded-2xl overflow-hidden shadow-lg border-0 ring-1 ring-slate-200/50">
                 <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">

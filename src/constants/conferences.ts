@@ -1,3 +1,5 @@
+import { createClient } from "@/utils/supabase/client";
+
 export interface Conference {
     id: string;
     name: string;
@@ -5,9 +7,11 @@ export interface Conference {
     month: number; // 0-indexed (0 = Jan)
     day: number;
     website: string;
+    last_ai_check?: string;
+    ai_confidence?: string;
 }
 
-export const CONFERENCES: Conference[] = [
+export const DEFAULT_CONFERENCES: Conference[] = [
     {
         id: 'SHM',
         name: 'SHM Converge',
@@ -105,6 +109,33 @@ export const CONFERENCES: Conference[] = [
         website: 'https://forum.ihi.org/'
     }
 ];
+
+// Compatibility alias
+export const CONFERENCES = DEFAULT_CONFERENCES;
+
+export async function fetchRegistry(): Promise<Conference[]> {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('conferences_registry')
+        .select('*')
+        .order('name');
+
+    if (error || !data) {
+        console.warn('Using default conference registry due to fetch error:', error);
+        return DEFAULT_CONFERENCES;
+    }
+
+    return data.map(d => ({
+        id: d.id,
+        name: d.name,
+        fullName: d.full_name,
+        month: d.deadline_month,
+        day: d.deadline_day,
+        website: d.website,
+        last_ai_check: d.last_ai_check,
+        ai_confidence: d.ai_confidence
+    }));
+}
 
 export function getNextDeadline(conf: Conference): Date {
     const now = new Date();

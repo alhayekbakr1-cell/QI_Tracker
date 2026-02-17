@@ -43,6 +43,7 @@ export async function analyzePDSA(projectData: any, metrics: any[]) {
 
   return askAI(prompt);
 }
+
 export async function generateSMARTAim(projectTitle: string, currentAim: string) {
   const prompt = `
     You are a Quality Improvement (QI) Academic Consultant.
@@ -151,6 +152,24 @@ export async function getProtocolSectionAdvice(section: string, question: string
     
     Provide a professional, academic, and encouraging answer that helps them fill this specific section correctly according to QI best practices (e.g., SQUIRE guidelines, PDSA methodology).
     Be concise but high-value.
+  `;
+  return askAI(prompt);
+}
+
+export async function getLiveConferenceDeadline(conferenceName: string) {
+  const prompt = `
+    You are a Quality Improvement (QI) Academic Scout.
+    Search the web for the official abstract submission deadline for the next "${conferenceName}" conference.
+    
+    CRITICAL:
+    1. Look for the exact date and year (e.g., Nov 24, 2026).
+    2. Identify the official website URL.
+    3. If the date is not yet announced, provide the estimated month based on historical data.
+    
+    Output format:
+    {"deadline": "ISO DATE", "displayDate": "Readable Date", "url": "URL", "confidence": "High/Medium/Low", "notes": "Brief explanation"}
+    
+    Output ONLY the JSON.
   `;
   return askAI(prompt);
 }
