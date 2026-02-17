@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Calendar, Clock, Trophy, ExternalLink, ChevronRight } from 'lucide-react';
-import { CONFERENCES } from '@/constants/conferences';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { CONFERENCES, getNextDeadline } from '@/constants/conferences';
+import { format, differenceInDays } from 'date-fns';
 
 export default function ConferenceMatcher() {
     return (
@@ -20,7 +20,8 @@ export default function ConferenceMatcher() {
 
             <div className="grid grid-cols-1 gap-4">
                 {CONFERENCES.map((conf, idx) => {
-                    const daysLeft = differenceInDays(parseISO(conf.deadline), new Date());
+                    const deadline = getNextDeadline(conf);
+                    const daysLeft = differenceInDays(deadline, new Date());
                     const isUrgent = daysLeft < 30;
 
                     return (
@@ -34,7 +35,7 @@ export default function ConferenceMatcher() {
 
                             <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400">
                                 <span className="flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" /> {format(parseISO(conf.deadline), 'MMM dd, yyyy')}
+                                    <Calendar className="w-3 h-3" /> {format(deadline, 'MMM dd, yyyy')}
                                 </span>
                                 <span className="flex items-center gap-1 uppercase tracking-widest">
                                     {/* Location removed from registry to prioritize minimalism */}

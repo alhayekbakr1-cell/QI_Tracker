@@ -1,7 +1,7 @@
 "use client"
 
-import { CONFERENCES, Conference } from "@/constants/conferences";
-import { formatDistanceToNow, isAfter } from "date-fns";
+import { CONFERENCES, getNextDeadline } from "@/constants/conferences";
+import { formatDistanceToNow } from "date-fns";
 import { Trophy, Calendar, ExternalLink } from "lucide-react";
 
 interface ConferenceCountdownProps {
@@ -14,8 +14,8 @@ export default function ConferenceCountdown({ targetConferenceId }: ConferenceCo
     const conf = CONFERENCES.find(c => c.id === targetConferenceId);
     if (!conf) return null;
 
-    const deadlineDate = new Date(conf.deadline);
-    const isPast = isAfter(new Date(), deadlineDate);
+    const deadlineDate = getNextDeadline(conf);
+    const isPast = false; // With getNextDeadline, it's never "past" globally, it just points to the next year
 
     return (
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group">
