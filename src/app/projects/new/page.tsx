@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { draftSummary, generateSMARTAim, suggestMetrics, checkDuplication } from "@/utils/ai";
 import { Project } from "@/types";
+import { sendEmail, TEMPLATES } from "@/utils/email";
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
@@ -84,8 +85,8 @@ export default function NewProjectPage() {
         checkAuth();
     }, [supabase, router]);
 
-    const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin');
-    const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin');
+    const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin' || p.role === 'Operator');
+    const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin' && p.role !== 'Operator');
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -128,6 +129,40 @@ export default function NewProjectPage() {
         if (error) {
             alert(error.message);
         } else {
+            // Trigger Email to Mentor
+            const triggerEmail = async () => {
+                try {
+                    let mentorEmail = "";
+                    const mentorId = formData.get('faculty_id') as string;
+                    const mentorName = formData.get('faculty_name') as string;
+
+                    if (mentorId) {
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('email')
+                            .eq('id', mentorId)
+                            .single();
+                        mentorEmail = (profile as any)?.email;
+                    }
+
+                    if (!mentorEmail && mentorName) {
+                        mentorEmail = mentorName.replace(/ /g, ".") + "@AdventHealth.com";
+                    }
+
+                    if (mentorEmail) {
+                        await sendEmail(TEMPLATES.MENTOR_ASSIGNED, {
+                            to_email: mentorEmail,
+                            to_name: mentorName,
+                            project_title: newProject.title,
+                            message: `A new QI project "${newProject.title}" has been created and you have been assigned as the Faculty Mentor. Please log in to review the protocol.`
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to send mentor email:", e);
+                }
+            };
+            triggerEmail();
+
             router.push(`/projects/view?id=${data.id}`);
             router.refresh();
         }
