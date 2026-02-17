@@ -1,35 +1,9 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Calendar, Clock, Trophy, ExternalLink, ChevronRight } from 'lucide-react';
+import { CONFERENCES } from '@/constants/conferences';
 import { format, differenceInDays, parseISO } from 'date-fns';
-
-const CONFERENCES = [
-    {
-        name: 'ACP National (Internal Medicine)',
-        deadline: '2026-11-15',
-        location: 'New Orleans, LA',
-        url: 'https://www.acponline.org/membership/residents/abstract-competitions'
-    },
-    {
-        name: 'SHM Converge (Hospital Medicine)',
-        deadline: '2026-10-30',
-        location: 'Las Vegas, NV',
-        url: 'https://www.hospitalmedicine.org/events/shm-converge/'
-    },
-    {
-        name: 'SGIM Annual Meeting',
-        deadline: '2026-12-05',
-        location: 'Miami, FL',
-        url: 'https://www.sgim.org/meetings'
-    },
-    {
-        name: 'AdventHealth Research Day',
-        deadline: '2026-04-15',
-        location: 'Orlando, FL',
-        url: '#'
-    }
-];
 
 export default function ConferenceMatcher() {
     return (
@@ -53,7 +27,7 @@ export default function ConferenceMatcher() {
                         <div key={idx} className="group p-5 bg-slate-50/50 rounded-3xl border border-slate-100 hover:border-amber-200 hover:bg-amber-50/30 transition-all">
                             <div className="flex justify-between items-start mb-2">
                                 <h4 className="text-sm font-black text-slate-900 group-hover:text-amber-700 transition-colors uppercase tracking-tight">{conf.name}</h4>
-                                <a href={conf.url} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white rounded-lg text-slate-300 hover:text-advent-navy border border-slate-100 shadow-sm transition-all">
+                                <a href={conf.website} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white rounded-lg text-slate-300 hover:text-advent-navy border border-slate-100 shadow-sm transition-all">
                                     <ExternalLink className="w-3 h-3" />
                                 </a>
                             </div>
@@ -63,7 +37,7 @@ export default function ConferenceMatcher() {
                                     <Calendar className="w-3 h-3" /> {format(parseISO(conf.deadline), 'MMM dd, yyyy')}
                                 </span>
                                 <span className="flex items-center gap-1 uppercase tracking-widest">
-                                    {conf.location}
+                                    {/* Location removed from registry to prioritize minimalism */}
                                 </span>
                             </div>
 

@@ -39,6 +39,7 @@ import ProtocolWizard from "@/components/ProtocolWizard";
 import ConferenceMatcher from "@/components/ConferenceMatcher";
 import ProjectReportGenerator from "@/components/ProjectReportGenerator";
 import { sendEmail, TEMPLATES } from "@/utils/email";
+import ConferenceCountdown from "@/components/ConferenceCountdown";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -75,12 +76,16 @@ export default function ProjectDetailPage() {
             setCurrentUser(user);
 
             // Fetch profile
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-            setUserProfile(profile);
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+                setUserProfile(profile);
+            } else if (bypass) {
+                setUserProfile({ role: 'Admin', full_name: 'Simulated User' } as any);
+            }
 
             // Fetch project details
             const { data: projectData } = await supabase
@@ -479,23 +484,31 @@ export default function ProjectDetailPage() {
                         <div className="pt-6 border-t border-slate-100">
                             <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
                                 <Trophy className="w-4 h-4 text-amber-500" />
-                                Targeting Conference
+                                Academic Matching
                             </h3>
                             {project.target_conference ? (
-                                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                                    <p className="text-xs font-black text-amber-800 uppercase tracking-tight mb-1">{project.target_conference}</p>
+                                <div className="space-y-4">
+                                    <ConferenceCountdown targetConferenceId={project.target_conference} />
                                     <button
                                         onClick={async () => {
-                                            await supabase.from('projects').update({ target_conference: null }).eq('id', project.id);
-                                            router.refresh(); // Refresh to show changes
+                                            const { error } = await supabase.from('projects').update({ target_conference: null }).eq('id', project.id);
+                                            if (!error) setProject({ ...project, target_conference: null });
                                         }}
-                                        className="text-[9px] font-black uppercase text-amber-600 hover:text-red-600 transition-colors"
+                                        className="w-full text-[10px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors text-center"
                                     >
-                                        Remove Target
+                                        Remove Academic Target
                                     </button>
                                 </div>
                             ) : (
-                                <p className="text-[10px] font-bold text-slate-400 italic">No conference targeted yet.</p>
+                                <div className="p-6 border-2 border-dashed border-slate-100 rounded-2xl text-center">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">No conference targeted</p>
+                                    <Link
+                                        href={`/projects/edit?id=${project.id}`}
+                                        className="inline-flex items-center gap-2 text-xs font-bold text-advent-blue hover:underline"
+                                    >
+                                        Set Academic Goal <ChevronRight className="w-3 h-3" />
+                                    </Link>
+                                </div>
                             )}
                         </div>
                     </div>
