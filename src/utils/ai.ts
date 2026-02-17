@@ -86,14 +86,16 @@ export async function generateExecutiveReport(projectsSummary: string) {
   const prompt = `
     You are a Quality Improvement (QI) Chief Consultant.
     Analyze the following summary of current QI projects and generate a high-level executive report for the hospital leadership.
-    Focus on:
-    - Overall institutional progress.
-    - Identification of categories with highest activity.
-    - Summary of common barriers.
+    
+    CRITICAL: 
+    1. Categorize barriers into "Systemic/Institutional" (e.g., IRB backlog, IT access) vs "Project-Specific".
+    2. Identify the Top 3 institutional blockers across the residency program.
+    3. Suggest one institutional-level intervention to accelerate progress.
     
     Summary Data:
     ${projectsSummary}
     
+    Structure the output with clear headings: [Institutional Progress], [Barrier Analysis Heatmap], [Strategic Recommendation].
     Keep the report professional, academic, and action-oriented.
   `;
   return askAI(prompt);

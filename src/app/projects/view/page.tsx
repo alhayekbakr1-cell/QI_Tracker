@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Project, Comment, Metric } from "@/types";
+import { Project, Comment, Metric, Profile } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 import PHIWarning from "@/components/PHIWarning";
 import MetricCharts from "@/components/MetricCharts";
@@ -40,6 +40,8 @@ import ConferenceMatcher from "@/components/ConferenceMatcher";
 import ProjectReportGenerator from "@/components/ProjectReportGenerator";
 import { sendEmail, TEMPLATES } from "@/utils/email";
 import ConferenceCountdown from "@/components/ConferenceCountdown";
+import FacultySignOff from "@/components/FacultySignOff";
+import ProjectComments from "@/components/ProjectComments";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -49,12 +51,8 @@ export default function ProjectDetailPage() {
     const [project, setProject] = useState<Project | null>(null);
     const [metrics, setMetrics] = useState<Metric[]>([]);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
-    const [comments, setComments] = useState<Comment[]>([]);
-    const [currentUser, setCurrentUser] = useState<any>(null);
-    const [userProfile, setUserProfile] = useState<any>(null);
+    const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [newComment, setNewComment] = useState("");
-    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const router = useRouter();
     const supabase = createClient();
 
@@ -73,7 +71,6 @@ export default function ProjectDetailPage() {
                 router.push("/login");
                 return;
             }
-            setCurrentUser(user);
 
             // Fetch profile
             if (user) {
@@ -108,43 +105,13 @@ export default function ProjectDetailPage() {
                 .order("month", { ascending: true });
             setMetrics(metricsData || []);
 
-            // Fetch comments
-            const { data: commentsData } = await supabase
-                .from("comments")
-                .select("*")
-                .eq("project_id", id)
-                .order("created_at", { ascending: true });
-            setComments(commentsData || []);
-
             setIsLoading(false);
         }
 
         fetchData();
     }, [id, supabase, router]);
 
-    const handleSubmitComment = async () => {
-        if (!newComment.trim() || !currentUser) return;
-
-        setIsSubmittingComment(true);
-        const { data, error } = await supabase
-            .from('comments')
-            .insert({
-                project_id: id,
-                user_id: currentUser.id,
-                content: newComment.trim(),
-                created_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-        if (!error && data) {
-            setComments([...comments, data as Comment]);
-            setNewComment("");
-        } else {
-            alert(error?.message || "Failed to post comment");
-        }
-        setIsSubmittingComment(false);
-    };
+    // handleSubmitComment, newComment, isSubmittingComment, comments, currentUser states are removed as ProjectComments component handles them.
 
     if (isLoading || !project) {
         return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
@@ -272,53 +239,7 @@ export default function ProjectDetailPage() {
                     </div>
 
                     {/* Comments Section */}
-                    <div className="pt-10 border-t border-slate-200">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-slate-400" />
-                                Comments & Feedback
-                            </h2>
-                        </div>
-
-                        {/* New Comment Input */}
-                        <div className="mb-8 space-y-3">
-                            <textarea
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Add your feedback or clinical updates here..."
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[100px] resize-none text-sm"
-                            />
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={handleSubmitComment}
-                                    disabled={isSubmittingComment || !newComment.trim()}
-                                    className="px-6 py-2.5 bg-advent-blue text-white rounded-xl font-bold text-sm shadow-sm hover:bg-advent-dark-blue transition-all disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    {isSubmittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                                    Post Comment
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 mb-8">
-                            {comments.length > 0 ? (
-                                comments.map(comment => (
-                                    <div key={comment.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                        <p className="text-sm text-slate-800 font-medium">{comment.content}</p>
-                                        <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                                            <span className="text-advent-blue">User {comment.user_id.slice(0, 5)}</span>
-                                            <span>•</span>
-                                            <span>{format(new Date(comment.created_at), 'MMM d, h:mm a')}</span>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="py-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                                    <p className="text-slate-400 text-sm font-black uppercase tracking-widest">No comments yet</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <ProjectComments projectId={project.id} currentUserProfile={userProfile} />
                 </div>
 
                 {/* Sidebar */}
@@ -391,91 +312,11 @@ export default function ProjectDetailPage() {
                         </div>
 
                         {/* Faculty Sign-off Section */}
-                        {(userProfile?.id === project.faculty_id || userProfile?.role === 'Admin' || userProfile?.role === 'Operator' || userProfile?.role === 'Faculty') && (
-                            <div className="pt-6 mt-6 border-t border-slate-100">
-                                <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
-                                    <FileCheck className="w-4 h-4 text-advent-green" />
-                                    Faculty Sign-off
-                                </h3>
-                                <div className="space-y-3">
-                                    <button
-                                        id="signoff-protocol-btn"
-                                        onClick={async () => {
-                                            const newVal = !project.faculty_approved_protocol;
-                                            const { error } = await supabase
-                                                .from('projects')
-                                                .update({ faculty_approved_protocol: newVal })
-                                                .eq('id', project.id);
-
-                                            if (!error) {
-                                                setProject({ ...project, faculty_approved_protocol: newVal });
-
-                                                // Trigger Email to Resident Leads if approved
-                                                if (newVal) {
-                                                    const triggerApprovalEmail = async () => {
-                                                        try {
-                                                            const leadIds = project.lead_proponent_ids || [];
-                                                            if (leadIds.length === 0) return;
-
-                                                            const { data: profiles } = await supabase
-                                                                .from('profiles')
-                                                                .select('email, full_name')
-                                                                .in('id', leadIds);
-
-                                                            if (profiles && profiles.length > 0) {
-                                                                for (const profile of profiles) {
-                                                                    if (profile.email) {
-                                                                        await sendEmail(TEMPLATES.PROTOCOL_APPROVED, {
-                                                                            to_email: profile.email,
-                                                                            to_name: profile.full_name,
-                                                                            project_title: project.title,
-                                                                            message: `Congratulations! Your QI protocol for "${project.title}" has been approved by your mentor. You are now cleared to proceed with the first step of your project implementation.`
-                                                                        });
-                                                                    }
-                                                                }
-                                                            }
-                                                        } catch (e) {
-                                                            console.error("Failed to send approval email:", e);
-                                                        }
-                                                    };
-                                                    triggerApprovalEmail();
-                                                }
-                                            }
-                                        }}
-                                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${project.faculty_approved_protocol
-                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                            : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200 hover:text-emerald-600'}`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${project.faculty_approved_protocol ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                                            <span className="text-xs font-bold">QI Protocol Approved</span>
-                                        </div>
-                                        {project.faculty_approved_protocol ? <CheckCircle2 className="w-4 h-4" /> : <ChevronRight className="w-4 h-4 opacity-30" />}
-                                    </button>
-
-                                    <button
-                                        id="signoff-pdsa-btn"
-                                        onClick={async () => {
-                                            const newVal = !project.faculty_approved_pdsa;
-                                            const { error } = await supabase
-                                                .from('projects')
-                                                .update({ faculty_approved_pdsa: newVal })
-                                                .eq('id', project.id);
-                                            if (!error) setProject({ ...project, faculty_approved_pdsa: newVal });
-                                        }}
-                                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${project.faculty_approved_pdsa
-                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                            : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200 hover:text-emerald-600'}`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${project.faculty_approved_pdsa ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                                            <span className="text-xs font-bold">PDSA Methodology Verified</span>
-                                        </div>
-                                        {project.faculty_approved_pdsa ? <CheckCircle2 className="w-4 h-4" /> : <ChevronRight className="w-4 h-4 opacity-30" />}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <FacultySignOff
+                            project={project}
+                            userRole={userProfile?.role || null}
+                            onUpdate={(updated) => setProject(updated)}
+                        />
 
                         <div className="space-y-4">
                             <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />
