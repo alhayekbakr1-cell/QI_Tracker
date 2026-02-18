@@ -10,6 +10,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import DashboardCharts from "@/components/DashboardCharts";
 import ConferenceMatcher from "@/components/ConferenceMatcher";
+import ActivityFeed from "@/components/ActivityFeed";
+import { Activity } from "lucide-react";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -183,6 +185,14 @@ export default function Dashboard() {
               </div>
             </section>
 
+            <section>
+              <h3 className="font-black text-advent-navy mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] opacity-60">
+                <Activity className="w-4 h-4" />
+                Live Pulse
+              </h3>
+              <ActivityFeed />
+            </section>
+
             <ConferenceMatcher />
           </div>
 
@@ -255,4 +265,3 @@ function StatCard({ label, value, variant }: { label: string, value: number, var
 }
 
 // Import Activity for header
-import { Activity } from 'lucide-react';
