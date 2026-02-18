@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Send, User, Trash2, Loader2 } from 'lucide-react';
-import { Comment, Profile } from '@/types';
+import { Comment, Profile, Project } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { getProfileDetails, sendEmailNotification } from '@/utils/notifications';
 
 interface ProjectCommentsProps {
     projectId: string;
@@ -46,8 +47,7 @@ export default function ProjectComments({ projectId, currentUserProfile }: Proje
             .insert([{
                 project_id: projectId,
                 user_id: currentUserProfile.id,
-                content: newComment.trim(),
-                is_resolved: false
+                content: newComment.trim()
             }])
             .select()
             .single();
@@ -55,6 +55,47 @@ export default function ProjectComments({ projectId, currentUserProfile }: Proje
         if (!error && data) {
             setComments([...comments, data as Comment]);
             setNewComment('');
+
+            // TRIGGER NOTIFICATION
+            try {
+                // 1. Fetch project details to get title and participants
+                const { data: project } = await supabase
+                    .from('projects')
+                    .select('*')
+                    .eq('id', projectId)
+                    .single();
+
+                if (project) {
+                    const typedProject = project as Project;
+
+                    // 2. Identify recipients
+                    // If Faculty posts, notify lead proponents
+                    // If Resident posts, notify faculty
+                    let recipientIds: string[] = [];
+                    if (currentUserProfile.role === 'Faculty' || currentUserProfile.role === 'Admin') {
+                        recipientIds = typedProject.lead_proponent_ids || [];
+                    } else {
+                        if (typedProject.faculty_id) recipientIds = [typedProject.faculty_id];
+                    }
+
+                    if (recipientIds.length > 0) {
+                        const recipients = await getProfileDetails(recipientIds);
+
+                        for (const recipient of recipients) {
+                            await sendEmailNotification({
+                                to_email: recipient.email,
+                                to_name: recipient.name,
+                                subject: `New Guidance for project: ${typedProject.title}`,
+                                message: `"${newComment.trim()}" — ${currentUserProfile.full_name || 'A Mentor'}`,
+                                project_title: typedProject.title,
+                                action_url: `${window.location.origin}/projects/view?id=${projectId}`
+                            });
+                        }
+                    }
+                }
+            } catch (notifyError) {
+                console.error('Notification trigger error:', notifyError);
+            }
         }
         setIsPosting(false);
     };
