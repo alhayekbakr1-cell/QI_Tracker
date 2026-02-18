@@ -35,6 +35,10 @@ import {
     Loader2
 } from 'lucide-react';
 
+import { createClient } from '@/utils/supabase/client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
 import mermaid from 'mermaid';
 
 // Initialize mermaid only once on the client
@@ -869,15 +873,30 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
         setIsAiLoading(true);
         setAiResponse(null);
         try {
-            // Context injection
-            const context = `The resident is currently reading the section: "${activeChapter.title}". Help them with their question: ${aiQuery}`;
-            const response = await fetch('/api/ai/chat', {
-                method: 'POST',
-                body: JSON.stringify({ message: context, chapter: activeChapter.id })
+            const supabase = createClient();
+            const context = `
+                You are the "AdventHealth QI Consultant", a senior mentor helping Internal Medicine residents.
+                
+                The resident is currently viewing the "${activeChapter.title}" chapter.
+                Chapter ID: ${activeChapter.id}.
+                Resident Question: ${aiQuery}
+                
+                INSTRUCTIONS:
+                1. Provide highly structured, professional guidance.
+                2. Use Markdown formatting: **bold** for emphasis, ### for headers, and bullet points for lists.
+                3. Ground your advice in the AdventHealth QI Pathways and standard frameworks (PDSA, SQUIRE 2.0).
+                4. Be encouraging but direct. Focus on actionable next steps.
+                5. If appropriate, suggest a specific QI tool (e.g., Fishbone, Pareto) to use and explain why.
+            `;
+
+            const { data, error } = await supabase.functions.invoke('qi-consultant', {
+                body: { prompt: context }
             });
-            const data = await response.json();
-            setAiResponse(data.message);
-        } catch (e) {
+
+            if (error) throw error;
+            setAiResponse(data.text);
+        } catch (e: any) {
+            console.error('AI Assistant Error:', e);
             setAiResponse("I'm currently busy assisting other residents, but I've reviewed your request. Check the handbook modules above for direct guidance on this topic, or ask your faculty mentor about 'AdventHealth QI Pathways'.");
         } finally {
             setIsAiLoading(false);
@@ -910,15 +929,15 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
                         <button
                             key={chapter.id}
                             onClick={() => setActiveChapter(chapter)}
-                            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all group ${activeChapter.id === chapter.id
+                            className={`w - full flex items - center gap - 4 px - 5 py - 4 rounded - 2xl transition - all group ${activeChapter.id === chapter.id
                                 ? 'bg-white shadow-xl shadow-slate-200/50 border border-slate-100'
                                 : 'hover:bg-slate-100/50 text-slate-500'
-                                }`}
+                                } `}
                         >
-                            <div className={`${activeChapter.id === chapter.id ? 'text-advent-navy' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                            <div className={`${activeChapter.id === chapter.id ? 'text-advent-navy' : 'text-slate-300 group-hover:text-slate-400'} `}>
                                 {chapter.icon}
                             </div>
-                            <span className={`text-xs font-black uppercase tracking-widest ${activeChapter.id === chapter.id ? 'text-slate-900' : ''}`}>
+                            <span className={`text - xs font - black uppercase tracking - widest ${activeChapter.id === chapter.id ? 'text-slate-900' : ''} `}>
                                 {chapter.title}
                             </span>
                         </button>
@@ -1032,8 +1051,10 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
                         <div className="flex-1 p-8 overflow-y-auto space-y-8">
                             {aiResponse ? (
                                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm leading-relaxed text-slate-600 font-medium italic">
-                                        "{aiResponse}"
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm leading-relaxed text-slate-600 font-medium prose prose-slate max-w-none">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {aiResponse}
+                                        </ReactMarkdown>
                                     </div>
                                     <button
                                         onClick={() => { setAiResponse(null); setAiQuery(''); }}
