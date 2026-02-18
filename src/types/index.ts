@@ -34,6 +34,9 @@ export interface Project {
     target_conference: string | null;
     faculty_approved_protocol: boolean;
     faculty_approved_pdsa: boolean;
+    total_patients_impacted?: number | null;
+    estimated_cost_savings?: number | null;
+    abstract_summary?: string | null;
 }
 
 export interface Comment {

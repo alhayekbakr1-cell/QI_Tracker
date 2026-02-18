@@ -42,6 +42,7 @@ import { sendEmail, TEMPLATES } from "@/utils/email";
 import ConferenceCountdown from "@/components/ConferenceCountdown";
 import FacultySignOff from "@/components/FacultySignOff";
 import ProjectComments from "@/components/ProjectComments";
+import PublicationAssistant from "@/components/PublicationAssistant";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -214,6 +215,31 @@ export default function ProjectDetailPage() {
                             </p>
                         </Section>
 
+                        {/* Impact Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 bg-slate-50/50 rounded-[2.5rem] px-8 border border-slate-100">
+                            <div className="space-y-2">
+                                <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Users className="w-3 h-3" />
+                                    Institutional Impact
+                                </dt>
+                                <dd className="text-3xl font-black text-advent-navy tracking-tight">
+                                    {project.total_patients_impacted || 0} <span className="text-sm font-bold text-slate-400">Patients</span>
+                                </dd>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">Volume reached across all cycles</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Trophy className="w-3 h-3 text-amber-500" />
+                                    Estimated Savings
+                                </dt>
+                                <dd className="text-3xl font-black text-emerald-600 tracking-tight">
+                                    ${(Number(project.estimated_cost_savings) || 0).toLocaleString()} <span className="text-sm font-bold text-slate-400">USD</span>
+                                </dd>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">Calculated based on institutional value</p>
+                            </div>
+                        </div>
+
                         {/* Metrics Section */}
                         <Section title="Project Metrics" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
                             <MetricSuggester projectTitle={project.title} />
@@ -317,6 +343,8 @@ export default function ProjectDetailPage() {
                             userRole={userProfile?.role || null}
                             onUpdate={(updated) => setProject(updated)}
                         />
+
+                        <PublicationAssistant project={project} />
 
                         <div className="space-y-4">
                             <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />

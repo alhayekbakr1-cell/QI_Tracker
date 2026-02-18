@@ -13,7 +13,9 @@ import {
     Trophy,
     GraduationCap,
     TrendingUp,
-    Presentation
+    Presentation,
+    DollarSign,
+    Users
 } from "lucide-react";
 import Link from "next/link";
 
@@ -138,7 +140,8 @@ export default function PortfolioPage() {
                             </div>
 
                             <div className="relative z-10">
-                                <h2 className="text-sm font-black uppercase tracking-[0.3em] text-white/60 mb-6">Mentorship Impact</h2>
+                                <h2 className="text-sm font-black uppercase tracking-[0.3em] text-white/60 mb-2">Mentorship Impact</h2>
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-6">Academic CV Ready</h3>
                                 <div className="grid grid-cols-2 gap-4 mb-8">
                                     <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                                         <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Projects Guided</p>
@@ -150,23 +153,27 @@ export default function PortfolioPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <FileText className="w-4 h-4 text-emerald-400" />
-                                            <span className="text-xs font-bold">Approved Protocols</span>
-                                        </div>
-                                        <span className="text-sm font-black">{myProjects.filter(p => p.faculty_approved_protocol).length}</span>
+                                <div className="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <Users className="w-4 h-4 text-blue-400" />
+                                        <span className="text-xs font-bold">Total Patient Reach</span>
                                     </div>
-                                    <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <TrendingUp className="w-4 h-4 text-amber-400" />
-                                            <span className="text-xs font-bold">Ongoing Interventions</span>
-                                        </div>
-                                        <span className="text-sm font-black">{myProjects.filter(p => p.status === 'Intervention Ongoing').length}</span>
+                                    <span className="text-sm font-black">{myProjects.reduce((sum, p) => sum + (p.total_patients_impacted || 0), 0).toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <DollarSign className="w-4 h-4 text-emerald-400" />
+                                        <span className="text-xs font-bold">Escaped Costs Guided</span>
                                     </div>
+                                    <span className="text-sm font-black">${myProjects.reduce((sum, p) => sum + (Number(p.estimated_cost_savings) || 0), 0).toLocaleString()}</span>
                                 </div>
                             </div>
+                            <button
+                                onClick={() => window.print()}
+                                className="w-full mt-8 py-4 bg-white text-advent-navy rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-black/20 hover:bg-slate-50 transition-all active:scale-95"
+                            >
+                                Export Mentorship Report for CV
+                            </button>
                         </div>
                     ) : (
                         /* Resident Graduation Status View */
@@ -252,6 +259,6 @@ export default function PortfolioPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

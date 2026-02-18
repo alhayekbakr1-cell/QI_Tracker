@@ -146,6 +146,9 @@ export default function EditProjectPage() {
             lead_proponent_ids: selectedLeadIds,
             updates_and_barriers: formData.get('updates_and_barriers') as string,
             target_conference: formData.get('target_conference') as string || null,
+            total_patients_impacted: parseInt(formData.get('total_patients_impacted') as string) || 0,
+            estimated_cost_savings: parseFloat(formData.get('estimated_cost_savings') as string) || 0,
+            abstract_summary: formData.get('abstract_summary') as string,
             last_updated_date: new Date().toISOString(),
         };
 
@@ -337,6 +340,41 @@ export default function EditProjectPage() {
                             <option value="SGIM Annual Meeting">SGIM Annual Meeting</option>
                             <option value="AdventHealth Research Day">AdventHealth Research Day</option>
                         </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Total Patients Impacted</label>
+                            <input
+                                type="number"
+                                name="total_patients_impacted"
+                                defaultValue={project.total_patients_impacted || 0}
+                                placeholder="e.g., 150"
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Estimated Cost Savings ($)</label>
+                            <input
+                                type="number"
+                                name="estimated_cost_savings"
+                                step="0.01"
+                                defaultValue={project.estimated_cost_savings || 0}
+                                placeholder="e.g., 5000.00"
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Publication Abstract / Summary (Draft)</label>
+                        <textarea
+                            name="abstract_summary"
+                            defaultValue={project.abstract_summary || ''}
+                            placeholder="Draft your abstract here or use it to store key results for publication..."
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[150px] resize-none"
+                        />
                     </div>
 
                     <AIUpdateSection initialValue={project.updates_and_barriers || ''} />
