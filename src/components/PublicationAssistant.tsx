@@ -1,8 +1,9 @@
 "use client"
 
 import { Project } from '@/types'
-import { Sparkles, Copy, CheckCircle2, FileText, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { Sparkles, Copy, CheckCircle2, FileText, ChevronRight, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { scanForPHI } from '@/utils/phi_guard'
 
 interface PublicationAssistantProps {
     project: Project;
@@ -12,6 +13,15 @@ interface PublicationAssistantProps {
 
 export default function PublicationAssistant({ project, isOpen, onClose }: PublicationAssistantProps) {
     const [copied, setCopied] = useState(false)
+    const [phiFindings, setPhiFindings] = useState<{ type: string; value: string }[]>([])
+
+    // Scan for PHI whenever the modal opens or project changes
+    useEffect(() => {
+        if (isOpen) {
+            const findings = scanForPHI(JSON.stringify(project));
+            setPhiFindings(findings);
+        }
+    }, [isOpen, project]);
 
     if (!isOpen) return null;
 
@@ -76,6 +86,18 @@ This project demonstrates the effectiveness of ${project.title} in improving qua
                 </div>
 
                 <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto">
+                    {phiFindings.length > 0 && (
+                        <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="text-[10px] font-black text-red-700 uppercase tracking-widest leading-none mb-1">Privacy Alert: Potential PHI Detected</h4>
+                                <p className="text-[10px] text-red-600 font-medium">
+                                    We found {phiFindings.length} item(s) that look like sensitive patient data (MRNs, Names, or Dates). Please ensure all clinical data is redacted before submission.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 font-mono text-sm text-slate-600 whitespace-pre-wrap leading-relaxed shadow-inner">
                         {abstractText}
                     </div>

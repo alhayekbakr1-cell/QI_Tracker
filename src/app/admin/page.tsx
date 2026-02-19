@@ -8,6 +8,7 @@ import { Shield, Users, Check, X, Loader2, Search, Layout, RefreshCw } from "luc
 import PHIWarning from "@/components/PHIWarning";
 import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
 import BulkPersonnelImport from "@/components/BulkPersonnelImport";
+import ErrorMonitor from "@/components/Admin/ErrorMonitor";
 import Link from "next/link";
 import { DEFAULT_CONFERENCES, fetchRegistry, Conference } from "@/constants/conferences";
 import LiveConferenceVerify from "@/components/LiveConferenceVerify";
@@ -162,8 +163,9 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-8">
                     <ExecutiveReportCenter />
+                    <ErrorMonitor />
                 </div>
                 <div>
                     <BulkPersonnelImport />

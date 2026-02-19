@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Sparkles, Loader2, Bot } from "lucide-react";
 import { getQIAdvice } from "@/utils/ai";
+import { scanForPHI } from "@/utils/phi_guard";
+import { AlertCircle } from "lucide-react";
 
 export default function QIConsultantChat() {
     const [isOpen, setIsOpen] = useState(false);
@@ -66,8 +68,8 @@ export default function QIConsultantChat() {
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[85%] p-3 rounded-2xl text-sm font-medium leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-advent-blue text-white rounded-br-none'
-                                        : 'bg-white text-slate-700 border border-slate-100 shadow-sm rounded-bl-none'
+                                    ? 'bg-advent-blue text-white rounded-br-none'
+                                    : 'bg-white text-slate-700 border border-slate-100 shadow-sm rounded-bl-none'
                                     }`}>
                                     {msg.content}
                                 </div>
@@ -81,6 +83,14 @@ export default function QIConsultantChat() {
                             </div>
                         )}
                     </div>
+
+                    {/* PHI Warning */}
+                    {input.length > 5 && scanForPHI(input).length > 0 && (
+                        <div className="px-4 py-2 bg-red-50 border-t border-red-100 flex items-center gap-2 animate-in slide-in-from-bottom-2">
+                            <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                            <span className="text-[9px] font-bold text-red-700 uppercase">Potential PHI Detected in input</span>
+                        </div>
+                    )}
 
                     {/* Input */}
                     <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-100 flex gap-2">
