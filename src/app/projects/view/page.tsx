@@ -52,6 +52,7 @@ export default function ProjectDetailPage() {
     const [project, setProject] = useState<Project | null>(null);
     const [metrics, setMetrics] = useState<Metric[]>([]);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
+    const [isPubAssistantOpen, setIsPubAssistantOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
@@ -344,7 +345,25 @@ export default function ProjectDetailPage() {
                             onUpdate={(updated) => setProject(updated)}
                         />
 
-                        <PublicationAssistant project={project} />
+                        <div className="pt-6 border-t border-slate-100">
+                            <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+                                <Sparkles className="w-4 h-4 text-advent-blue" />
+                                Academic Toolkit
+                            </h3>
+                            <button
+                                onClick={() => setIsPubAssistantOpen(true)}
+                                className="w-full flex items-center gap-3 p-4 bg-slate-900 border border-slate-800 rounded-2xl text-white font-bold text-sm hover:bg-slate-800 transition-all group shadow-lg shadow-slate-900/20"
+                            >
+                                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                                    <Trophy className="w-6 h-6" />
+                                </div>
+                                <div className="flex flex-col text-left">
+                                    <span className="text-[9px] uppercase tracking-widest text-slate-400 font-black">Publication</span>
+                                    <span>AI Assistant</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 ml-auto text-slate-600 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
 
                         <div className="space-y-4">
                             <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />
@@ -388,6 +407,13 @@ export default function ProjectDetailPage() {
                     projectId={project.id}
                     projectTitle={project.title}
                     onClose={() => setIsWizardOpen(false)}
+                />
+            )}
+            {project && (
+                <PublicationAssistant
+                    project={project}
+                    isOpen={isPubAssistantOpen}
+                    onClose={() => setIsPubAssistantOpen(false)}
                 />
             )}
         </div>

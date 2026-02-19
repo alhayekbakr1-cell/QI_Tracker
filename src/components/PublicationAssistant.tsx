@@ -6,18 +6,14 @@ import { useState } from 'react'
 
 interface PublicationAssistantProps {
     project: Project;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
-export default function PublicationAssistant({ project }: PublicationAssistantProps) {
-    const [isGenerating, setIsGenerating] = useState(false)
+export default function PublicationAssistant({ project, isOpen, onClose }: PublicationAssistantProps) {
     const [copied, setCopied] = useState(false)
 
-    const generateAbstract = () => {
-        setIsGenerating(true)
-        // Simulated generation - in real life this could call AI with more context
-        // But we can structure the existing data beautifully first
-        setTimeout(() => setIsGenerating(false), 800)
-    }
+    if (!isOpen) return null;
 
     const abstractText = `
 TITLE: ${project.title.toUpperCase()}
@@ -42,48 +38,65 @@ This project demonstrates the effectiveness of ${project.title} in improving qua
     }
 
     return (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center">
-                        <Trophy className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-black tracking-tight leading-none">Publication Assistant</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Ready for Abstract Submission</p>
-                    </div>
-                </div>
-                <button
-                    onClick={handleCopy}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${copied ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
-                        }`}
-                >
-                    {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied' : 'Copy Abstract'}
-                </button>
-            </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                onClick={onClose}
+            />
 
-            <div className="p-8 space-y-6">
-                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 font-mono text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">
-                    {abstractText}
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <div className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="p-8 bg-slate-900 text-white flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="flex -space-x-2">
-                            <div className="w-8 h-8 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center text-[10px] font-black text-blue-600">AH</div>
-                            <div className="w-8 h-8 rounded-full border-2 border-white bg-emerald-100 flex items-center justify-center text-[10px] font-black text-emerald-600">GME</div>
+                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                            <Trophy className="w-6 h-6 text-amber-400" />
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Collaborators Linked</span>
+                        <div>
+                            <h3 className="text-lg font-black tracking-tight leading-none">Publication Assistant</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 px-2 py-0.5 bg-white/5 rounded-full inline-block">Ready for Submission</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleCopy}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${copied ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+                                }`}
+                        >
+                            {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {copied ? 'Copied' : 'Copy Abstract'}
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto">
+                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 font-mono text-sm text-slate-600 whitespace-pre-wrap leading-relaxed shadow-inner">
+                        {abstractText}
                     </div>
 
-                    <button
-                        className="flex items-center gap-2 text-advent-blue font-black text-xs uppercase tracking-widest hover:translate-x-1 transition-transform"
-                        onClick={() => alert("PDF Export coming soon!")}
-                    >
-                        Export PDF Summary
-                        <ChevronRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                        <div className="flex items-center gap-4">
+                            <div className="flex -space-x-3">
+                                <div className="w-10 h-10 rounded-full border-4 border-white bg-blue-100 flex items-center justify-center text-[10px] font-black text-blue-600 shadow-sm">AH</div>
+                                <div className="w-10 h-10 rounded-full border-4 border-white bg-emerald-100 flex items-center justify-center text-[10px] font-black text-emerald-600 shadow-sm">GME</div>
+                            </div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Collaborators Linked</span>
+                        </div>
+
+                        <button
+                            className="group flex items-center gap-2 text-advent-blue font-black text-[10px] uppercase tracking-widest hover:translate-x-1 transition-transform bg-advent-blue/5 px-6 py-3 rounded-xl"
+                            onClick={() => alert("PDF Export coming soon!")}
+                        >
+                            Export PDF Summary
+                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
