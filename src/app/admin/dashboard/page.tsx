@@ -5,9 +5,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     PieChart, Pie, Cell, Legend 
 } from "recharts";
-import { 
-    TrendingUp, Users, AlertTriangle, CheckCircle2, 
-    Clock, ArrowRight, Activity, ShieldCheck, Mail
+    Clock, ArrowRight, Activity, ShieldCheck, Mail, Loader2
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types";
@@ -64,6 +62,13 @@ export default function ExecutiveDashboard() {
         { name: 'Pediatrics', projects: 6, impact: 78 },
         { name: 'Emergency', projects: 5, impact: 64 },
         { name: 'Nursing', projects: 4, impact: 90 },
+    ];
+
+    const stats = [
+        { label: "Total Projects", value: projects.length, icon: Activity, color: "text-advent-navy" },
+        { label: "Stagnant", value: stagnantProjects.length, icon: AlertTriangle, color: "text-amber-600" },
+        { label: "High Impact", value: projects.filter(p => p.status === 'Impacted (Completed)').length, icon: CheckCircle2, color: "text-emerald-600" },
+        { label: "Active Residents", value: 42, icon: Users, color: "text-advent-blue" },
     ];
 
     const handleNudge = async (p: Project) => {
