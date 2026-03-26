@@ -1,4 +1,4 @@
-export type ProjectStatus = 'Idea' | 'Pre-Intervention' | 'Intervention Ongoing' | 'Sustain the Gains';
+export type ProjectStatus = 'Idea' | 'Pre-Intervention' | 'Intervention Ongoing' | 'Sustain the Gains' | 'Impacted (Completed)';
 export type UserRole = 'Operator' | 'Viewer' | 'Admin' | 'Faculty';
 
 export interface Profile {

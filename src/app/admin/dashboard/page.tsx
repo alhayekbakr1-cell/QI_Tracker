@@ -22,7 +22,7 @@ export default function ExecutiveDashboard() {
 
     useEffect(() => {
         async function fetchData() {
-            const { data, error } = await supabase.from('projects').select('*');
+            const { data } = await supabase.from('projects').select('*');
             if (data) setProjects(data);
             setIsLoading(false);
         }
