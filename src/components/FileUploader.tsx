@@ -22,6 +22,11 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
             const file = e.target.files?.[0];
             if (!file) return;
 
+            if (file.size > 25 * 1024 * 1024) {
+                alert("File is too large! Maximum limit is 25MB.");
+                return;
+            }
+
             setUploading(true);
 
             const fileExt = file.name.split('.').pop();
