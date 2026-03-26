@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
-import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X, Users } from 'lucide-react'
+import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X, Users, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
