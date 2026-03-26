@@ -9,8 +9,8 @@ import Link from "next/link";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
 import FileUploader from "@/components/FileUploader";
 import { useEffect, useState } from "react";
-import { FileDown } from "lucide-react";
-import { draftSummary } from "@/utils/ai";
+import { FileDown, RefreshCw } from "lucide-react";
+import { draftSummary, auditProjectQuality, suggestMetrics } from "@/utils/ai";
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
@@ -54,6 +54,141 @@ function AIUpdateSection({ initialValue }: { initialValue: string }) {
                 placeholder="Enter bullet points (e.g. - IRB approved, - Data collection started) then click 'Draft with AI'..."
                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[150px] resize-none"
             />
+        </div>
+    );
+}
+
+function AIAuditCard({ project }: { project: any }) {
+    const [audit, setAudit] = useState<{ score: number, feedback: string } | null>(null);
+    const [isAuditing, setIsAuditing] = useState(false);
+
+    const runAudit = async () => {
+        setIsAuditing(true);
+        try {
+            const result = await auditProjectQuality(project);
+            const scoreMatch = result.match(/(\d+)/);
+            const score = scoreMatch ? parseInt(scoreMatch[0]) : 70;
+            const feedback = result.replace(/Quality Score: \d+\.?\s*/i, '');
+            setAudit({ score, feedback });
+        } catch (error) {
+            console.error("Audit failed:", error);
+        } finally {
+            setIsAuditing(false);
+        }
+    };
+
+    return (
+        <div className="bg-advent-navy/5 border border-advent-navy/10 rounded-3xl p-6 space-y-4">
+            <div className="flex justify-between items-center text-advent-navy">
+                <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" />
+                    <h3 className="text-xs font-black uppercase tracking-widest">AI Quality Assessment</h3>
+                </div>
+                <button
+                    type="button"
+                    onClick={runAudit}
+                    disabled={isAuditing}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg border border-advent-navy/20 hover:bg-advent-navy/5 transition-all disabled:opacity-50"
+                >
+                    {isAuditing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    {audit ? "Re-Audit" : "Run AI Audit"}
+                </button>
+            </div>
+
+            {audit && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
+                    <div className="flex items-center gap-4">
+                        <div className="relative w-16 h-16 flex items-center justify-center">
+                            <svg className="w-full h-full -rotate-90">
+                                <circle
+                                    cx="32" cy="32" r="28"
+                                    fill="none" stroke="currentColor" strokeWidth="4"
+                                    className="text-slate-200"
+                                />
+                                <circle
+                                    cx="32" cy="32" r="28"
+                                    fill="none" stroke="currentColor" strokeWidth="4"
+                                    strokeDasharray="176"
+                                    strokeDashoffset={176 - (176 * audit.score) / 100}
+                                    className={audit.score > 80 ? 'text-emerald-500' : audit.score > 50 ? 'text-amber-500' : 'text-red-500'}
+                                />
+                            </svg>
+                            <span className="absolute text-sm font-black text-slate-900">{audit.score}</span>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-[10px] text-slate-600 font-bold leading-relaxed italic">
+                                &quot;{audit.feedback}&quot;
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!audit && !isAuditing && (
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center py-4">
+                    Click to analyze project completeness and quality
+                </p>
+            )}
+        </div>
+    );
+}
+
+function ShieldCheck(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+            <path d="m9 12 2 2 4-4" />
+        </svg>
+    )
+}
+
+function MetricSuggester({ title, onSelect }: { title: string, onSelect: (val: string) => void }) {
+    const [suggestions, setSuggestions] = useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const getSuggestions = async () => {
+        setIsGenerating(true);
+        try {
+            const raw = await suggestMetrics(title);
+            setSuggestions(raw);
+        } catch (error) {
+            console.error("Metric suggestion error:", error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            <button
+                type="button"
+                onClick={getSuggestions}
+                disabled={isGenerating}
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-blue bg-advent-blue/5 px-4 py-2 rounded-xl hover:bg-advent-blue/10 transition-all border border-advent-blue/10 disabled:opacity-50"
+            >
+                {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                Get AI Suggested Metrics
+            </button>
+
+            {suggestions && (
+                <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-3">AI Recommendations</p>
+                    <div className="text-xs text-slate-600 font-bold whitespace-pre-wrap leading-relaxed">
+                        {suggestions}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -199,7 +334,14 @@ export default function EditProjectPage() {
                 <DeleteProjectButton onDelete={handleDelete} />
             </div>
 
-            <PHIWarning />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-start">
+                <div className="lg:col-span-2">
+                    <PHIWarning />
+                </div>
+                <div className="lg:col-span-1">
+                    <AIAuditCard project={project} />
+                </div>
+            </div>
 
             <form onSubmit={handleUpdate} className="space-y-8 bg-white p-10 rounded-3xl border border-slate-200 shadow-sm">
                 <div className="grid grid-cols-1 gap-8">
@@ -320,11 +462,14 @@ export default function EditProjectPage() {
 
                     <div className="space-y-3">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Outcome</label>
-                        <textarea
-                            name="primary_outcome"
-                            defaultValue={project.primary_outcome || ''}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[100px] resize-none"
-                        />
+                        <div className="space-y-6">
+                            <textarea
+                                name="primary_outcome"
+                                defaultValue={project.primary_outcome || ''}
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[100px] resize-none"
+                            />
+                            <MetricSuggester title={project.title} onSelect={() => { }} />
+                        </div>
                     </div>
 
                     <div className="space-y-3">

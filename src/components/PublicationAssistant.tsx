@@ -1,9 +1,10 @@
 "use client"
 
 import { Project } from '@/types'
-import { Sparkles, Copy, CheckCircle2, FileText, ChevronRight, AlertCircle } from 'lucide-react'
+import { Sparkles, Copy, CheckCircle2, FileText, ChevronRight, AlertCircle, Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { scanForPHI } from '@/utils/phi_guard'
+import { generateAbstract } from '@/utils/ai'
 
 interface PublicationAssistantProps {
     project: Project;
@@ -15,31 +16,32 @@ export default function PublicationAssistant({ project, isOpen, onClose }: Publi
     const [copied, setCopied] = useState(false)
     const [phiFindings, setPhiFindings] = useState<{ type: string; value: string }[]>([])
 
-    // Scan for PHI whenever the modal opens or project changes
+    const [abstractText, setAbstractText] = useState<string>('')
+    const [isGenerating, setIsGenerating] = useState(false)
+
+    // Scan for PHI and Generate Abstract whenever the modal opens or project changes
     useEffect(() => {
         if (isOpen) {
             const findings = scanForPHI(JSON.stringify(project));
             setPhiFindings(findings);
+            
+            async function triggerGeneration() {
+                setIsGenerating(true);
+                try {
+                    const text = await generateAbstract(project);
+                    setAbstractText(text);
+                } catch (error) {
+                    console.error('Failed to generate abstract:', error);
+                    setAbstractText('Error generating abstract. Please try again.');
+                } finally {
+                    setIsGenerating(false);
+                }
+            }
+            triggerGeneration();
         }
     }, [isOpen, project]);
 
     if (!isOpen) return null;
-
-    const abstractText = `
-TITLE: ${project.title.toUpperCase()}
-
-BACKGROUND: 
-Quality improvement initiative focused on ${project.category || 'clinical healthcare'} within the ${project.subcategory || 'Internal Medicine'} department. The primary focus was addressed through ${project.primary_outcome || 'standard institutional monitoring'}.
-
-METHODS:
-Through ${project.pdsa_cycle} PDSA cycles, we implemented ${project.updates_and_barriers || 'systematic changes'} to address existing barriers. Progress was tracked via standardized metrics and faculty oversight.
-
-RESULTS:
-The initiative successfully impacted ${project.total_patients_impacted || 0} patients. Implementation of these changes resulted in an estimated institutional savings of $${project.estimated_cost_savings || 0}. Current status: ${project.status}.
-
-CONCLUSIONS:
-This project demonstrates the effectiveness of ${project.title} in improving quality outcomes. Continuous monitoring through the QI Chief Tracker ensures sustainability of gained improvements.
-`.trim()
 
     const handleCopy = () => {
         navigator.clipboard.writeText(abstractText)
@@ -98,8 +100,31 @@ This project demonstrates the effectiveness of ${project.title} in improving qua
                         </div>
                     )}
 
-                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 font-mono text-sm text-slate-600 whitespace-pre-wrap leading-relaxed shadow-inner">
-                        {abstractText}
+                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 font-mono text-sm text-slate-600 whitespace-pre-wrap leading-relaxed shadow-inner min-h-[300px] flex items-center justify-center relative group">
+                        {isGenerating ? (
+                            <div className="flex flex-col items-center gap-4 py-12">
+                                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 animate-bounce">
+                                    <Sparkles className="w-8 h-8 text-amber-400" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI is composing your abstract...</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="w-full h-full">
+                                {abstractText}
+                            </div>
+                        )}
+                        
+                        {!isGenerating && (
+                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-100 shadow-sm">
+                                    <div className="w-1 h-1 bg-amber-400 rounded-full animate-pulse" />
+                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">AI Enhanced</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center justify-between pt-6 border-t border-slate-100">

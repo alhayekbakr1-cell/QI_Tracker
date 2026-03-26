@@ -173,3 +173,27 @@ export async function getLiveConferenceDeadline(conferenceName: string) {
   `;
   return askAI(prompt);
 }
+export async function generateAbstract(project: any) {
+  const prompt = `
+    You are a Quality Improvement (QI) Academic Consultant. 
+    Write a formal, publication-ready abstract for the following QI project.
+    
+    Project Title: ${project.title}
+    Category: ${project.category}
+    Current Status: ${project.status}
+    Primary Outcome: ${project.primary_outcome}
+    PDSA Cycles: ${project.pdsa_cycle}
+    Updates/Barriers: ${project.updates_and_barriers}
+    Patients Impacted: ${project.total_patients_impacted || 0}
+    Cost Savings: $${project.estimated_cost_savings || 0}
+    
+    Structure the abstract with the following headings:
+    BACKGROUND:
+    METHODS:
+    RESULTS:
+    CONCLUSIONS:
+    
+    Keep it scholarly, concise, and professional. Output ONLY the abstract text.
+  `;
+  return askAI(prompt);
+}
