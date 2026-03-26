@@ -87,10 +87,10 @@ export const DEFAULT_CONFERENCES: Conference[] = [
     {
         id: 'ASCO',
         name: 'ASCO Quality',
-        fullName: 'American Society of Clinical Oncology Quality Care',
+        fullName: 'ASCO Quality Care Symposium',
         month: 5, // June
         day: 10,
-        website: 'https://meetings.asco.org/'
+        website: 'https://meetings.asco.org/quality/abstracts'
     },
     {
         id: 'IDWEEK',
@@ -107,6 +107,14 @@ export const DEFAULT_CONFERENCES: Conference[] = [
         month: 10, // November (Posters)
         day: 3,
         website: 'https://www.ihi.org/forum'
+    },
+    {
+        id: 'ASH',
+        name: 'Annual ASH',
+        fullName: 'American Society of Hematology Annual Meeting',
+        month: 11, // December
+        day: 5,
+        website: 'https://www.hematology.org/meetings/annual-meeting'
     }
 ];
 

@@ -16,7 +16,7 @@ export default function LoginPage() {
     const supabase = createClient()
 
     const validateDomain = (emailAddr: string) => {
-        return emailAddr.toLowerCase().endsWith('@adventhealth.com')
+        return emailAddr.trim().toLowerCase().endsWith('@adventhealth.com')
     }
 
     const handleLogin = async (e: React.FormEvent) => {

@@ -8,6 +8,7 @@ import { Shield, Users, Check, X, Loader2, Search, Layout, RefreshCw } from "luc
 import PHIWarning from "@/components/PHIWarning";
 import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
 import BulkPersonnelImport from "@/components/BulkPersonnelImport";
+import BulkProjectImport from "@/components/BulkProjectImport";
 import ErrorMonitor from "@/components/Admin/ErrorMonitor";
 import Link from "next/link";
 import { DEFAULT_CONFERENCES, fetchRegistry, Conference } from "@/constants/conferences";
@@ -168,7 +169,10 @@ export default function AdminPage() {
                     <ErrorMonitor />
                 </div>
                 <div>
-                    <BulkPersonnelImport />
+                    <div className="space-y-8">
+                        <BulkPersonnelImport />
+                        <BulkProjectImport />
+                    </div>
                 </div>
             </div>
             <PHIWarning />
