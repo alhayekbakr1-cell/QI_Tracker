@@ -71,14 +71,18 @@ export async function suggestMetrics(projectTitle: string) {
   return askAI(prompt);
 }
 
-export async function getQIAdvice(question: string, context?: string) {
+export async function getQIAdvice(question: string, context?: string, handbookContent?: string) {
   const prompt = `
-    You are a Quality Improvement (QI) Academic Consultant.
-    The user is asking a question about QI methodology. 
-    Question: ${question}
-    ${context ? `Project Context: ${context}` : ''}
+    You are a Quality Improvement (QI) Academic Consultant at AdventHealth.
+    The resident is asking a question about QI methodology. 
     
-    Provide a brief, scholarly, and helpful 3-4 sentence response.
+    HANDBOOK CONTEXT (Follow these rules and terminology):
+    ${handbookContent || "Standard QI Best Practices (SQUIRE 2.0, PDSA)."}
+    
+    Resident Question: ${question}
+    ${context ? `Specific Project Context: ${context}` : ''}
+    
+    Provide a scholarly, and helpful response. Be concise but cite specific steps from the handbook if provided.
   `;
   return askAI(prompt);
 }
