@@ -43,7 +43,10 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
         { href: '/portfolio', label: 'My Portfolio', icon: BookOpen },
         { href: '/resources', label: 'Resources', icon: BookOpen },
         ...(role === 'Faculty' ? [{ href: '/faculty', label: 'Faculty Portal', icon: Users }] : []),
-        ...(role === 'Admin' ? [{ href: '/admin', label: 'Admin', icon: Activity }] : []),
+        ...(role === 'Admin' ? [
+            { href: '/admin', label: 'Admin', icon: Users },
+            { href: '/admin/dashboard', label: 'Intelligence', icon: TrendingUp }
+        ] : []),
     ]
 
     return (
