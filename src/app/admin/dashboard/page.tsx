@@ -7,11 +7,12 @@ import {
 } from "recharts";
 import { 
     TrendingUp, Users, AlertTriangle, CheckCircle2, 
-    Clock, ArrowRight, Activity, ShieldCheck
+    Clock, ArrowRight, Activity, ShieldCheck, Mail
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
+import emailjs from '@emailjs/browser';
 
 const ADVENT_COLORS = ['#003057', '#00A3E0', '#FFBD31', '#007A53', '#626469'];
 
@@ -19,6 +20,8 @@ export default function ExecutiveDashboard() {
     const supabase = createClient();
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isNudging, setIsNudging] = useState<string | null>(null);
+    const [productionMode, setProductionMode] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -63,24 +66,66 @@ export default function ExecutiveDashboard() {
         { name: 'Nursing', projects: 4, impact: 90 },
     ];
 
-    const stats = [
-        { label: "Total Projects", value: projects.length, icon: Activity, color: "text-advent-navy" },
-        { label: "Stagnant", value: stagnantProjects.length, icon: AlertTriangle, color: "text-amber-600" },
-        { label: "High Impact", value: projects.filter(p => p.status === 'Impacted (Completed)').length, icon: CheckCircle2, color: "text-emerald-600" },
-        { label: "Active Residents", value: 42, icon: Users, color: "text-advent-blue" }, // Hardcoded for demo
-    ];
+    const handleNudge = async (p: Project) => {
+        setIsNudging(p.id);
+        try {
+            const leadNames = p.lead_proponents;
+            const emails = p.lead_proponents.map(name => name.replace(/ /g, ".") + "@AdventHealth.com").join(",");
+            const lastUpdated = new Date(p.last_updated_date);
+            const daysSinceUpdate = differenceInDays(new Date(), lastUpdated);
+
+            const SERVICE_ID = 'service_cmylzni';
+            const TEMPLATE_ID = 'template_zp4ihsn';
+            const PUBLIC_KEY = 'FUMeORBrHGR5uaims';
+
+            const templateParams = {
+                lead_email: productionMode ? emails : "bakr.alhayek.md@adventhealth.com",
+                to_name: leadNames.join(", "),
+                project_title: p.title,
+                days_inactive: daysSinceUpdate,
+                last_update: format(lastUpdated, 'MMM d, yyyy'),
+                message: `This is a formal nudge from the QI Chief office. Your project "${p.title}" hasn't been updated in over 30 days. Please log in and provide an update on your progress and any barriers you are facing.`,
+                reply_to: 'noreply@qitracker.com'
+            };
+
+            await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
+            alert(`✅ Nudge sent to ${productionMode ? emails : 'YOU (Test Mode)'}`);
+        } catch (err: any) {
+            console.error("Nudge Error:", err);
+            alert(`❌ Failed: ${err.text || err.message}`);
+        } finally {
+            setIsNudging(null);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 p-8">
-            <header className="mb-10">
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-advent-navy text-white rounded-lg">
-                        <TrendingUp className="w-5 h-5" />
+            <header className="mb-10 flex justify-between items-end">
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-advent-navy text-white rounded-lg">
+                            <TrendingUp className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Strategic Intelligence</span>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Strategic Intelligence</span>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tight">Executive Dashboard</h1>
+                    <p className="text-slate-500 font-bold mt-2">Real-time QI performance and institutional impact oversight.</p>
                 </div>
-                <h1 className="text-4xl font-black text-slate-900 tracking-tight">Executive Dashboard</h1>
-                <p className="text-slate-500 font-bold mt-2">Real-time QI performance and institutional impact oversight.</p>
+
+                <div className="flex items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Mode</span>
+                        <span className={`text-xs font-black ${productionMode ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {productionMode ? 'PRODUCTION' : 'TEST (SENDS TO YOU)'}
+                        </span>
+                    </div>
+                    <button 
+                        onClick={() => setProductionMode(!productionMode)}
+                        className={`w-12 h-6 rounded-full transition-all relative ${productionMode ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                    >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${productionMode ? 'right-1' : 'left-1'}`} />
+                    </button>
+                </div>
             </header>
 
             {/* QUICK STATS */}
@@ -200,8 +245,13 @@ export default function ExecutiveDashboard() {
                                             </span>
                                         </td>
                                         <td className="py-4 text-right">
-                                            <button className="text-advent-blue font-black text-[10px] uppercase tracking-widest hover:underline">
-                                                Nudge Manager
+                                            <button 
+                                                onClick={() => handleNudge(p)}
+                                                disabled={isNudging === p.id}
+                                                className="flex items-center gap-2 text-advent-blue font-black text-[10px] uppercase tracking-widest hover:underline disabled:opacity-50 ml-auto"
+                                            >
+                                                {isNudging === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
+                                                {isNudging === p.id ? "Sending..." : "Nudge Leads"}
                                             </button>
                                         </td>
                                     </tr>
