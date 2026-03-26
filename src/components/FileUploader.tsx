@@ -53,7 +53,10 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
                 .update({ [fieldName]: publicUrl })
                 .eq('id', projectId);
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                console.error('Database update error:', updateError);
+                throw new Error(`Database error: ${updateError.message}`);
+            }
 
             onUploadComplete(publicUrl);
         } catch (error) {

@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 
 import { createClient } from '@/utils/supabase/client';
+import { draftProtocol, getQIAdvice } from '@/utils/ai';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -537,6 +538,26 @@ const MermaidDiagram = ({ definition, title }: { definition: string; title?: str
 
 const PICOBuilder = () => {
     const [pico, setPico] = useState({ p: '', i: '', c: '', o: '' });
+    const [isDrafting, setIsDrafting] = useState(false);
+    const [protocolDraft, setProtocolDraft] = useState<string | null>(null);
+
+    const handleDraft = async () => {
+        if (!pico.p || !pico.i || !pico.o) {
+            alert("Please fill in at least Population, Intervention, and Outcome first.");
+            return;
+        }
+        setIsDrafting(true);
+        try {
+            const draft = await draftProtocol(pico);
+            setProtocolDraft(draft);
+        } catch (e) {
+            console.error("Drafting error:", e);
+            alert("Failed to draft protocol. Ensure PICO fields are meaningful.");
+        } finally {
+            setIsDrafting(false);
+        }
+    };
+
     return (
         <div className="bg-white border-2 border-slate-100 rounded-3xl p-6 space-y-4 my-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -561,6 +582,39 @@ const PICOBuilder = () => {
                     "In {pico.p || '[Population]'}, does {pico.i || '[Intervention]'} compared to {pico.c || '[Comparison]'} result in {pico.o || '[Outcome]'}?"
                 </p>
             </div>
+
+            <div className="pt-2">
+                <button
+                    onClick={handleDraft}
+                    disabled={isDrafting}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-blue bg-advent-blue/5 px-4 py-2 rounded-xl hover:bg-advent-blue/10 transition-all border border-advent-blue/10 disabled:opacity-50"
+                >
+                    {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    Draft AI Protocol (300 Words)
+                </button>
+            </div>
+
+            {protocolDraft && (
+                <div className="mt-4 p-6 bg-slate-50 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="flex justify-between items-center mb-4">
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Protocol Draft</p>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(protocolDraft);
+                                alert("Copied to clipboard!");
+                            }}
+                            className="text-[9px] font-black uppercase tracking-widest text-advent-blue hover:underline"
+                        >
+                            Copy to Clipboard
+                        </button>
+                    </div>
+                    <div className="text-xs text-slate-700 font-bold whitespace-pre-wrap leading-relaxed prose prose-slate max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {protocolDraft}
+                        </ReactMarkdown>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -873,28 +927,11 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
         setIsAiLoading(true);
         setAiResponse(null);
         try {
-            const supabase = createClient();
-            const context = `
-                You are the "AdventHealth QI Consultant", a senior mentor helping Internal Medicine residents.
-                
-                The resident is currently viewing the "${activeChapter.title}" chapter.
-                Chapter ID: ${activeChapter.id}.
-                Resident Question: ${aiQuery}
-                
-                INSTRUCTIONS:
-                1. Provide highly structured, professional guidance.
-                2. Use Markdown formatting: **bold** for emphasis, ### for headers, and bullet points for lists.
-                3. Ground your advice in the AdventHealth QI Pathways and standard frameworks (PDSA, SQUIRE 2.0).
-                4. Be encouraging but direct. Focus on actionable next steps.
-                5. If appropriate, suggest a specific QI tool (e.g., Fishbone, Pareto) to use and explain why.
-            `;
+            // Include chapter content for "smart" context
+            const chapterText = activeChapter.sections.map(s => `Section: ${s.title}\n${s.blocks.filter(b => b.type === 'text').map(b => b.content).join('\n')}`).join('\n\n');
 
-            const { data, error } = await supabase.functions.invoke('qi-consultant', {
-                body: { prompt: context }
-            });
-
-            if (error) throw error;
-            setAiResponse(data.text);
+            const response = await getQIAdvice(aiQuery, undefined, chapterText);
+            setAiResponse(response);
         } catch (e: any) {
             console.error('AI Assistant Error:', e);
             setAiResponse("I'm currently busy assisting other residents, but I've reviewed your request. Check the handbook modules above for direct guidance on this topic, or ask your faculty mentor about 'AdventHealth QI Pathways'.");
