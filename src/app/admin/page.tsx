@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Profile, UserRole } from "@/types";
-import { Shield, Users, Check, X, Loader2, Search, Layout, RefreshCw } from "lucide-react";
+import { Users, FileText, BarChart3, Settings, Shield, Plus, Upload, Trash2, Edit, Save, Trash, AlertCircle, RefreshCw, Loader2, Search, Layout } from 'lucide-react';
 import PHIWarning from "@/components/PHIWarning";
 import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
 import BulkPersonnelImport from "@/components/BulkPersonnelImport";

@@ -84,23 +84,65 @@ export default function BulkProjectImport() {
                     }).filter(p => p.title); // Ensure title exists
 
                     // 1. Fetch existing projects to check for title conflicts manually
-                    const { data: existingProjects, error: fetchError } = await supabase
-                        .from('projects')
-                        .select('id, title');
+                    // 1b. Fetch directory for name-to-id mapping
+                    const [{ data: existingProjects, error: fetchError }, { data: directory, error: dirError }] = await Promise.all([
+                        supabase.from('projects').select('id, title'),
+                        supabase.from('directory').select('id, name')
+                    ]);
 
                     if (fetchError) throw fetchError;
+                    if (dirError) throw dirError;
 
                     const titleToId = new Map(existingProjects.map(p => [p.title.toLowerCase().trim(), p.id]));
+                    
+                    // Build name map for directory lookups
+                    const nameToIdMap = new Map();
+                    directory.forEach(d => {
+                        nameToIdMap.set(d.name.toLowerCase().trim(), d.id);
+                        // Base name fallback (without MD/DO)
+                        const base = d.name.replace(/\s+(MD|DO)$/i, '').toLowerCase().trim();
+                        if (!nameToIdMap.has(base)) nameToIdMap.set(base, d.id);
+                    });
 
                     const toUpdate = [];
                     const toInsert = [];
 
                     for (const entry of entries) {
+                        // Perform Linkage: Map names to UUIDs
+                        const leadIds: string[] = [];
+                        const proponentIds: string[] = [];
+                        let facultyId: string | null = null;
+
+                        // Standard logic: identify lead vs regular proponents
+                        // For now, if specified in proponents list, we try to match them
+                        entry.proponents.forEach((name, index) => {
+                            const clean = name.toLowerCase().trim();
+                            const id = nameToIdMap.get(clean) || nameToIdMap.get(name.replace(/Dr\.?\s+/i, '').toLowerCase().trim());
+                            if (id) {
+                                if (index === 0) leadIds.push(id); // First name usually lead
+                                else proponentIds.push(id);
+                            }
+                        });
+
+                        // Match Faculty
+                        if (entry.faculty) {
+                            const cleanFaculty = entry.faculty.toLowerCase().trim();
+                            facultyId = nameToIdMap.get(cleanFaculty) || nameToIdMap.get(entry.faculty.replace(/Dr\.?\s+/i, '').toLowerCase().trim());
+                        }
+
+                        // Attach IDs to entry
+                        const enrichedEntry = {
+                            ...entry,
+                            lead_proponent_ids: leadIds,
+                            proponent_ids: proponentIds,
+                            faculty_id: facultyId
+                        };
+
                         const existingId = titleToId.get(entry.title.toLowerCase().trim());
                         if (existingId) {
-                            toUpdate.push({ id: existingId, ...entry });
+                            toUpdate.push({ id: existingId, ...enrichedEntry });
                         } else {
-                            toInsert.push(entry);
+                            toInsert.push(enrichedEntry);
                         }
                     }
 
