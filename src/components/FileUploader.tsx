@@ -37,7 +37,10 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
                 .from('project-documents')
                 .upload(filePath, file);
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error('Storage upload error:', uploadError);
+                throw new Error(`Storage error: ${uploadError.message}`);
+            }
 
             // Get Public URL
             const { data: { publicUrl } } = supabase.storage
@@ -55,7 +58,7 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
             onUploadComplete(publicUrl);
         } catch (error) {
             console.error('Error uploading file:', error);
-            alert('Error uploading file!');
+            alert(error instanceof Error ? error.message : 'Error uploading file!');
         } finally {
             setUploading(false);
         }
