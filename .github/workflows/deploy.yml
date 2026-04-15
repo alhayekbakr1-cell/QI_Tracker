@@ -41,7 +41,7 @@ jobs:
           NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID }}
           NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID }}
       - name: Run Smoke Tests
-        run: npx playwright install --with-deps chromium \u0026\u0026 npm run test:smoke
+        run: npx playwright install --with-deps chromium && npm run test:smoke
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
@@ -66,7 +66,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dashboard/out
+          path: ./out
 
   deploy:
     environment:
