@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Project } from "@/types";
 import KanbanBoard from "@/components/KanbanBoard";
 import { ArrowLeft, Layout, Loader2 } from "lucide-react";
@@ -12,16 +12,13 @@ export default function WorkflowPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
-    const searchParams = useSearchParams();
     const supabase = createClient();
 
     useEffect(() => {
         async function fetchProjects() {
             const { data: { user } } = await supabase.auth.getUser();
-            const isLocal = window.location.hostname === 'localhost';
-            const bypass = isLocal && searchParams.get('bypassAuth') === 'true';
 
-            if (!user && !bypass) {
+            if (!user) {
                 router.push("/login");
                 return;
             }
@@ -35,8 +32,6 @@ export default function WorkflowPage() {
                     .eq("id", user.id)
                     .single();
                 userRole = profile?.role;
-            } else if (bypass) {
-                userRole = "Admin";
             }
 
             if (userRole !== "Admin" && userRole !== "Operator") {

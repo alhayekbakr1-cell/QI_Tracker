@@ -1,18 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-    PieChart, Pie, Cell, Legend 
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    PieChart, Pie, Cell, Legend
 } from "recharts";
-import { 
-    TrendingUp, Users, AlertTriangle, CheckCircle2, 
+import {
+    TrendingUp, Users, AlertTriangle, CheckCircle2,
     Clock, ArrowRight, Activity, ShieldCheck, Mail, Loader2
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types";
 import { differenceInDays, format } from "date-fns";
-import emailjs from '@emailjs/browser';
 
 const ADVENT_COLORS = ['#003057', '#00A3E0', '#FFBD31', '#007A53', '#626469'];
 
@@ -40,7 +39,6 @@ export default function ExecutiveDashboard() {
         );
     }
 
-    // 1. PROJECT STATUS DISTRIBUTION
     const statusCounts = projects.reduce((acc, p) => {
         const s = p.status || 'Idea';
         acc[s] = (acc[s] || 0) + 1;
@@ -49,13 +47,11 @@ export default function ExecutiveDashboard() {
 
     const statusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
-    // 2. STAGNANT PROJECTS (> 30 Days)
-    const stagnantProjects = projects.filter(p => {
+    const stagnantProjects = projects.filter((p) => {
         const lastUpdate = new Date(p.last_updated_date);
         return differenceInDays(new Date(), lastUpdate) >= 30 && p.status !== 'Impacted (Completed)';
     });
 
-    // 3. DEPARTMENTAL ACTIVITY (Top 5)
     const deptData = [
         { name: 'Internal Medicine', projects: 12, impact: 85 },
         { name: 'Cardiology', projects: 8, impact: 92 },
@@ -67,7 +63,7 @@ export default function ExecutiveDashboard() {
     const stats = [
         { label: "Total Projects", value: projects.length, icon: Activity, color: "text-advent-navy" },
         { label: "Stagnant", value: stagnantProjects.length, icon: AlertTriangle, color: "text-amber-600" },
-        { label: "High Impact", value: projects.filter(p => p.status === 'Impacted (Completed)').length, icon: CheckCircle2, color: "text-emerald-600" },
+        { label: "High Impact", value: projects.filter((p) => p.status === 'Impacted (Completed)').length, icon: CheckCircle2, color: "text-emerald-600" },
         { label: "Active Residents", value: 42, icon: Users, color: "text-advent-blue" },
     ];
 
@@ -75,29 +71,24 @@ export default function ExecutiveDashboard() {
         setIsNudging(p.id);
         try {
             const leadNames = p.lead_proponents || [];
-            const emails = leadNames.map(name => name.replace(/ /g, ".") + "@AdventHealth.com").join(",");
+            const emails = leadNames.map((name) => name.replace(/ /g, ".") + "@AdventHealth.com").join(",");
             const lastUpdated = new Date(p.last_updated_date);
             const daysSinceUpdate = differenceInDays(new Date(), lastUpdated);
+            const recipient = productionMode ? emails : "bakr.alhayek.md@adventhealth.com";
+            const subject = encodeURIComponent(`QI Update Requested: ${p.title}`);
+            const body = encodeURIComponent(
+                `Hi ${leadNames.join(", ") || "Team"},\n\n` +
+                `This is a formal nudge from the QI Chief office. Our records show "${p.title}" has not been updated in ${daysSinceUpdate} days.\n\n` +
+                `Please log in to the QI Tracker and provide an update on your progress, metrics, and any barriers you are facing.\n\n` +
+                `Last recorded update: ${format(lastUpdated, 'MMM d, yyyy')}\n` +
+                `Tracker Link: ${window.location.origin}/QI_Tracker/\n\n` +
+                `Thanks,\nQI Chief`
+            );
 
-            const SERVICE_ID = 'service_cmylzni';
-            const TEMPLATE_ID = 'template_zp4ihsn';
-            const PUBLIC_KEY = 'FUMeORBrHGR5uaims';
-
-            const templateParams = {
-                lead_email: productionMode ? emails : "bakr.alhayek.md@adventhealth.com",
-                to_name: leadNames.join(", "),
-                project_title: p.title,
-                days_inactive: daysSinceUpdate,
-                last_update: format(lastUpdated, 'MMM d, yyyy'),
-                message: `This is a formal nudge from the QI Chief office. Your project "${p.title}" hasn't been updated in over 30 days. Please log in and provide an update on your progress and any barriers you are facing.`,
-                reply_to: 'noreply@qitracker.com'
-            };
-
-            await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
-            alert(`✅ Nudge sent to ${productionMode ? emails : 'YOU (Test Mode)'}`);
-        } catch (err: any) {
-            console.error("Nudge Error:", err);
-            alert(`❌ Failed: ${err.text || err.message}`);
+            window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+        } catch (err: unknown) {
+            console.error("Nudge draft error:", err);
+            alert(`Failed to open email draft: ${err instanceof Error ? err.message : "Unknown error"}`);
         } finally {
             setIsNudging(null);
         }
@@ -121,10 +112,10 @@ export default function ExecutiveDashboard() {
                     <div className="flex flex-col items-end">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Mode</span>
                         <span className={`text-xs font-black ${productionMode ? 'text-emerald-600' : 'text-amber-600'}`}>
-                            {productionMode ? 'PRODUCTION' : 'TEST (SENDS TO YOU)'}
+                            {productionMode ? 'PRODUCTION' : 'TEST (DRAFTS TO YOU)'}
                         </span>
                     </div>
-                    <button 
+                    <button
                         onClick={() => setProductionMode(!productionMode)}
                         className={`w-12 h-6 rounded-full transition-all relative ${productionMode ? 'bg-emerald-500' : 'bg-slate-200'}`}
                     >
@@ -133,7 +124,6 @@ export default function ExecutiveDashboard() {
                 </div>
             </header>
 
-            {/* QUICK STATS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
                 {stats.map((s, idx) => (
                     <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -171,11 +161,11 @@ export default function ExecutiveDashboard() {
                                         <Cell key={`cell-${index}`} fill={ADVENT_COLORS[index % ADVENT_COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip 
+                                <Tooltip
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                     itemStyle={{ fontWeight: 'bold' }}
                                 />
-                                <Legend verticalAlign="bottom" height={36}/>
+                                <Legend verticalAlign="bottom" height={36} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
@@ -192,7 +182,7 @@ export default function ExecutiveDashboard() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94A3B8' }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94A3B8' }} />
-                                <Tooltip 
+                                <Tooltip
                                     cursor={{ fill: '#F1F5F9' }}
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                 />
@@ -231,13 +221,13 @@ export default function ExecutiveDashboard() {
                                         <td className="py-4 text-xs font-medium text-slate-500">{p.lead_proponents?.join(", ")}</td>
                                         <td className="py-4 text-xs font-bold text-slate-400">{p.last_updated_date}</td>
                                         <td className="py-4 text-right">
-                                            <button 
+                                            <button
                                                 onClick={() => handleNudge(p)}
                                                 disabled={isNudging === p.id}
                                                 className="flex items-center gap-2 text-advent-blue font-black text-[10px] uppercase tracking-widest hover:underline disabled:opacity-50 ml-auto"
                                             >
                                                 {isNudging === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
-                                                {isNudging === p.id ? "Sending..." : "Nudge Leads"}
+                                                {isNudging === p.id ? "Opening..." : "Draft Nudge"}
                                             </button>
                                         </td>
                                     </tr>

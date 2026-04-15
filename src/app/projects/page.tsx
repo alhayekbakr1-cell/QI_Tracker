@@ -28,10 +28,8 @@ export default function ProjectsPage() {
     useEffect(() => {
         async function fetchProjects() {
             const { data: { user } } = await supabase.auth.getUser();
-            const isLocal = window.location.hostname === 'localhost';
-            const bypass = isLocal && searchParams.get('bypassAuth') === 'true';
 
-            if (!user && !bypass) {
+            if (!user) {
                 router.push("/login");
                 return;
             }

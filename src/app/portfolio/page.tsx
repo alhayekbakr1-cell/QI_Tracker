@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Project } from "@/types";
 import ProjectCard from "@/components/ProjectCard";
@@ -24,38 +25,31 @@ export default function PortfolioPage() {
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
     const supabase = createClient();
 
     useEffect(() => {
         async function fetchMyData() {
-            // Check for simulated profile first (for browser testing)
-            const simulated = localStorage.getItem('simulatedUserProfile');
-            const isLocal = window.location.hostname === 'localhost';
-            const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
-
             let user: any = null;
             let profile: any = null;
 
-            if (simulated) {
-                profile = JSON.parse(simulated);
-                user = { id: profile.id, email: profile.email || "simulated@example.com" };
-                setUserProfile(profile);
-                setUserEmail(user.email);
-            } else {
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                if (!authUser && !bypass) return;
-                user = authUser;
-                setUserEmail(user?.email ?? "Guest");
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (!authUser) {
+                router.push("/login");
+                return;
+            }
 
-                if (user) {
-                    const { data: profileData } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', user.id)
-                        .single();
-                    profile = profileData;
-                    setUserProfile(profile);
-                }
+            user = authUser;
+            setUserEmail(user?.email ?? "Guest");
+
+            if (user) {
+                const { data: profileData } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+                profile = profileData;
+                setUserProfile(profile);
             }
 
             if (!user && !profile) {
@@ -101,7 +95,7 @@ export default function PortfolioPage() {
             setIsLoading(false);
         }
         fetchMyData();
-    }, [supabase]);
+    }, [router, supabase]);
 
     if (isLoading) {
         return <div className="flex justify-center items-center min-h-screen">Loading Portfolio...</div>;

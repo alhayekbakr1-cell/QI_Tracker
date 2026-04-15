@@ -1,9 +1,8 @@
 "use client"
 
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ShieldAlert, Mail, Lock, User, Info, Loader2, ArrowRight } from "lucide-react";
+import { ShieldAlert, Mail, User, Info, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -12,11 +11,22 @@ export default function LoginPage() {
     const [isSignup, setIsSignup] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
-    const router = useRouter()
     const supabase = createClient()
 
     const validateDomain = (emailAddr: string) => {
         return emailAddr.trim().toLowerCase().endsWith('@adventhealth.com')
+    }
+
+    const getErrorMessage = (err: unknown) => {
+        return err instanceof Error ? err.message : "An unexpected error occurred."
+    }
+
+    const getRedirectUrl = () => {
+        if (typeof window === "undefined") {
+            return "https://alhayekbakr1-cell.github.io/QI_Tracker/"
+        }
+
+        return `${window.location.origin}/QI_Tracker/`
     }
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -26,32 +36,36 @@ export default function LoginPage() {
         setSuccess(null)
 
         try {
-            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
+            if (!validateDomain(email)) {
+                setError("Access is restricted to @adventhealth.com email addresses.")
+                setIsLoading(false)
+                return
+            }
 
             if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
                 throw new Error("Supabase configuration is missing. Please check your environment variables.")
             }
 
-            const { error: loginError } = await supabase.auth.signInWithPassword({
+            const { error: loginError } = await supabase.auth.signInWithOtp({
                 email: email.trim().toLowerCase(),
-                password: institutionalPass,
+                options: {
+                    emailRedirectTo: getRedirectUrl(),
+                    shouldCreateUser: false,
+                },
             })
 
             if (loginError) {
-                setError(loginError.message === "Invalid login credentials"
-                    ? "User not found or not registered. Did you register first?"
+                setError(loginError.message === "Signups not allowed for otp"
+                    ? "Email link sign-in is not enabled yet in Supabase. Turn on email OTP for this project."
                     : loginError.message)
                 setIsLoading(false)
             } else {
-                router.push('/')
-                // For static sites, we might need a small delay or a force reload
-                setTimeout(() => {
-                    window.location.href = '/QI_Tracker/'
-                }, 500)
+                setSuccess("Check your AdventHealth inbox for a secure sign-in link.")
+                setIsLoading(false)
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Login catch block:", err)
-            setError(err.message || "An unexpected error occurred during login.")
+            setError(getErrorMessage(err))
             setIsLoading(false)
         }
     }
@@ -75,16 +89,15 @@ export default function LoginPage() {
                 return
             }
 
-            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
-
             if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
                 throw new Error("Supabase configuration is missing.")
             }
 
-            const { error: signUpError } = await supabase.auth.signUp({
+            const { error: signUpError } = await supabase.auth.signInWithOtp({
                 email: email.trim().toLowerCase(),
-                password: institutionalPass,
                 options: {
+                    emailRedirectTo: getRedirectUrl(),
+                    shouldCreateUser: true,
                     data: {
                         full_name: fullName.trim(),
                     }
@@ -95,22 +108,13 @@ export default function LoginPage() {
                 setError(signUpError.message)
                 setIsLoading(false)
             } else {
-                const { error: loginError } = await supabase.auth.signInWithPassword({
-                    email: email.trim().toLowerCase(),
-                    password: institutionalPass,
-                })
-
-                if (loginError) {
-                    setSuccess("Account created! Please try to Access Portal now.")
-                    setIsSignup(false)
-                    setIsLoading(false)
-                } else {
-                    window.location.href = '/QI_Tracker/'
-                }
+                setSuccess("Registration request received. Check your AdventHealth inbox to confirm your secure access link.")
+                setIsSignup(false)
+                setIsLoading(false)
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Signup catch block:", err)
-            setError(err.message || "An unexpected error occurred during registration.")
+            setError(getErrorMessage(err))
             setIsLoading(false)
         }
     }
@@ -256,7 +260,7 @@ export default function LoginPage() {
                         <div className="flex items-start gap-4 text-slate-400 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                             <Info className="w-5 h-5 mt-0.5 flex-shrink-0 text-advent-sky" />
                             <p className="text-[10px] leading-relaxed font-bold">
-                                Access is restricted to **institutional personnel**. This system is monitored for security compliance. Faculty elevation is automated.
+                                Access is restricted to institutional personnel using AdventHealth email verification. This system is monitored for security compliance.
                             </p>
                         </div>
                     </div>

@@ -2,6 +2,8 @@
 
 A professional, AI-powered platform for tracking Quality Improvement (QI) projects, academic scholarship, and institutional impact for residency programs.
 
+This public repository is intentionally limited to application source and deployment code. Keep operational credentials, private runbooks, backups, and sensitive administrative notes outside the repository.
+
 ## 🌟 Key Features
 
 * **AI Academic Consultant**: Real-time methodology guidance.
@@ -18,7 +20,8 @@ The site is deployed as a static export to **GitHub Pages**.
 
 ## 🛠 Maintenance & Handover
 
-For detailed instructions on managing the database, adding users, and handing over the project to a new Chief Resident, please refer to the **[MAINTENANCE.md](./MAINTENANCE.md)** guide.
+For the public-safe maintenance checklist, refer to **[MAINTENANCE.md](./MAINTENANCE.md)**.
+For credential and deployment security expectations, refer to **[SECURITY.md](./SECURITY.md)**.
 
 ## 💻 Local Development
 
