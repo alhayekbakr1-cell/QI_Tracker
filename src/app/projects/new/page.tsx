@@ -67,10 +67,8 @@ export default function NewProjectPage() {
     useEffect(() => {
         async function checkAuth() {
             const { data: { user } } = await supabase.auth.getUser();
-            const isLocal = window.location.hostname === 'localhost';
-            const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
 
-            if (!user && !bypass) {
+            if (!user) {
                 router.push("/login");
                 return;
             }

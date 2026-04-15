@@ -1,6 +1,6 @@
 # QI Chief Tracker Maintenance Guide
 
-This document provides the essential information for maintaining the **QI Chief Tracker** and handing it over to future Chief Residents.
+This document contains the public-safe maintenance checklist for the **QI Chief Tracker**. Keep private operational runbooks, backup locations, and credential transfer procedures outside this repository.
 
 ## 🚀 Quick Start
 
@@ -22,6 +22,14 @@ npm run dev
 * **Database**: Supabase (PostgreSQL).
 * **AI**: Google Gemini Pro (via `@google/generative-ai`).
 * **Hosting**: GitHub Pages (Static Site).
+
+## 🔐 Security Baseline
+
+1. Protect GitHub, Supabase, and maintainer email accounts with MFA.
+2. Never commit secrets, data exports, screenshots with sensitive content, or internal handoff notes to this repository.
+3. Store backups outside the published GitHub Pages content and outside the public repository.
+4. Use Supabase Auth email verification rather than shared credentials embedded in frontend code.
+5. Review GitHub Actions secrets and Supabase keys whenever maintainers change.
 
 ## 🔐 Administration
 
@@ -63,13 +71,13 @@ Deployments are automatic upon pushing to the `main` branch.
 * **Repository**: `alhayekbakr1-cell/QI_Tracker`
 * **Live Site**: `https://alhayekbakr1-cell.github.io/QI_Tracker/`
 
-## 🤝 Handover Checklist
+## 🤝 Public Handover Checklist
 
 When passing this project to the next Chief:
 
 1. Ensure they have `ADMIN` access to the GitHub Repository.
 2. Ensure they have access to the **Supabase Dashboard**.
-3. Share the `GOOGLE_GENERATIVE_AI_API_KEY` with them securely.
-4. Direct them to this `MAINTENANCE.md` file.
+3. Rotate or reissue secrets in the destination secret manager instead of sharing old copies.
+4. Share the private operational runbook through an approved internal channel, not through this repository.
 
-*Built with ❤️ for Adventist Health GME.*
+*Built with care for Adventist Health GME.*

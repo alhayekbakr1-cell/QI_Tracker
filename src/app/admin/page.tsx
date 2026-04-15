@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Profile, UserRole } from "@/types";
 import { Users, FileText, BarChart3, Settings, Shield, Plus, Upload, Trash2, Edit, Save, Trash, AlertCircle, RefreshCw, Loader2, Search, Layout } from 'lucide-react';
@@ -24,16 +24,13 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const router = useRouter();
-    const searchParams = useSearchParams();
     const supabase = createClient();
 
     useEffect(() => {
         async function fetchAdminData() {
             const { data: { user } } = await supabase.auth.getUser();
-            const isLocal = window.location.hostname === 'localhost';
-            const bypass = isLocal && searchParams.get('bypassAuth') === 'true';
 
-            if (!user && !bypass) {
+            if (!user) {
                 router.push("/login");
                 return;
             }
@@ -46,8 +43,6 @@ export default function AdminPage() {
                     .eq("id", user.id)
                     .single();
                 profileData = data;
-            } else if (bypass) {
-                profileData = { role: "Admin" }; // Assume Admin if bypassed
             }
 
             if (profileData?.role !== "Admin") {

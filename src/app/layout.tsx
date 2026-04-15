@@ -8,6 +8,17 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "QI Project Tracker | AdventHealth",
   description: "Secure, role-based QI project tracking dashboard.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
+  referrer: "same-origin",
 };
 
 export default function RootLayout({

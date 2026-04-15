@@ -66,10 +66,8 @@ export default function ProjectDetailPage() {
 
         async function fetchData() {
             const { data: { user } } = await supabase.auth.getUser();
-            const isLocal = window.location.hostname === 'localhost';
-            const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
 
-            if (!user && !bypass) {
+            if (!user) {
                 router.push("/login");
                 return;
             }
@@ -82,8 +80,6 @@ export default function ProjectDetailPage() {
                     .eq('id', user.id)
                     .single();
                 setUserProfile(profile);
-            } else if (bypass) {
-                setUserProfile({ role: 'Admin', full_name: 'Simulated User' } as any);
             }
 
             // Fetch project details
