@@ -1,8 +1,9 @@
 "use client"
 
 import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ShieldAlert, Mail, User, Info, ArrowRight } from "lucide-react";
+import { ShieldAlert, Mail, Lock, User, Info, Loader2, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -11,36 +12,11 @@ export default function LoginPage() {
     const [isSignup, setIsSignup] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const router = useRouter()
     const supabase = createClient()
 
     const validateDomain = (emailAddr: string) => {
         return emailAddr.trim().toLowerCase().endsWith('@adventhealth.com')
-    }
-
-    const getFriendlyAuthError = (message: string) => {
-        const normalized = message.trim().toLowerCase()
-
-        if (normalized === "signups not allowed for otp") {
-            return "Email link sign-in is not enabled yet in Supabase. Turn on email OTP for this project."
-        }
-
-        if (normalized.includes("rate limit") || normalized.includes("email rate limit exceeded")) {
-            return "Too many email requests were sent recently. Please wait about 60 seconds and try again. If this keeps happening, check Supabase Authentication > Rate Limits."
-        }
-
-        return message
-    }
-
-    const getErrorMessage = (err: unknown) => {
-        return err instanceof Error ? err.message : "An unexpected error occurred."
-    }
-
-    const getRedirectUrl = () => {
-        if (typeof window === "undefined") {
-            return "https://alhayekbakr1-cell.github.io/QI_Tracker/"
-        }
-
-        return `${window.location.origin}/QI_Tracker/`
     }
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -50,34 +26,31 @@ export default function LoginPage() {
         setSuccess(null)
 
         try {
-            if (!validateDomain(email)) {
-                setError("Access is restricted to @adventhealth.com email addresses.")
-                setIsLoading(false)
-                return
-            }
+            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
 
             if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
                 throw new Error("Supabase configuration is missing. Please check your environment variables.")
             }
 
-            const { error: loginError } = await supabase.auth.signInWithOtp({
+            const { error: loginError } = await supabase.auth.signInWithPassword({
                 email: email.trim().toLowerCase(),
-                options: {
-                    emailRedirectTo: getRedirectUrl(),
-                    shouldCreateUser: false,
-                },
+                password: institutionalPass,
             })
 
             if (loginError) {
-                setError(getFriendlyAuthError(loginError.message))
+                setError(loginError.message === "Invalid login credentials"
+                    ? "User not found or not registered. Did you register first?"
+                    : loginError.message)
                 setIsLoading(false)
             } else {
-                setSuccess("Check your AdventHealth inbox for a secure sign-in link.")
-                setIsLoading(false)
+                router.push('/')
+                setTimeout(() => {
+                    window.location.href = '/QI_Tracker/'
+                }, 500)
             }
-        } catch (err: unknown) {
+        } catch (err: any) {
             console.error("Login catch block:", err)
-            setError(getErrorMessage(err))
+            setError(err.message || "An unexpected error occurred during login.")
             setIsLoading(false)
         }
     }
@@ -101,15 +74,16 @@ export default function LoginPage() {
                 return
             }
 
+            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
+
             if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
                 throw new Error("Supabase configuration is missing.")
             }
 
-            const { error: signUpError } = await supabase.auth.signInWithOtp({
+            const { error: signUpError } = await supabase.auth.signUp({
                 email: email.trim().toLowerCase(),
+                password: institutionalPass,
                 options: {
-                    emailRedirectTo: getRedirectUrl(),
-                    shouldCreateUser: true,
                     data: {
                         full_name: fullName.trim(),
                     }
@@ -117,33 +91,39 @@ export default function LoginPage() {
             })
 
             if (signUpError) {
-                setError(getFriendlyAuthError(signUpError.message))
+                setError(signUpError.message)
                 setIsLoading(false)
             } else {
-                setSuccess("Registration request received. Check your AdventHealth inbox to confirm your secure access link.")
-                setIsSignup(false)
-                setIsLoading(false)
+                const { error: loginError } = await supabase.auth.signInWithPassword({
+                    email: email.trim().toLowerCase(),
+                    password: institutionalPass,
+                })
+
+                if (loginError) {
+                    setSuccess("Account created! Please try to Access Portal now.")
+                    setIsSignup(false)
+                    setIsLoading(false)
+                } else {
+                    window.location.href = '/QI_Tracker/'
+                }
             }
-        } catch (err: unknown) {
+        } catch (err: any) {
             console.error("Signup catch block:", err)
-            setError(getErrorMessage(err))
+            setError(err.message || "An unexpected error occurred during registration.")
             setIsLoading(false)
         }
     }
 
     return (
         <div className="flex-1 min-h-screen flex flex-col items-center justify-center p-6 bg-[#F8FAFC] relative overflow-hidden">
-            {/* Background Sophistication */}
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-advent-navy via-advent-sky to-advent-green" />
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-advent-navy/5 blur-[120px] -mr-64 -mt-64 rounded-full" />
             <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-advent-green/5 blur-[100px] -ml-48 -mb-48 rounded-full" />
 
             <div className="w-full max-w-lg z-10 space-y-10">
-                {/* Official AdventHealth Wordmark Style */}
                 <div className="text-center space-y-4">
                     <div className="flex justify-center mb-6">
                         <div className="relative">
-                            {/* Butterfly-inspired Iconography */}
                             <div className="flex gap-1 animate-pulse duration-[3000ms]">
                                 <div className="w-4 h-4 rounded-tr-xl rounded-bl-xl bg-advent-sky" />
                                 <div className="w-4 h-4 rounded-tl-xl rounded-br-xl bg-advent-navy" />
@@ -272,13 +252,12 @@ export default function LoginPage() {
                         <div className="flex items-start gap-4 text-slate-400 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                             <Info className="w-5 h-5 mt-0.5 flex-shrink-0 text-advent-sky" />
                             <p className="text-[10px] leading-relaxed font-bold">
-                                Access is restricted to institutional personnel using AdventHealth email verification. This system is monitored for security compliance.
+                                Access is restricted to institutional personnel. This system is monitored for security compliance. Faculty elevation is automated.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Data Integrity Footer */}
                 <div className="p-6 bg-amber-50 rounded-[2rem] border border-amber-100 flex gap-5">
                     <div className="flex-shrink-0 w-12 h-12 bg-amber-100/50 rounded-2xl flex items-center justify-center text-amber-600 border border-amber-200">
                         <ShieldAlert className="w-6 h-6 outline-none" />
