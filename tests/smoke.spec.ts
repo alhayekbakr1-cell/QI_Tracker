@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3000/QI_Tracker';
 
 test('has title', async ({ page }) => {
     await page.goto(BASE_URL);
@@ -14,7 +14,7 @@ test('can navigate to login', async ({ page }) => {
 });
 
 test('public dashboard renders', async ({ page }) => {
-    await page.goto(`${BASE_URL}/QI_Tracker/projects/`);
+    await page.goto(`${BASE_URL}/projects/`);
     // It might redirect if not logged in, but we check if the basic structure is there
     const bodyText = await page.innerText('body');
     expect(bodyText).toContain('QI Project Tracker');

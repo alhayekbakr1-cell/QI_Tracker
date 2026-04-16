@@ -41,10 +41,11 @@ jobs:
           NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID }}
           NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID }}
       - name: Run Smoke Tests
-        run: npx playwright install --with-deps chromium && npm run test:smoke
+        run: npx playwright install --with-deps chromium && (npm run dev > /tmp/qitracker-dev.log 2>&1 &) && npx wait-on http://127.0.0.1:3000/QI_Tracker/ && npm run test:smoke
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
           NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
           NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID }}
