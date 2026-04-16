@@ -17,6 +17,20 @@ export default function LoginPage() {
         return emailAddr.trim().toLowerCase().endsWith('@adventhealth.com')
     }
 
+    const getFriendlyAuthError = (message: string) => {
+        const normalized = message.trim().toLowerCase()
+
+        if (normalized === "signups not allowed for otp") {
+            return "Email link sign-in is not enabled yet in Supabase. Turn on email OTP for this project."
+        }
+
+        if (normalized.includes("rate limit") || normalized.includes("email rate limit exceeded")) {
+            return "Too many email requests were sent recently. Please wait about 60 seconds and try again. If this keeps happening, check Supabase Authentication > Rate Limits."
+        }
+
+        return message
+    }
+
     const getErrorMessage = (err: unknown) => {
         return err instanceof Error ? err.message : "An unexpected error occurred."
     }
@@ -55,9 +69,7 @@ export default function LoginPage() {
             })
 
             if (loginError) {
-                setError(loginError.message === "Signups not allowed for otp"
-                    ? "Email link sign-in is not enabled yet in Supabase. Turn on email OTP for this project."
-                    : loginError.message)
+                setError(getFriendlyAuthError(loginError.message))
                 setIsLoading(false)
             } else {
                 setSuccess("Check your AdventHealth inbox for a secure sign-in link.")
@@ -105,7 +117,7 @@ export default function LoginPage() {
             })
 
             if (signUpError) {
-                setError(signUpError.message)
+                setError(getFriendlyAuthError(signUpError.message))
                 setIsLoading(false)
             } else {
                 setSuccess("Registration request received. Check your AdventHealth inbox to confirm your secure access link.")
