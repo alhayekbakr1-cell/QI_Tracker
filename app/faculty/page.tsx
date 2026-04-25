@@ -21,6 +21,8 @@ import {
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
 import { format } from "date-fns";
+import { createNotifications } from "@/utils/createNotification";
+import emailjs from "@emailjs/browser";
 
 type FilterMode = "all" | "protocol" | "pdsa";
 
@@ -81,10 +83,52 @@ export default function FacultyDashboard() {
             .from('projects')
             .update({ [field]: newValue })
             .eq('id', project.id);
+
         if (!error) {
             setAssignedProjects(prev =>
                 prev.map(p => p.id === project.id ? { ...p, [field]: newValue } : p)
             );
+
+            // Fire notifications and email when approving (not revoking)
+            if (newValue) {
+                const isProtocol = field === "faculty_approved_protocol";
+                const approvalLabel = isProtocol ? "Protocol" : "PDSA";
+                const mentorName = userProfile?.full_name || "Your faculty mentor";
+
+                // In-app notifications for all linked resident IDs
+                const recipientIds = [...(project.lead_proponent_ids || []), ...(project.proponent_ids || [])]
+                    .filter((id, i, arr) => arr.indexOf(id) === i); // dedupe
+
+                if (recipientIds.length > 0) {
+                    await createNotifications(recipientIds.map(uid => ({
+                        user_id: uid,
+                        type: "faculty_approval" as const,
+                        title: `${approvalLabel} Approved ✓`,
+                        message: `${mentorName} approved your ${approvalLabel.toLowerCase()} for "${project.title}"`,
+                        project_id: project.id,
+                    })));
+                }
+
+                // Email notification via EmailJS (test mode — sends to director)
+                try {
+                    await emailjs.send(
+                        'service_cmylzni',
+                        'template_zp4ihsn',
+                        {
+                            lead_email: "bakr.alhayek.md@adventhealth.com", // TEST MODE
+                            to_name: project.lead_proponents[0] || "Resident",
+                            project_title: project.title,
+                            days_inactive: 0,
+                            last_update: new Date().toLocaleDateString(),
+                            message: `${mentorName} has approved your ${approvalLabel} for "${project.title}". Log in to the QI Tracker to review your project status.`,
+                            reply_to: 'noreply@qitracker.com'
+                        },
+                        'FUMeORBrHGR5uaims'
+                    );
+                } catch (emailErr) {
+                    console.warn('[Faculty] Email notification failed:', emailErr);
+                }
+            }
         }
         setApprovingId(null);
     }

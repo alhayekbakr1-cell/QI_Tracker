@@ -10,6 +10,7 @@ import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
 import BulkPersonnelImport from "@/components/BulkPersonnelImport";
 import BulkProjectImport from "@/components/BulkProjectImport";
 import ErrorMonitor from "@/components/Admin/ErrorMonitor";
+import StaleNudgePanel from "@/components/Admin/StaleNudgePanel";
 import Link from "next/link";
 import { DEFAULT_CONFERENCES, fetchRegistry, Conference } from "@/constants/conferences";
 import LiveConferenceVerify from "@/components/LiveConferenceVerify";
@@ -165,6 +166,7 @@ export default function AdminPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
+                    <StaleNudgePanel />
                     <ExecutiveReportCenter />
                     <ErrorMonitor />
                 </div>

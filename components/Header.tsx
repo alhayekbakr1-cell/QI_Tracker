@@ -4,7 +4,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X, Users, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import NotificationBell from './NotificationBell'
 
 interface HeaderProps {
     userEmail?: string;
@@ -17,6 +18,13 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
     const pathname = usePathname()
     const supabase = createClient()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const [userId, setUserId] = useState<string | null>(null)
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => {
+            setUserId(data.user?.id ?? null)
+        })
+    }, [supabase])
 
     const formatName = (email?: string, name?: string | null) => {
         if (name) return name;
@@ -101,6 +109,13 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                         >
                             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
+
+                        {/* Notification Bell (Desktop) */}
+                        {userId && (
+                            <div className="hidden md:block">
+                                <NotificationBell userId={userId} />
+                            </div>
+                        )}
 
                         {/* User Profile & Actions (Desktop) */}
                         <div className="hidden md:flex items-center gap-6">
