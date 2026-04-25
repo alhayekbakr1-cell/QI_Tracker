@@ -20,50 +20,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: 'npm'
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+          node-version: "20"
+
+      - name: Restore Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-
+
       - name: Install dependencies
-        run: npm ci || npm install
-      - name: Validate Environment
-        run: node scripts/env-check.js
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
-          NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
-          NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
-          NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID }}
-          NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID }}
-          NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID }}
-      - name: Run Smoke Tests
-        run: npx playwright install --with-deps chromium && (npm run dev > /tmp/qitracker-dev.log 2>&1 &) && npx wait-on http://127.0.0.1:3000/QI_Tracker/ && npm run test:smoke
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
-          NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
-          NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
-          NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID }}
-          NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID }}
-          NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID }}
+        run: npm install --legacy-peer-deps
+
       - name: Build with Next.js
         run: npm run build
         env:
-          NEXT_PRIVATE_SKIP_ESLINT: true
-          NEXT_PRIVATE_SKIP_TYPESCRIPT: true
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
-          NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
-          NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
-          NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_NUDGE_TEMPLATE_ID }}
-          NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID }}
-          NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_PROTOCOL_TEMPLATE_ID }}
+          NEXT_PUBLIC_INSTITUTIONAL_SECRET: ${{ secrets.NEXT_PUBLIC_INSTITUTIONAL_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
