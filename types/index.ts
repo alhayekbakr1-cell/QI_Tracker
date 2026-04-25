@@ -37,6 +37,18 @@ export interface Project {
     total_patients_impacted?: number | null;
     estimated_cost_savings?: number | null;
     abstract_summary?: string | null;
+    charter?: ProjectCharter | null;
+}
+
+export interface ProjectCharter {
+    problemStatement: string;
+    aimStatement: string;
+    teamMembers: string;
+    scopeIn: string;
+    scopeOut: string;
+    timeline: string;
+    resources: string;
+    successMeasures: string;
 }
 
 export interface Comment {

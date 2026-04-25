@@ -11,7 +11,6 @@ import {
     ArrowLeft,
     MessageSquare,
     Paperclip,
-    History,
     TrendingUp,
     Sparkles,
     Info,
@@ -120,7 +119,7 @@ export default function ProjectDetailPage() {
         return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
     }
 
-    const workflow = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains'];
+    const workflow = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains', 'Impacted (Completed)'];
     const currentIndex = workflow.indexOf(project.status);
 
     return (
@@ -369,10 +368,6 @@ export default function ProjectDetailPage() {
                             </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />
-                        </div>
-
                         <div className="pt-6 border-t border-slate-100">
                             <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
                                 <Trophy className="w-4 h-4 text-amber-500" />
@@ -441,12 +436,3 @@ function DetailItem({ label, value, icon, isLinked }: { label: string, value: st
     )
 }
 
-function HistoryItem({ date, action, user }: { date: string, action: string, user: string }) {
-    return (
-        <div className="border-l-2 border-slate-100 pl-4 py-1">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{date}</p>
-            <p className="text-xs font-bold text-slate-700 leading-tight my-1">{action}</p>
-            <p className="text-[10px] text-slate-500 italic">by {user}</p>
-        </div>
-    )
-}

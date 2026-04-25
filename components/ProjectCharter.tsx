@@ -3,21 +3,11 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sparkles, Save, FileText, CheckCircle2, Loader2, ChevronDown, ChevronUp } from "lucide-react"
-import { Project } from "@/types"
+import { Project, ProjectCharter as CharterType } from "@/types"
 import { askAI } from "@/utils/ai"
+import { createClient } from "@/utils/supabase/client"
 
-interface Charter {
-  problemStatement: string
-  aimStatement: string
-  teamMembers: string
-  scopeIn: string
-  scopeOut: string
-  timeline: string
-  resources: string
-  successMeasures: string
-}
-
-const EMPTY_CHARTER: Charter = {
+const EMPTY_CHARTER: CharterType = {
   problemStatement: "",
   aimStatement: "",
   teamMembers: "",
@@ -28,7 +18,7 @@ const EMPTY_CHARTER: Charter = {
   successMeasures: "",
 }
 
-const SECTIONS: { key: keyof Charter; label: string; placeholder: string; hint: string }[] = [
+const SECTIONS: { key: keyof CharterType; label: string; placeholder: string; hint: string }[] = [
   {
     key: "problemStatement",
     label: "Problem Statement",
@@ -80,34 +70,58 @@ const SECTIONS: { key: keyof Charter; label: string; placeholder: string; hint: 
 ]
 
 export default function ProjectCharter({ project }: { project: Project }) {
-  const storageKey = `qi-charter-${project.id}`
-  const [charter, setCharter] = useState<Charter>(EMPTY_CHARTER)
-  const [saved, setSaved] = useState(false)
+  const supabase = createClient()
+  const [charter, setCharter] = useState<CharterType>(EMPTY_CHARTER)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [completionPct, setCompletionPct] = useState(0)
 
+  // Load from Supabase or migrate from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey)
-    if (stored) {
-      try { setCharter(JSON.parse(stored)) } catch {}
+    if (project.charter) {
+      setCharter(project.charter)
+    } else {
+      // One-time migration: pull from localStorage if it exists
+      const stored = localStorage.getItem(`qi-charter-${project.id}`)
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          setCharter(parsed)
+          // Auto-save migrated data to Supabase then remove from localStorage
+          supabase
+            .from("projects")
+            .update({ charter: parsed })
+            .eq("id", project.id)
+            .then(() => localStorage.removeItem(`qi-charter-${project.id}`))
+        } catch {}
+      }
     }
-  }, [storageKey])
+  }, [project.id, project.charter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const filled = Object.values(charter).filter(v => v.trim().length > 0).length
     setCompletionPct(Math.round((filled / SECTIONS.length) * 100))
   }, [charter])
 
-  function update(key: keyof Charter, value: string) {
-    setSaved(false)
+  function update(key: keyof CharterType, value: string) {
+    setSaveStatus("idle")
     setCharter(prev => ({ ...prev, [key]: value }))
   }
 
-  function save() {
-    localStorage.setItem(storageKey, JSON.stringify(charter))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  async function save() {
+    setSaveStatus("saving")
+    const { error } = await supabase
+      .from("projects")
+      .update({ charter })
+      .eq("id", project.id)
+    if (error) {
+      console.error("Charter save error:", error)
+      setSaveStatus("error")
+    } else {
+      setSaveStatus("saved")
+      setTimeout(() => setSaveStatus("idle"), 2500)
+    }
   }
 
   async function aiPrefill() {
@@ -142,9 +156,9 @@ Make each section substantive (2-4 sentences), professional, and specific to the
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         setCharter(parsed)
-        localStorage.setItem(storageKey, JSON.stringify(parsed))
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2500)
+        await supabase.from("projects").update({ charter: parsed }).eq("id", project.id)
+        setSaveStatus("saved")
+        setTimeout(() => setSaveStatus("idle"), 2500)
       }
     } catch (err) {
       console.error("Charter AI error:", err)
@@ -205,10 +219,15 @@ Make each section substantive (2-4 sentences), professional, and specific to the
             </button>
             <button
               onClick={save}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+              disabled={saveStatus === "saving"}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-60"
             >
-              {saved ? (
+              {saveStatus === "saving" ? (
+                <><Loader2 size={12} className="animate-spin" /> Saving...</>
+              ) : saveStatus === "saved" ? (
                 <><CheckCircle2 size={12} className="text-green-500" /> Saved</>
+              ) : saveStatus === "error" ? (
+                <><span className="text-red-500 text-xs">✕</span> Error — retry</>
               ) : (
                 <><Save size={12} /> Save Charter</>
               )}
@@ -236,9 +255,12 @@ Make each section substantive (2-4 sentences), professional, and specific to the
           <div className="mt-6 flex justify-end">
             <button
               onClick={save}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-[#004F9F] text-white rounded-xl hover:bg-[#003d7a] transition-colors"
+              disabled={saveStatus === "saving"}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-[#004F9F] text-white rounded-xl hover:bg-[#003d7a] transition-colors disabled:opacity-60"
             >
-              {saved ? (
+              {saveStatus === "saving" ? (
+                <><Loader2 size={14} className="animate-spin" /> Saving...</>
+              ) : saveStatus === "saved" ? (
                 <><CheckCircle2 size={14} /> Charter Saved!</>
               ) : (
                 <><Save size={14} /> Save Charter</>
