@@ -228,14 +228,14 @@ Updates and Barriers: ${projectData.updates_and_barriers || 'None provided'}`;
 }
 
 /**
- * Returns a JSON array of tag strings like ["HPVVaccination", "QualityImprovement"]
+ * Returns a JSON array of tag strings like ["HPV Vaccination", "Quality Improvement"]
  * Uses JSON mode — no prose possible.
  */
 export async function getSuggestedTags(title: string, category: string): Promise<string[]> {
-  const prompt = `Return a JSON array of exactly 5 short medical or QI keyword tags for this project.
-Each tag must be a single CamelCase word (no spaces, no # prefix, no punctuation).
+  const prompt = `Return a JSON array of exactly 5 highly specific, professional clinical or quality improvement tags for this project.
+Do NOT use camel case unless it's an acronym. Use normal title-cased short phrases (e.g., "Patient Safety", "Sepsis Protocol", "Outpatient Workflow").
 Project: "${title}" | Category: "${category}"
-Example output: ["SepsisBundle","PatientSafety","PDSA","Outpatient","OutcomeMetric"]`;
+Example output: ["Sepsis Bundle", "Patient Safety", "PDSA Cycle", "Outpatient", "Outcome Metric"]`;
 
   try {
     const raw = await invokeAI(prompt, 'json');
@@ -243,7 +243,7 @@ Example output: ["SepsisBundle","PatientSafety","PDSA","Outpatient","OutcomeMetr
     const parsed = JSON.parse(cleaned);
     if (Array.isArray(parsed)) {
       return parsed
-        .map((t: any) => String(t).replace(/[^\w]/g, '').trim())
+        .map((t: any) => String(t).trim())
         .filter(t => t.length > 1 && t.length < 35)
         .slice(0, 5);
     }
@@ -253,9 +253,62 @@ Example output: ["SepsisBundle","PatientSafety","PDSA","Outpatient","OutcomeMetr
   }
 }
 
+/**
+ * Searches the web for the official abstract submission deadline of a given medical conference.
+ */
+export async function getLiveConferenceDeadline(conferenceName: string): Promise<{ url: string; displayDate: string; notes: string }> {
+  const prompt = `Search for the official abstract submission deadline for the medical conference: "${conferenceName}".
+Return a JSON object with exactly these fields:
+- "url": the official website or submission portal URL if found, else empty string.
+- "displayDate": the specific deadline date found (e.g. "October 15, 2024") or "Unknown".
+- "notes": a very brief 1-2 sentence summary of any relevant deadline details or extensions.`;
+
+  try {
+    return await askAIJson<{ url: string; displayDate: string; notes: string }>(prompt);
+  } catch {
+    return {
+      url: "",
+      displayDate: "Unknown",
+      notes: "Could not retrieve deadline information."
+    };
+  }
+}
+
 export async function getProtocolSectionAdvice(section: string, question: string): Promise<string> {
   const prompt = `A resident is writing the "${section}" section of a QI protocol and asks: ${question}
 
 Provide concise, academic guidance (2-3 sentences) specific to this section.`;
+  return askAI(prompt);
+}
+
+/**
+ * Generate a structured conference-ready abstract (~250 words).
+ * Sections: Background | Objective | Methods | Results | Conclusion
+ * Plain text only — no markdown, no labels with colons on their own line.
+ */
+export async function generateAbstract(projectData: any): Promise<string> {
+  const prompt = `Write a structured QI conference abstract (~250 words) for the following project. Use exactly these section headers on their own line, followed by the content:
+
+BACKGROUND
+OBJECTIVE
+METHODS
+RESULTS
+CONCLUSION
+
+Rules:
+- Plain text only. No markdown, no bullets, no bold.
+- RESULTS section: if data is unavailable, write "Results are pending completion of the intervention phase."
+- CONCLUSION: end with implications for practice or policy.
+- Keep the entire abstract under 270 words.
+- Do not include the project title as a header.
+
+Project Title: ${projectData.title}
+Status: ${projectData.status}
+Category: ${projectData.category || 'Internal Medicine'}
+Primary Outcome / Aim: ${projectData.primary_outcome || 'Not specified'}
+Current Updates / Methods: ${projectData.updates_and_barriers || 'Not provided'}
+PDSA Cycle: ${projectData.pdsa_cycle || 0}
+Patients Impacted: ${projectData.total_patients_impacted || 'Not yet measured'}`;
+
   return askAI(prompt);
 }

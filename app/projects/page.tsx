@@ -17,6 +17,7 @@ export default function ProjectsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
+    const supabase = createClient();
 
     const status = searchParams.get("status");
     const q = searchParams.get("q");
@@ -26,7 +27,6 @@ export default function ProjectsPage() {
 
     useEffect(() => {
         async function fetchProjects() {
-            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             const isLocal = window.location.hostname === 'localhost';
             const bypass = isLocal && searchParams.get('bypassAuth') === 'true';
@@ -74,7 +74,7 @@ export default function ProjectsPage() {
         }
 
         fetchProjects();
-    }, [status, q, category, faculty, lead, router]);
+    }, [status, q, category, faculty, lead, supabase, router]);
 
     if (isLoading) {
         return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
@@ -186,4 +186,3 @@ export default function ProjectsPage() {
         </div>
     );
 }
-  

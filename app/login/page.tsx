@@ -13,6 +13,7 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
     const router = useRouter()
+    const supabase = createClient()
 
     const validateDomain = (emailAddr: string) => {
         return emailAddr.trim().toLowerCase().endsWith('@adventhealth.com')
@@ -25,8 +26,7 @@ export default function LoginPage() {
         setSuccess(null)
 
         try {
-            const supabase = createClient()
-            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || ""
+            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
 
             if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
                 throw new Error("Supabase configuration is missing. Please check your environment variables.")
@@ -43,7 +43,11 @@ export default function LoginPage() {
                     : loginError.message)
                 setIsLoading(false)
             } else {
-                window.location.href = '/QI_Tracker/'
+                router.push('/')
+                // For static sites, we might need a small delay or a force reload
+                setTimeout(() => {
+                    window.location.href = '/QI_Tracker/'
+                }, 500)
             }
         } catch (err: any) {
             console.error("Login catch block:", err)
@@ -59,7 +63,6 @@ export default function LoginPage() {
         setSuccess(null)
 
         try {
-            const supabase = createClient()
             if (!validateDomain(email)) {
                 setError("Registration is restricted to @adventhealth.com email addresses.")
                 setIsLoading(false)
@@ -72,7 +75,7 @@ export default function LoginPage() {
                 return
             }
 
-            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || ""
+            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
 
             if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
                 throw new Error("Supabase configuration is missing.")
@@ -277,4 +280,3 @@ export default function LoginPage() {
         </div>
     )
 }
-                                                                                                                                                                                               

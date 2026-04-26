@@ -10,7 +10,7 @@ import DeleteProjectButton from "@/components/DeleteProjectButton";
 import FileUploader from "@/components/FileUploader";
 import { useEffect, useState } from "react";
 import { FileDown, RefreshCw } from "lucide-react";
-import { draftSummary, auditProjectQuality, suggestMetrics, improveWriting } from "@/utils/ai";
+import { draftSummary, auditProjectQuality, suggestMetrics, improveWriting, generateAbstract } from "@/utils/ai";
 import SmartTextarea from "@/components/SmartTextarea";
 import { DEFAULT_CONFERENCES } from "@/constants/conferences";
 
@@ -96,10 +96,15 @@ function AIAuditCard({ project }: { project: any }) {
         setIsAuditing(true);
         try {
             const result = await auditProjectQuality(project);
-            const scoreMatch = result.match(/(\d+)/);
-            const score = scoreMatch ? parseInt(scoreMatch[0]) : 70;
-            const feedback = result.replace(/Quality Score: \d+\.?\s*/i, '');
-            setAudit({ score, feedback });
+            // auditProjectQuality returns { score, feedback } directly
+            if (result && typeof result === 'object' && 'score' in result) {
+                setAudit(result as { score: number; feedback: string });
+            } else {
+                // Fallback if old string format returned
+                const str = String(result);
+                const scoreMatch = str.match(/(\d+)/);
+                setAudit({ score: scoreMatch ? parseInt(scoreMatch[0]) : 70, feedback: str });
+            }
         } catch (error) {
             console.error("Audit failed:", error);
         } finally {
@@ -223,6 +228,54 @@ function MetricSuggester({ title, onSelect }: { title: string, onSelect: (val: s
     );
 }
 
+function AIAbstractSection({ project }: { project: any }) {
+    const [value, setValue] = useState(project.abstract_summary || '');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleGenerate = async () => {
+        setIsGenerating(true);
+        try {
+            const abstract = await generateAbstract(project);
+            setValue(abstract);
+        } catch (error: any) {
+            console.error('Abstract generation failed:', error);
+            alert(`Abstract generation failed: ${error.message || 'Unknown error'}`);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="flex justify-between items-end ml-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Publication Abstract / Summary</label>
+                <button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={isGenerating}
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg hover:bg-violet-100 transition-all border border-violet-100 disabled:opacity-50"
+                >
+                    {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {isGenerating ? 'Generating...' : '✨ Generate with AI'}
+                </button>
+            </div>
+            <textarea
+                name="abstract_summary"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="Draft your abstract here, or click ✨ Generate with AI to auto-generate a structured conference abstract from this project's data..."
+                rows={8}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-violet-400/10 focus:border-violet-400 text-slate-900 font-bold transition-all resize-none leading-relaxed text-sm"
+            />
+            {value && (
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest ml-1">
+                    ~{value.split(' ').length} words · Edit freely before saving
+                </p>
+            )}
+        </div>
+    );
+}
+
 export default function EditProjectPage() {
     const searchParams = useSearchParams();
     const id = searchParams.get("id");
@@ -304,6 +357,7 @@ export default function EditProjectPage() {
             title: formData.get('title') as string,
             status: formData.get('status') as any,
             category: formData.get('category') as string,
+            pdsa_cycle: parseInt(formData.get('pdsa_cycle') as string) || 0,
             faculty: formData.get('faculty_name') as string,
             faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
             primary_outcome: formData.get('primary_outcome') as string,
@@ -388,7 +442,7 @@ export default function EditProjectPage() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Current Status</label>
                             <select
@@ -404,6 +458,52 @@ export default function EditProjectPage() {
                             </select>
                         </div>
 
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category / Specialty</label>
+                            <select
+                                name="category"
+                                defaultValue={project.category || ''}
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                            >
+                                <option value="">-- Select Category --</option>
+                                <optgroup label="General">
+                                    <option value="General Internal Medicine">General Internal Medicine</option>
+                                    <option value="Hospital Medicine">Hospital Medicine</option>
+                                    <option value="Outpatient">Outpatient</option>
+                                    <option value="QI / Patient Safety">QI / Patient Safety</option>
+                                    <option value="Medical Education / GME">Medical Education / GME</option>
+                                </optgroup>
+                                <optgroup label="Subspecialty">
+                                    <option value="Cardiology">Cardiology</option>
+                                    <option value="Pulmonology / Critical Care">Pulmonology / Critical Care</option>
+                                    <option value="Gastroenterology">Gastroenterology</option>
+                                    <option value="Hematology / Oncology">Hematology / Oncology</option>
+                                    <option value="Endocrinology / Diabetes">Endocrinology / Diabetes</option>
+                                    <option value="Nephrology">Nephrology</option>
+                                    <option value="Rheumatology">Rheumatology</option>
+                                    <option value="Infectious Disease">Infectious Disease</option>
+                                    <option value="Neurology">Neurology</option>
+                                    <option value="Radiology">Radiology</option>
+                                    <option value="Psychiatry">Psychiatry</option>
+                                    <option value="Dermatology">Dermatology</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">PDSA Cycle #</label>
+                            <input
+                                type="number"
+                                name="pdsa_cycle"
+                                min={0}
+                                max={20}
+                                defaultValue={project.pdsa_cycle ?? 0}
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
                             <div className="flex flex-col gap-2">
@@ -509,17 +609,22 @@ export default function EditProjectPage() {
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Targeting Conference</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Target Conference</label>
                         <select
                             name="target_conference"
                             defaultValue={project.target_conference || ""}
                             className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
                         >
                             <option value="">-- No Conference Targeted --</option>
-                            {DEFAULT_CONFERENCES.map(conf => (
-                                <option key={conf.id} value={conf.name}>{conf.name} — {conf.fullName}</option>
+                            {Array.from(new Set(DEFAULT_CONFERENCES.map(c => c.group || 'Other'))).map(group => (
+                                <optgroup key={group} label={group}>
+                                    {DEFAULT_CONFERENCES.filter(c => (c.group || 'Other') === group).map(conf => (
+                                        <option key={conf.id} value={conf.name}>
+                                            {conf.name} — {conf.fullName}
+                                        </option>
+                                    ))}
+                                </optgroup>
                             ))}
-                            <option value="AdventHealth Research Day">AdventHealth Research Day</option>
                         </select>
                     </div>
 
@@ -548,14 +653,7 @@ export default function EditProjectPage() {
                         </div>
                     </div>
 
-                    <SmartTextarea
-                        name="abstract_summary"
-                        label="Publication Abstract / Summary (Draft)"
-                        defaultValue={project.abstract_summary || ''}
-                        placeholder="Draft your abstract here or use it to store key results for publication..."
-                        rows={5}
-                        context="Publication Abstract for a QI project"
-                    />
+                    <AIAbstractSection project={project} />
 
                     <AIUpdateSection initialValue={project.updates_and_barriers || ''} />
 
@@ -598,4 +696,28 @@ export default function EditProjectPage() {
                                         Download .pptx
                                     </a>
                                 </div>
-               
+                                <FileUploader
+                                    projectId={id!}
+                                    fieldName="presentation_url"
+                                    currentUrl={project.presentation_url}
+                                    onUploadComplete={(url) => setProject({ ...project, presentation_url: url })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end pt-6 border-t border-slate-100">
+                    <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="flex items-center gap-2 bg-advent-blue text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-advent-dark-blue transition-all shadow-xl shadow-advent-blue/20 active:scale-95 group disabled:opacity-50"
+                    >
+                        <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        {isSaving ? "Saving..." : "Save Changes"}
+                    </button>
+                </div>
+            </form >
+        </div >
+    )
+}

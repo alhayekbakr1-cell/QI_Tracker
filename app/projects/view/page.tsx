@@ -11,7 +11,6 @@ import {
     ArrowLeft,
     MessageSquare,
     Paperclip,
-    History,
     TrendingUp,
     Sparkles,
     Info,
@@ -25,10 +24,7 @@ import {
     FileCheck,
     ChevronRight,
     Users,
-    Loader2,
-    BookOpen,
-    Target,
-    CalendarClock
+    Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -43,10 +39,10 @@ import ConferenceMatcher from "@/components/ConferenceMatcher";
 import ProjectReportGenerator from "@/components/ProjectReportGenerator";
 import { sendEmail, TEMPLATES } from "@/utils/email";
 import ConferenceCountdown from "@/components/ConferenceCountdown";
-import { DEFAULT_CONFERENCES } from "@/constants/conferences";
 import FacultySignOff from "@/components/FacultySignOff";
 import ProjectComments from "@/components/ProjectComments";
 import PublicationAssistant from "@/components/PublicationAssistant";
+import ProjectCharter from "@/components/ProjectCharter";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -60,6 +56,7 @@ export default function ProjectDetailPage() {
     const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
+    const supabase = createClient();
 
     useEffect(() => {
         if (!id) {
@@ -68,7 +65,6 @@ export default function ProjectDetailPage() {
         }
 
         async function fetchData() {
-            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             const isLocal = window.location.hostname === 'localhost';
             const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
@@ -115,7 +111,7 @@ export default function ProjectDetailPage() {
         }
 
         fetchData();
-    }, [id, router]);
+    }, [id, supabase, router]);
 
     // handleSubmitComment, newComment, isSubmittingComment, comments, currentUser states are removed as ProjectComments component handles them.
 
@@ -123,7 +119,7 @@ export default function ProjectDetailPage() {
         return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
     }
 
-    const workflow = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains'];
+    const workflow = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains', 'Impacted (Completed)'];
     const currentIndex = workflow.indexOf(project.status);
 
     return (
@@ -211,37 +207,16 @@ export default function ProjectDetailPage() {
                             icon={<Users className="w-4 h-4 text-slate-400" />}
                             isLinked={(project.proponent_ids?.length || 0) > 0}
                         />
-                        {project.target_conference && (() => {
-                            const conf = DEFAULT_CONFERENCES.find(c => c.id === project.target_conference);
-                            return (
-                                <DetailItem
-                                    label="Target Conference"
-                                    value={conf ? conf.fullName : project.target_conference}
-                                    icon={<CalendarClock className="w-4 h-4 text-amber-500" />}
-                                />
-                            );
-                        })()}
                     </div>
 
                     <div className="space-y-12">
-                        <Section title="Primary Outcome & Aim" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
+                        <Section title="Primary Outcome" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
                             <p className="text-slate-700 text-lg font-medium leading-relaxed">
                                 {project.primary_outcome || "No outcome defined yet."}
                             </p>
                         </Section>
 
-                        {project.abstract_summary && (
-                            <Section title="Publication Abstract" icon={<BookOpen className="w-5 h-5 text-violet-500" />}>
-                                <div className="p-6 bg-violet-50/50 border border-violet-100 rounded-2xl">
-                                    <p className="text-slate-700 text-sm leading-relaxed font-medium whitespace-pre-wrap">
-                                        {project.abstract_summary}
-                                    </p>
-                                </div>
-                            </Section>
-                        )}
-
-                        {/* Impact Section — only shown when at least one value is non-zero */}
-                        {((project.total_patients_impacted || 0) > 0 || (Number(project.estimated_cost_savings) || 0) > 0) && (
+                        {/* Impact Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 bg-slate-50/50 rounded-[2.5rem] px-8 border border-slate-100">
                             <div className="space-y-2">
                                 <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -265,7 +240,9 @@ export default function ProjectDetailPage() {
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">Calculated based on institutional value</p>
                             </div>
                         </div>
-                        )}
+
+                        {/* Charter Section */}
+                        <ProjectCharter project={project} />
 
                         {/* Metrics Section */}
                         <Section title="Project Metrics" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
@@ -282,9 +259,6 @@ export default function ProjectDetailPage() {
                             )}
                         </Section>
 
-                        {/* PDSA Consultant - inline full-width */}
-                        <PDSAAnalyzer project={project} metrics={metrics} />
-
                         <Section title="Updates and Barriers" icon={<Info className="w-5 h-5 text-advent-lightblue" />}>
                             <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl font-medium">
                                 <p className="text-slate-700 whitespace-pre-wrap leading-relaxed italic">
@@ -300,6 +274,7 @@ export default function ProjectDetailPage() {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
+                    <PDSAAnalyzer project={project} metrics={metrics} />
                     <QualityAudit project={project} />
 
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-24">
@@ -393,10 +368,6 @@ export default function ProjectDetailPage() {
                             </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />
-                        </div>
-
                         <div className="pt-6 border-t border-slate-100">
                             <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
                                 <Trophy className="w-4 h-4 text-amber-500" />
@@ -407,7 +378,7 @@ export default function ProjectDetailPage() {
                                     <ConferenceCountdown targetConferenceId={project.target_conference} />
                                     <button
                                         onClick={async () => {
-                                            const { error } = await createClient().from('projects').update({ target_conference: null }).eq('id', project.id);
+                                            const { error } = await supabase.from('projects').update({ target_conference: null }).eq('id', project.id);
                                             if (!error) setProject({ ...project, target_conference: null });
                                         }}
                                         className="w-full text-[10px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors text-center"
@@ -434,4 +405,34 @@ export default function ProjectDetailPage() {
                 <ProtocolWizard
                     projectId={project.id}
                     projectTitle={project.title}
-                    onClose={() => s
+                    onClose={() => setIsWizardOpen(false)}
+                />
+            )}
+            {project && (
+                <PublicationAssistant
+                    project={project}
+                    isOpen={isPubAssistantOpen}
+                    onClose={() => setIsPubAssistantOpen(false)}
+                />
+            )}
+        </div>
+    );
+}
+
+function DetailItem({ label, value, icon, isLinked }: { label: string, value: string | null, icon: React.ReactNode, isLinked?: boolean }) {
+    return (
+        <div className="flex gap-3">
+            <div className="flex-shrink-0 mt-1 text-slate-300">{icon}</div>
+            <div>
+                <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    {label}
+                    {isLinked && (
+                        <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded text-[7px] border border-emerald-100 uppercase tracking-tighter">Linked</span>
+                    )}
+                </dt>
+                <dd className="text-sm font-semibold text-slate-800">{value || '—'}</dd>
+            </div>
+        </div>
+    )
+}
+
