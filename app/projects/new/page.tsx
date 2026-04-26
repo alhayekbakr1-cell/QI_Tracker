@@ -62,10 +62,10 @@ export default function NewProjectPage() {
     const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
     const [selectedProponentIds, setSelectedProponentIds] = useState<string[]>([]);
     const router = useRouter();
-    const supabase = createClient();
 
     useEffect(() => {
         async function checkAuth() {
+            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             const isLocal = window.location.hostname === 'localhost';
             const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
@@ -83,7 +83,7 @@ export default function NewProjectPage() {
             setAllProfiles(profiles || []);
         }
         checkAuth();
-    }, [supabase, router]);
+    }, [router]);
 
     const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin' || p.role === 'Operator');
     const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin' && p.role !== 'Operator');
@@ -91,6 +91,7 @@ export default function NewProjectPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSaving(true);
+        const supabase = createClient();
 
         const formData = new FormData(e.currentTarget);
 
@@ -198,14 +199,14 @@ export default function NewProjectPage() {
                                     const btn = document.getElementById('duplicate-check-btn');
                                     if (btn) btn.innerHTML = '<span class="animate-spin text-[8px]">🌀</span> Checking...';
                                     try {
-                                        const { data: projects } = await supabase.from('projects').select('title').limit(50);
+                                        const { data: projects } = await createClient().from('projects').select('title').limit(50);
                                         const summaries = projects?.map(p => p.title).join(', ') || "";
                                         const result = await checkDuplication(title, summaries);
                                         alert("AI Duplicate Check:\n\n" + result);
                                     } catch (e: any) {
                                         alert("AI Error: " + e.message);
                                     } finally {
-                                        if (btn) btn.innerHTML = '<svg class="w-3 h-3" ...>...</svg> Check Duplicates';
+                                        if (btn) btn.innerHTML = '✦ Check Duplicates';
                                     }
                                 }}
                                 id="duplicate-check-btn"
@@ -232,12 +233,19 @@ export default function NewProjectPage() {
                                 <option value="Pre-Intervention">Pre-Intervention</option>
                                 <option value="Intervention Ongoing">Intervention Ongoing</option>
                                 <option value="Sustain the Gains">Sustain the Gains</option>
+                                <option value="Impacted (Completed)">Impacted (Completed)</option>
                             </select>
                         </div>
 
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category</label>
-                            <input name="category" placeholder="e.g., Outpatient" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300" />
+                            <select name="category" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer">
+                                <option value="Inpatient">Inpatient</option>
+                                <option value="Outpatient">Outpatient</option>
+                                <option value="Ambulatory">Ambulatory</option>
+                                <option value="Procedural">Procedural</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
                     </div>
 
@@ -337,7 +345,7 @@ export default function NewProjectPage() {
                                     } catch (e: any) {
                                         alert("AI Error: " + e.message);
                                     } finally {
-                                        if (btn) btn.innerHTML = '<svg class="w-3 h-3" ...>...</svg> Make SMART';
+                                        if (btn) btn.innerHTML = '✦ Make SMART';
                                     }
                                 }}
                                 id="smart-aim-btn"
@@ -436,13 +444,4 @@ export default function NewProjectPage() {
                         id="create-project-submit"
                         type="submit"
                         disabled={isSaving}
-                        className="flex items-center gap-2 bg-advent-blue text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-advent-dark-blue transition-all shadow-xl shadow-advent-blue/20 active:scale-95 group disabled:opacity-50"
-                    >
-                        <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        {isSaving ? "Creating..." : "Create Project"}
-                    </button>
-                </div>
-            </form>
-        </div>
-    )
-}
+                        className="flex items-center gap-2 bg-advent-blue text-white p

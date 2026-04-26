@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import PHIWarning from "@/components/PHIWarning";
 import ProjectCard from "@/components/ProjectCard";
 import { Project, ProjectStatus } from "@/types";
-import { Plus, Search, Filter, ArrowRight, List, LayoutPanelLeft, User } from "lucide-react";
+import { Plus, Search, Filter, ArrowRight, List, LayoutPanelLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Profile } from "@/types";
 import DashboardCharts from "@/components/DashboardCharts";
 import ConferenceMatcher from "@/components/ConferenceMatcher";
 import ActivityFeed from "@/components/ActivityFeed";
@@ -17,14 +16,11 @@ import { Activity } from "lucide-react";
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [myProjectsOnly, setMyProjectsOnly] = useState(false);
-  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
     async function fetchDashboardData() {
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
@@ -42,44 +38,17 @@ export default function Dashboard() {
       } else {
         setProjects((data || []) as Project[]);
       }
-
-      // Fetch current user profile for "My Projects" filter
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      setCurrentProfile(profile);
-
       setIsLoading(false);
     }
 
     fetchDashboardData();
-  }, [supabase, router]);
+  }, [router]);
 
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  // "My Projects" + search filtering
-  const myName = currentProfile?.full_name?.toLowerCase() || "";
-  const displayProjects = projects.filter(p => {
-    const matchesMe = !myProjectsOnly || myName === "" || (
-      p.lead_proponents.some(n => n.toLowerCase().includes(myName)) ||
-      p.proponents.some(n => n.toLowerCase().includes(myName))
-    );
-    const q = searchQuery.toLowerCase();
-    const matchesSearch = !q || (
-      p.title.toLowerCase().includes(q) ||
-      (p.primary_outcome || "").toLowerCase().includes(q) ||
-      (p.faculty || "").toLowerCase().includes(q) ||
-      p.proponents.some(n => n.toLowerCase().includes(q)) ||
-      p.lead_proponents.some(n => n.toLowerCase().includes(q))
-    );
-    return matchesMe && matchesSearch;
-  });
-
-  // Statistics (always from full portfolio)
+  // Statistics
   const stats: Record<ProjectStatus | 'Total', number> = {
     'Total': projects.length,
     'Idea': projects.filter(p => p.status === 'Idea').length,
@@ -94,15 +63,14 @@ export default function Dashboard() {
     { name: 'Pre-Intervention', value: stats['Pre-Intervention'] },
     { name: 'Intervention Ongoing', value: stats['Intervention Ongoing'] },
     { name: 'Sustain the Gains', value: stats['Sustain the Gains'] },
-    { name: 'Completed', value: stats['Impacted (Completed)'] },
   ].filter(d => d.value > 0);
 
-  const ALL_CATEGORIES = ['Inpatient', 'Outpatient', 'Perioperative', 'ED', 'ICU', 'Other'];
-  const categoryChartData = ALL_CATEGORIES
-    .map(cat => ({ name: cat, value: projects.filter(p => p.category === cat).length }))
-    .filter(d => d.value > 0);
+  const categoryChartData = [
+    { name: 'Inpatient', value: projects.filter(p => p.category === 'Inpatient').length },
+    { name: 'Outpatient', value: projects.filter(p => p.category === 'Outpatient').length },
+  ];
 
-  const recentProjects = displayProjects.slice(0, 6);
+  const recentProjects = projects.slice(0, 6);
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
@@ -134,13 +102,12 @@ export default function Dashboard() {
       <PHIWarning />
 
       {/* Stats Grid - Professional Cards */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
         <StatCard label="Total Portfolio" value={stats.Total} variant="primary" />
         <StatCard label="Phase: Idea" value={stats.Idea} variant="default" />
         <StatCard label="Pre-Interv." value={stats['Pre-Intervention']} variant="default" />
         <StatCard label="Ongoing" value={stats['Intervention Ongoing']} variant="default" />
         <StatCard label="Sustained" value={stats['Sustain the Gains']} variant="success" />
-        <StatCard label="Completed" value={stats['Impacted (Completed)']} variant="completed" />
       </div>
 
       {/* Charts Section */}
@@ -156,12 +123,7 @@ export default function Dashboard() {
               <div className="bg-advent-navy text-white p-2 rounded-xl">
                 <Activity className="w-5 h-5" />
               </div>
-              {myProjectsOnly ? "My Projects" : "Recently Updated"}
-              {(searchQuery || myProjectsOnly) && (
-                <span className="text-sm font-bold text-slate-400 normal-case">
-                  ({displayProjects.length} result{displayProjects.length !== 1 ? "s" : ""})
-                </span>
-              )}
+              Recently Updated
             </h2>
             <Link href="/projects/kanban" prefetch={false} className="text-xs font-black uppercase tracking-widest text-advent-green hover:text-advent-navy flex items-center gap-2 group transition-all">
               Visual Pipeline <LayoutPanelLeft className="w-4 h-4" />
@@ -199,25 +161,10 @@ export default function Dashboard() {
                 <input
                   type="text"
                   placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy outline-none transition-all placeholder:text-slate-400 placeholder:font-medium"
                 />
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
               </div>
-              {currentProfile?.full_name && (
-                <button
-                  onClick={() => setMyProjectsOnly(p => !p)}
-                  className={`mt-3 w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
-                    myProjectsOnly
-                      ? "bg-advent-navy text-white border-advent-navy shadow-md"
-                      : "bg-slate-50 text-slate-500 border-slate-200 hover:border-advent-navy hover:text-advent-navy"
-                  }`}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  {myProjectsOnly ? "Showing My Projects" : "My Projects Only"}
-                </button>
-              )}
             </section>
 
             <section>
@@ -226,7 +173,7 @@ export default function Dashboard() {
                 Status Filter
               </h3>
               <div className="flex flex-wrap gap-2">
-                {['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains'].map(s => (
+                {['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains', 'Impacted (Completed)'].map(s => (
                   <Link
                     key={s}
                     href={`/projects?status=${s}`}
@@ -279,30 +226,27 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ label, value, variant }: { label: string, value: number, variant: 'primary' | 'success' | 'completed' | 'default' }) {
+function StatCard({ label, value, variant }: { label: string, value: number, variant: 'primary' | 'success' | 'default' }) {
   const styles = {
     primary: 'bg-advent-navy text-white border-transparent shadow-advent-navy/20',
-    success: 'bg-white border-slate-200 text-slate-900',
-    completed: 'bg-white border-slate-200 text-slate-900',
+    success: 'bg-white border-slate-200 text-slate-900', // Fixed contrast
     default: 'bg-white border-slate-200 text-slate-900'
   }
 
   const labelStyles = {
     primary: 'text-blue-200/80',
-    success: 'text-advent-green',
-    completed: 'text-amber-500',
+    success: 'text-advent-green', // Use brand green for the label to distinguish
     default: 'text-slate-400'
   }
 
   const valueStyles = {
     primary: 'text-white',
-    success: 'text-slate-900',
-    completed: 'text-amber-600',
+    success: 'text-slate-900', // Black text on white back avoids "white on white" issues
     default: 'text-advent-navy'
   }
 
   return (
-    <div className={`${styles[variant]} p-6 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border flex flex-col items-center justify-center min-h-[120px] relative overflow-hidden group`}>
+    <div className={`${styles[variant]} p-8 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border flex flex-col items-center justify-center min-h-[140px] relative overflow-hidden group`}>
       <span className={`text-[9px] uppercase font-black tracking-[0.2em] mb-3 text-center z-10 ${labelStyles[variant]}`}>
         {label}
       </span>
@@ -310,17 +254,15 @@ function StatCard({ label, value, variant }: { label: string, value: number, var
         {value}
       </span>
 
+      {/* Subtle background decoration */}
       {variant === 'primary' && (
         <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-700" />
       )}
       {variant === 'success' && (
         <div className="absolute bottom-0 left-0 w-full h-1 bg-advent-green" />
       )}
-      {variant === 'completed' && (
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-amber-400" />
-      )}
     </div>
   )
 }
 
-// Import Activity for header
+// Import Ac

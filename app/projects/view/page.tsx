@@ -11,6 +11,7 @@ import {
     ArrowLeft,
     MessageSquare,
     Paperclip,
+    History,
     TrendingUp,
     Sparkles,
     Info,
@@ -42,7 +43,6 @@ import ConferenceCountdown from "@/components/ConferenceCountdown";
 import FacultySignOff from "@/components/FacultySignOff";
 import ProjectComments from "@/components/ProjectComments";
 import PublicationAssistant from "@/components/PublicationAssistant";
-import ProjectCharter from "@/components/ProjectCharter";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -56,7 +56,6 @@ export default function ProjectDetailPage() {
     const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
-    const supabase = createClient();
 
     useEffect(() => {
         if (!id) {
@@ -65,6 +64,7 @@ export default function ProjectDetailPage() {
         }
 
         async function fetchData() {
+            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             const isLocal = window.location.hostname === 'localhost';
             const bypass = isLocal && localStorage.getItem('bypassAuth') === 'true';
@@ -111,7 +111,7 @@ export default function ProjectDetailPage() {
         }
 
         fetchData();
-    }, [id, supabase, router]);
+    }, [id, router]);
 
     // handleSubmitComment, newComment, isSubmittingComment, comments, currentUser states are removed as ProjectComments component handles them.
 
@@ -119,7 +119,7 @@ export default function ProjectDetailPage() {
         return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
     }
 
-    const workflow = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains', 'Impacted (Completed)'];
+    const workflow = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains'];
     const currentIndex = workflow.indexOf(project.status);
 
     return (
@@ -240,9 +240,6 @@ export default function ProjectDetailPage() {
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">Calculated based on institutional value</p>
                             </div>
                         </div>
-
-                        {/* Charter Section */}
-                        <ProjectCharter project={project} />
 
                         {/* Metrics Section */}
                         <Section title="Project Metrics" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
@@ -368,6 +365,10 @@ export default function ProjectDetailPage() {
                             </button>
                         </div>
 
+                        <div className="space-y-4">
+                            <HistoryItem date="Feb 12, 2026" action={`Status: ${project.status}`} user="System" />
+                        </div>
+
                         <div className="pt-6 border-t border-slate-100">
                             <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
                                 <Trophy className="w-4 h-4 text-amber-500" />
@@ -378,7 +379,7 @@ export default function ProjectDetailPage() {
                                     <ConferenceCountdown targetConferenceId={project.target_conference} />
                                     <button
                                         onClick={async () => {
-                                            const { error } = await supabase.from('projects').update({ target_conference: null }).eq('id', project.id);
+                                            const { error } = await createClient().from('projects').update({ target_conference: null }).eq('id', project.id);
                                             if (!error) setProject({ ...project, target_conference: null });
                                         }}
                                         className="w-full text-[10px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors text-center"
@@ -436,3 +437,11 @@ function DetailItem({ label, value, icon, isLinked }: { label: string, value: st
     )
 }
 
+function HistoryItem({ date, action, user }: { date: string, action: string, user: string }) {
+    return (
+        <div className="border-l-2 border-slate-100 pl-4 py-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{date}</p>
+            <p className="text-xs font-bold text-slate-700 leading-tight my-1">{action}</p>
+            <p className="text-[10px] text-slate-500 italic">by {user}</p>
+        </div>
+    

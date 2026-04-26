@@ -204,7 +204,6 @@ export default function EditProjectPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
-    const supabase = createClient();
 
     useEffect(() => {
         if (!id) {
@@ -213,6 +212,7 @@ export default function EditProjectPage() {
         }
 
         async function fetchData() {
+            const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 router.push("/login");
@@ -246,7 +246,7 @@ export default function EditProjectPage() {
         }
 
         fetchData();
-    }, [id, supabase, router]);
+    }, [id, router]);
 
     const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin');
     const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin');
@@ -255,6 +255,7 @@ export default function EditProjectPage() {
         e.preventDefault();
         if (!project || !id) return;
         setIsSaving(true);
+        const supabase = createClient();
 
         const formData = new FormData(e.currentTarget);
 
@@ -303,6 +304,7 @@ export default function EditProjectPage() {
 
     const handleDelete = async () => {
         if (!id) return;
+        const supabase = createClient();
         const { error } = await supabase.from('projects').delete().eq('id', id);
         if (error) {
             alert(error.message);
@@ -367,6 +369,7 @@ export default function EditProjectPage() {
                                 <option value="Pre-Intervention">Pre-Intervention</option>
                                 <option value="Intervention Ongoing">Intervention Ongoing</option>
                                 <option value="Sustain the Gains">Sustain the Gains</option>
+                                <option value="Impacted (Completed)">Impacted (Completed)</option>
                             </select>
                         </div>
 
@@ -468,7 +471,10 @@ export default function EditProjectPage() {
                                 defaultValue={project.primary_outcome || ''}
                                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[100px] resize-none"
                             />
-                            <MetricSuggester title={project.title} onSelect={() => { }} />
+                            <MetricSuggester title={project.title} onSelect={(val) => {
+                                const ta = document.querySelector('textarea[name="primary_outcome"]') as HTMLTextAreaElement;
+                                if (ta) ta.value = (ta.value ? ta.value + '\n\n' : '') + val;
+                            }} />
                         </div>
                     </div>
 
@@ -555,7 +561,7 @@ export default function EditProjectPage() {
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Presentation Template</span>
                                     <a
-                                        href="/QI_Tracker/templates/AdventHealth IM GME QI Template.pptx"
+                                        href="/QI_Tracker/templates/AdventHealth%20IM%20GME%20QI%20Template.pptx"
                                         download
                                         className="flex items-center gap-2 text-advent-blue text-xs font-bold hover:underline"
                                     >
@@ -578,13 +584,4 @@ export default function EditProjectPage() {
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="flex items-center gap-2 bg-advent-blue text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-advent-dark-blue transition-all shadow-xl shadow-advent-blue/20 active:scale-95 group disabled:opacity-50"
-                    >
-                        <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        {isSaving ? "Saving..." : "Save Changes"}
-                    </button>
-                </div>
-            </form >
-        </div >
-    )
-}
+                        className="flex items-center gap-2 bg-advent-blue text-white px-10 py-4 rounded-2

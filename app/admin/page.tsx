@@ -10,7 +10,6 @@ import ExecutiveReportCenter from "@/components/ExecutiveReportCenter";
 import BulkPersonnelImport from "@/components/BulkPersonnelImport";
 import BulkProjectImport from "@/components/BulkProjectImport";
 import ErrorMonitor from "@/components/Admin/ErrorMonitor";
-import StaleNudgePanel from "@/components/Admin/StaleNudgePanel";
 import Link from "next/link";
 import { DEFAULT_CONFERENCES, fetchRegistry, Conference } from "@/constants/conferences";
 import LiveConferenceVerify from "@/components/LiveConferenceVerify";
@@ -26,9 +25,9 @@ export default function AdminPage() {
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const supabase = createClient();
 
     useEffect(() => {
+        const supabase = createClient();
         async function fetchAdminData() {
             const { data: { user } } = await supabase.auth.getUser();
             const isLocal = window.location.hostname === 'localhost';
@@ -78,7 +77,7 @@ export default function AdminPage() {
         }
 
         fetchAdminData();
-    }, [supabase, router]);
+    }, [router, searchParams]);
 
     const handleSyncRegistry = async () => {
         if (!confirm("This will trigger the AI to search the web for every conference in the registry. It may take 1-2 minutes. Proceed?")) return;
@@ -100,6 +99,7 @@ export default function AdminPage() {
     const toggleRole = async (profileId: string, currentRole: UserRole) => {
         if (updatingId) return;
         setUpdatingId(profileId);
+        const supabase = createClient();
 
         // Rotation: Viewer -> Operator -> Faculty -> Viewer
         let newRole: UserRole = "Viewer";
@@ -166,7 +166,6 @@ export default function AdminPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <StaleNudgePanel />
                     <ExecutiveReportCenter />
                     <ErrorMonitor />
                 </div>
@@ -304,8 +303,4 @@ export default function AdminPage() {
                             ))}
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </div >
-    );
-}
+                </

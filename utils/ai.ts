@@ -113,7 +113,7 @@ export async function auditProjectQuality(projectData: any) {
     
     Title: ${projectData.title}
     Aim: ${projectData.primary_outcome}
-    Updates: ${projectData.updates_barriers}
+    Updates: ${projectData.updates_and_barriers}
     
     Provide a brief "Quality Score" (0-100) and 1-2 sentences of feedback on what is missing or can be improved (e.g., missing metrics, vague aim).
   `;
@@ -216,5 +216,4 @@ export async function generateAbstract(project: any) {
     
     Keep it scholarly, concise, and professional. Output ONLY the abstract text.
   `;
-  return askAI(prompt);
-}
+  return askAI(prompt)
