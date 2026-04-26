@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShieldAlert, Mail, Lock, User, Info, Loader2, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
@@ -14,6 +14,16 @@ export default function LoginPage() {
     const [success, setSuccess] = useState<string | null>(null)
     const router = useRouter()
     const supabase = createClient()
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                router.push('/')
+            }
+        }
+        checkAuth()
+    }, [supabase, router])
 
     const validateDomain = (emailAddr: string) => {
         return emailAddr.trim().toLowerCase().endsWith('@adventhealth.com')
@@ -44,10 +54,6 @@ export default function LoginPage() {
                 setIsLoading(false)
             } else {
                 router.push('/')
-                // For static sites, we might need a small delay or a force reload
-                setTimeout(() => {
-                    window.location.href = '/QI_Tracker/'
-                }, 500)
             }
         } catch (err: any) {
             console.error("Login catch block:", err)
@@ -105,7 +111,7 @@ export default function LoginPage() {
                     setIsSignup(false)
                     setIsLoading(false)
                 } else {
-                    window.location.href = '/QI_Tracker/'
+                    router.push('/')
                 }
             }
         } catch (err: any) {
