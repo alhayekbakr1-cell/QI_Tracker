@@ -1,14 +1,39 @@
 import { createClient } from "./supabase/client";
 
-const supabase = createClient();
+/** Strip any residual markdown the AI might still produce */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*\*(.*?)\*\*\*/g, '$1')      // ***bold italic***
+    .replace(/\*\*(.*?)\*\*/g, '$1')           // **bold**
+    .replace(/\*(.*?)\*/g, '$1')               // *italic*
+    .replace(/^#{1,6}\s+/gm, '')              // ## headers
+    .replace(/`{3}[\s\S]*?`{3}/g, '')         // ```code blocks```
+    .replace(/`([^`]+)`/g, '$1')              // `inline code`
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [links](url)
+    .replace(/^[-*+]\s+/gm, '')               // - bullet points
+    .trim();
+}
 
 export async function askAI(prompt: string) {
+  const supabase = createClient();
   const { data, error } = await supabase.functions.invoke('qi-consultant', {
     body: { prompt }
   });
 
   if (error) throw error;
-  return data.text;
+  return stripMarkdown(data.text);
+}
+
+export async function improveWriting(text: string, fieldContext: string) {
+  const prompt = `You are a clinical QI academic writing editor.
+Improve the following text from the "${fieldContext}" field of a QI project form.
+Make it more professional, precise, and academically appropriate for institutional documentation.
+Preserve all factual content and meaning. Do not add information that is not already present.
+Output only the improved text, nothing else.
+
+Original text:
+${text}`;
+  return askAI(prompt);
 }
 
 export async function draftSummary(points: string) {
@@ -184,36 +209,4 @@ export async function getLiveConferenceDeadline(conferenceName: string) {
     
     CRITICAL:
     1. Look for the exact date and year (e.g., Nov 24, 2026).
-    2. Identify the official website URL.
-    3. If the date is not yet announced, provide the estimated month based on historical data.
-    
-    Output format:
-    {"deadline": "ISO DATE", "displayDate": "Readable Date", "url": "URL", "confidence": "High/Medium/Low", "notes": "Brief explanation"}
-    
-    Output ONLY the JSON.
-  `;
-  return askAI(prompt);
-}
-export async function generateAbstract(project: any) {
-  const prompt = `
-    You are a Quality Improvement (QI) Academic Consultant. 
-    Write a formal, publication-ready abstract for the following QI project.
-    
-    Project Title: ${project.title}
-    Category: ${project.category}
-    Current Status: ${project.status}
-    Primary Outcome: ${project.primary_outcome}
-    PDSA Cycles: ${project.pdsa_cycle}
-    Updates/Barriers: ${project.updates_and_barriers}
-    Patients Impacted: ${project.total_patients_impacted || 0}
-    Cost Savings: $${project.estimated_cost_savings || 0}
-    
-    Structure the abstract with the following headings:
-    BACKGROUND:
-    METHODS:
-    RESULTS:
-    CONCLUSIONS:
-    
-    Keep it scholarly, concise, and professional. Output ONLY the abstract text.
-  `;
-  return askAI(prompt)
+    2. Identi

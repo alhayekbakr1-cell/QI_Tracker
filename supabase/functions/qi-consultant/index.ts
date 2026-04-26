@@ -6,8 +6,16 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const SYSTEM_INSTRUCTION = `You are a clinical Quality Improvement (QI) expert assistant for AdventHealth Internal Medicine residency.
+
+CRITICAL OUTPUT RULES — follow these without exception:
+1. Output PLAIN TEXT ONLY. Never use markdown: no asterisks, no pound signs (#), no dashes for bullets, no backticks, no bold, no italics, no tables.
+2. Never start with conversational openers. Do not write "Sure!", "Great question!", "Of course!", "Okay, let me help you with that.", "Certainly!", or any similar preamble.
+3. Begin your response IMMEDIATELY with the substantive content requested.
+4. If listing items, use numbered lists (1. 2. 3.) or write them as prose sentences separated by periods.
+5. Write in a formal, scholarly, clinical tone appropriate for institutional QI documentation.`
+
 serve(async (req) => {
-    // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
@@ -27,10 +35,11 @@ serve(async (req) => {
         const genAI = new GoogleGenerativeAI(apiKey)
         const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash",
+            systemInstruction: SYSTEM_INSTRUCTION,
             tools: [{ googleSearch: {} }]
         })
 
-        console.log('Generating content with Google Search for prompt length:', prompt.length)
+        console.log('Generating content for prompt length:', prompt.length)
         const result = await model.generateContent(prompt)
         const responseText = result.response.text()
 
@@ -40,19 +49,13 @@ serve(async (req) => {
 
         return new Response(
             JSON.stringify({ text: responseText }),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 200
-            }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
     } catch (error) {
         console.error('Edge Function Error:', error.message)
         return new Response(
             JSON.stringify({ error: error.message }),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400
-            }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         )
     }
 })

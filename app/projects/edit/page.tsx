@@ -10,11 +10,14 @@ import DeleteProjectButton from "@/components/DeleteProjectButton";
 import FileUploader from "@/components/FileUploader";
 import { useEffect, useState } from "react";
 import { FileDown, RefreshCw } from "lucide-react";
-import { draftSummary, auditProjectQuality, suggestMetrics } from "@/utils/ai";
+import { draftSummary, auditProjectQuality, suggestMetrics, improveWriting } from "@/utils/ai";
+import SmartTextarea from "@/components/SmartTextarea";
+import { DEFAULT_CONFERENCES } from "@/constants/conferences";
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
     const [isDrafting, setIsDrafting] = useState(false);
+    const [isImproving, setIsImproving] = useState(false);
 
     const handleAIDraft = async () => {
         if (!value || value.length < 10) {
@@ -33,19 +36,46 @@ function AIUpdateSection({ initialValue }: { initialValue: string }) {
         }
     };
 
+    const handleImprove = async () => {
+        if (!value || value.trim().length < 10) {
+            alert("Please enter some text first before improving.");
+            return;
+        }
+        setIsImproving(true);
+        try {
+            const improved = await improveWriting(value, "Updates and Barriers");
+            setValue(improved);
+        } catch (error: any) {
+            alert(`Improve failed: ${error.message || "Unknown error"}`);
+        } finally {
+            setIsImproving(false);
+        }
+    };
+
     return (
         <div className="space-y-3">
             <div className="flex justify-between items-end ml-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Updates and Barriers</label>
-                <button
-                    type="button"
-                    onClick={handleAIDraft}
-                    disabled={isDrafting}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-3 py-1.5 rounded-lg hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50"
-                >
-                    {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    Draft with AI
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleImprove}
+                        disabled={isDrafting || isImproving}
+                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-violet-600 bg-violet-50 px-2.5 py-1.5 rounded-lg hover:bg-violet-100 transition-all border border-violet-100 disabled:opacity-50"
+                    >
+                        {isImproving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        Improve
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleAIDraft}
+                        disabled={isDrafting || isImproving}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-3 py-1.5 rounded-lg hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50"
+                    >
+                        {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        Draft with AI
+                    </button>
+                </div>
             </div>
             <textarea
                 name="updates_and_barriers"
@@ -463,19 +493,18 @@ export default function EditProjectPage() {
                         </div>
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Outcome</label>
-                        <div className="space-y-6">
-                            <textarea
-                                name="primary_outcome"
-                                defaultValue={project.primary_outcome || ''}
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[100px] resize-none"
-                            />
-                            <MetricSuggester title={project.title} onSelect={(val) => {
-                                const ta = document.querySelector('textarea[name="primary_outcome"]') as HTMLTextAreaElement;
-                                if (ta) ta.value = (ta.value ? ta.value + '\n\n' : '') + val;
-                            }} />
-                        </div>
+                    <div className="space-y-6">
+                        <SmartTextarea
+                            name="primary_outcome"
+                            label="Primary Outcome"
+                            defaultValue={project.primary_outcome || ''}
+                            rows={4}
+                            context="Primary Outcome / SMART Aim for a QI project"
+                        />
+                        <MetricSuggester title={project.title} onSelect={(val) => {
+                            const ta = document.querySelector('textarea[name="primary_outcome"]') as HTMLTextAreaElement;
+                            if (ta) ta.value = (ta.value ? ta.value + '\n\n' : '') + val;
+                        }} />
                     </div>
 
                     <div className="space-y-3">
@@ -486,9 +515,9 @@ export default function EditProjectPage() {
                             className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
                         >
                             <option value="">-- No Conference Targeted --</option>
-                            <option value="ACP National (Internal Medicine)">ACP National (Internal Medicine)</option>
-                            <option value="SHM Converge (Hospital Medicine)">SHM Converge (Hospital Medicine)</option>
-                            <option value="SGIM Annual Meeting">SGIM Annual Meeting</option>
+                            {DEFAULT_CONFERENCES.map(conf => (
+                                <option key={conf.id} value={conf.name}>{conf.name} — {conf.fullName}</option>
+                            ))}
                             <option value="AdventHealth Research Day">AdventHealth Research Day</option>
                         </select>
                     </div>
@@ -518,15 +547,14 @@ export default function EditProjectPage() {
                         </div>
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Publication Abstract / Summary (Draft)</label>
-                        <textarea
-                            name="abstract_summary"
-                            defaultValue={project.abstract_summary || ''}
-                            placeholder="Draft your abstract here or use it to store key results for publication..."
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[150px] resize-none"
-                        />
-                    </div>
+                    <SmartTextarea
+                        name="abstract_summary"
+                        label="Publication Abstract / Summary (Draft)"
+                        defaultValue={project.abstract_summary || ''}
+                        placeholder="Draft your abstract here or use it to store key results for publication..."
+                        rows={5}
+                        context="Publication Abstract for a QI project"
+                    />
 
                     <AIUpdateSection initialValue={project.updates_and_barriers || ''} />
 
@@ -571,17 +599,4 @@ export default function EditProjectPage() {
                                 </div>
                                 <FileUploader
                                     projectId={id!}
-                                    fieldName="presentation_url"
-                                    currentUrl={project.presentation_url}
-                                    onUploadComplete={(url) => setProject({ ...project, presentation_url: url })}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex justify-end pt-6 border-t border-slate-100">
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex items-center gap-2 bg-advent-blue text-white px-10 py-4 rounded-2
+              

@@ -6,13 +6,16 @@ import PHIWarning from "@/components/PHIWarning";
 import { ArrowLeft, Save, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { draftSummary, generateSMARTAim, suggestMetrics, checkDuplication } from "@/utils/ai";
+import { draftSummary, generateSMARTAim, checkDuplication, improveWriting } from "@/utils/ai";
 import { Project } from "@/types";
 import { sendEmail, TEMPLATES } from "@/utils/email";
+import SmartTextarea from "@/components/SmartTextarea";
+import { DEFAULT_CONFERENCES } from "@/constants/conferences";
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
     const [isDrafting, setIsDrafting] = useState(false);
+    const [isImproving, setIsImproving] = useState(false);
 
     const handleAIDraft = async () => {
         if (!value || value.length < 10) {
@@ -31,19 +34,46 @@ function AIUpdateSection({ initialValue }: { initialValue: string }) {
         }
     };
 
+    const handleImprove = async () => {
+        if (!value || value.trim().length < 10) {
+            alert("Please enter some text first before improving.");
+            return;
+        }
+        setIsImproving(true);
+        try {
+            const improved = await improveWriting(value, "Updates and Barriers");
+            setValue(improved);
+        } catch (error: any) {
+            alert(`Improve failed: ${error.message || "Unknown error"}`);
+        } finally {
+            setIsImproving(false);
+        }
+    };
+
     return (
         <div className="space-y-3">
             <div className="flex justify-between items-end ml-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Initial Updates/Barriers (Optional)</label>
-                <button
-                    type="button"
-                    onClick={handleAIDraft}
-                    disabled={isDrafting}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-3 py-1.5 rounded-lg hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50"
-                >
-                    {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    Draft with AI
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleImprove}
+                        disabled={isDrafting || isImproving}
+                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-violet-600 bg-violet-50 px-2.5 py-1.5 rounded-lg hover:bg-violet-100 transition-all border border-violet-100 disabled:opacity-50"
+                    >
+                        {isImproving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        Improve
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleAIDraft}
+                        disabled={isDrafting || isImproving}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-3 py-1.5 rounded-lg hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50"
+                    >
+                        {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        Draft with AI
+                    </button>
+                </div>
             </div>
             <textarea
                 name="updates_and_barriers"
@@ -51,6 +81,66 @@ function AIUpdateSection({ initialValue }: { initialValue: string }) {
                 onChange={(e) => setValue(e.target.value)}
                 placeholder="Enter bullet points (e.g. - IRB approved, - Data collection started) then click 'Draft with AI'..."
                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[150px] resize-none"
+            />
+        </div>
+    );
+}
+
+function PrimaryOutcomeField() {
+    const [value, setValue] = useState("");
+    const [isWorking, setIsWorking] = useState<"smart" | "improve" | null>(null);
+
+    const handleMakeSmart = async () => {
+        const title = (document.getElementsByName('title')[0] as HTMLInputElement)?.value;
+        if (!title) return alert("Please enter a project title first.");
+        setIsWorking("smart");
+        try {
+            const smart = await generateSMARTAim(title, value);
+            setValue(smart);
+        } catch (e: any) {
+            alert("AI Error: " + e.message);
+        } finally {
+            setIsWorking(null);
+        }
+    };
+
+    const handleImprove = async () => {
+        if (!value || value.trim().length < 10) return alert("Please enter some text first.");
+        setIsWorking("improve");
+        try {
+            const improved = await improveWriting(value, "Primary Outcome / SMART Aim");
+            setValue(improved);
+        } catch (e: any) {
+            alert("AI Error: " + e.message);
+        } finally {
+            setIsWorking(null);
+        }
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="flex justify-between items-end ml-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Primary Outcome (SMART Aim)</label>
+                <div className="flex items-center gap-2">
+                    <button type="button" onClick={handleImprove} disabled={!!isWorking}
+                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-violet-600 bg-violet-50 px-2.5 py-1.5 rounded-lg hover:bg-violet-100 transition-all border border-violet-100 disabled:opacity-50">
+                        {isWorking === "improve" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        Improve
+                    </button>
+                    <button type="button" onClick={handleMakeSmart} disabled={!!isWorking}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50">
+                        {isWorking === "smart" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        Make SMART
+                    </button>
+                </div>
+            </div>
+            <textarea
+                name="primary_outcome"
+                value={value}
+                onChange={e => setValue(e.target.value)}
+                placeholder="e.g., Increase rate of counseling from 20% to 50%..."
+                rows={3}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 resize-none"
             />
         </div>
     );
@@ -117,6 +207,7 @@ export default function NewProjectPage() {
             lead_proponent_ids: selectedLeadIds,
             primary_outcome: formData.get('primary_outcome') as string,
             updates_and_barriers: formData.get('updates_and_barriers') as string,
+            target_conference: formData.get('target_conference') as string || null,
             total_patients_impacted: parseInt(formData.get('total_patients_impacted') as string) || 0,
             estimated_cost_savings: parseFloat(formData.get('estimated_cost_savings') as string) || 0,
             abstract_summary: formData.get('abstract_summary') as string,
@@ -328,40 +419,7 @@ export default function NewProjectPage() {
                         </div>
                     </div>
 
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end ml-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Primary Outcome (SMART Aim)</label>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    const title = (document.getElementsByName('title')[0] as HTMLInputElement).value;
-                                    const currentAim = (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value;
-                                    if (!title) return alert("Please enter a title first.");
-                                    const btn = document.getElementById('smart-aim-btn');
-                                    if (btn) btn.innerHTML = '<span class="animate-spin">🌀</span> Working...';
-                                    try {
-                                        const smart = await generateSMARTAim(title, currentAim);
-                                        (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value = smart;
-                                    } catch (e: any) {
-                                        alert("AI Error: " + e.message);
-                                    } finally {
-                                        if (btn) btn.innerHTML = '✦ Make SMART';
-                                    }
-                                }}
-                                id="smart-aim-btn"
-                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100"
-                            >
-                                <Sparkles className="w-3 h-3" />
-                                Make SMART
-                            </button>
-                        </div>
-                        <textarea
-                            id="primary-outcome-textarea"
-                            name="primary_outcome"
-                            placeholder="e.g., Increase rate of counseling from 20% to 50%..."
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[100px] resize-none"
-                        />
-                    </div>
+                    <PrimaryOutcomeField />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
@@ -386,13 +444,25 @@ export default function NewProjectPage() {
                         </div>
                     </div>
 
+                    <SmartTextarea
+                        name="abstract_summary"
+                        label="Publication Abstract / Summary (Draft)"
+                        placeholder="Draft your abstract here or use it to store key results for publication..."
+                        rows={5}
+                        context="Publication Abstract for a QI project"
+                    />
+
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Publication Abstract / Summary (Draft)</label>
-                        <textarea
-                            name="abstract_summary"
-                            placeholder="Draft your abstract here or use it to store key results for publication..."
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[150px] resize-none"
-                        />
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Target Conference</label>
+                        <select
+                            name="target_conference"
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                        >
+                            <option value="">-- No Conference Targeted --</option>
+                            {DEFAULT_CONFERENCES.map(conf => (
+                                <option key={conf.id} value={conf.name}>{conf.name} — {conf.fullName}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="space-y-6 pt-10 border-t border-slate-100">
@@ -409,39 +479,4 @@ export default function NewProjectPage() {
                                 <div className="space-y-3">
                                     <p className="text-xs text-slate-500 font-medium italic">Download the IM GME Tampa template to your OneDrive first.</p>
                                     <a
-                                        href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
-                                        download
-                                        className="flex items-center justify-center gap-2 w-full py-3 bg-white border border-slate-200 text-advent-navy rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
-                                    >
-                                        <Save className="w-3 h-3" />
-                                        Download Template
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Protocol AI Assistant</span>
-                                </div>
-                                <div className="space-y-3">
-                                    <p className="text-xs text-emerald-800 font-medium italic">Use the standardized wizard to draft your protocol with AI.</p>
-                                    <button
-                                        type="button"
-                                        className="flex items-center justify-center gap-2 w-full py-3 bg-white border border-emerald-200 text-emerald-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
-                                        onClick={() => alert("The Protocol AI Wizard is available immediately after creating the project. Please save the project details first.")}
-                                    >
-                                        <Sparkles className="w-3 h-3 text-emerald-500" />
-                                        Protocol AI Wizard
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex justify-end pt-6 border-t border-slate-100">
-                    <button
-                        id="create-project-submit"
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex items-center gap-2 bg-advent-blue text-white p
+       
