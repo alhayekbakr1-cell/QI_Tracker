@@ -9,7 +9,7 @@ import { AlertCircle } from "lucide-react";
 export default function QIConsultantChat() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([
-        { role: 'ai', content: "Hello! I am your QI Academic Consultant. How can I help you with your project methodology today?" }
+        { role: 'ai', content: "What's on your mind? Ask me anything about QI methodology, your project design, PDSA cycles, metrics, writing your aim statement — whatever you're working through." }
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);

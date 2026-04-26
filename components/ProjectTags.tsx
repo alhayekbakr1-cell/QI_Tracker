@@ -4,43 +4,18 @@ import { useState, useEffect } from "react";
 import { Tag, Sparkles } from "lucide-react";
 import { getSuggestedTags } from "@/utils/ai";
 
-/** Extract clean tag tokens from any AI output format */
-function parseTags(raw: string): string[] {
-    // First try: extract all #Hashtag tokens
-    const hashMatches = raw.match(/#[\w\-]+/g);
-    if (hashMatches && hashMatches.length >= 2) {
-        return hashMatches
-            .map(t => t.replace('#', '').trim())
-            .filter(t => t.length > 1 && t.length < 30)
-            .slice(0, 6);
-    }
-
-    // Fallback: split by comma or newline, strip markdown junk, filter short/long noise
-    const candidates = raw
-        .split(/[,\n]+/)
-        .map(t => t
-            .replace(/^[\s\-\*\#\d\.]+/, '')   // strip leading bullets/numbers/markdown
-            .replace(/[\*\_\`\[\]]/g, '')        // strip inline markdown chars
-            .trim()
-        )
-        .filter(t => {
-            const len = t.length;
-            return len > 2 && len < 35 && !t.toLowerCase().includes('here are') && !t.toLowerCase().includes('keyword');
-        })
-        .slice(0, 6);
-    return candidates;
-}
-
 export default function ProjectTags({ title, category }: { title: string, category: string }) {
     const [tags, setTags] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         async function fetchTags() {
+            if (!title) return;
             setIsLoading(true);
             try {
+                // getSuggestedTags now returns a clean string[] directly via JSON mode
                 const result = await getSuggestedTags(title, category);
-                setTags(parseTags(result));
+                setTags(result);
             } catch (e) {
                 console.error("Tagging error:", e);
             } finally {
@@ -50,7 +25,26 @@ export default function ProjectTags({ title, category }: { title: string, catego
         fetchTags();
     }, [title, category]);
 
+    if (!isLoading && tags.length === 0) return null;
+
     return (
         <div className="flex flex-wrap gap-2 mt-4">
             {isLoading ? (
-                <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase trac
+                <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                    <Sparkles className="w-3 h-3 animate-pulse" />
+                    Generating tags...
+                </div>
+            ) : (
+                tags.map((tag, i) => (
+                    <span
+                        key={i}
+                        className="inline-flex items-center gap-1.5 bg-advent-blue/10 text-advent-blue border border-advent-blue/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-advent-blue/20 transition-colors cursor-default"
+                    >
+                        <Tag className="w-2.5 h-2.5" />
+                        {tag}
+                    </span>
+                ))
+            )}
+        </div>
+    );
+}

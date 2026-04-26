@@ -161,12 +161,7 @@ Be specific and concise.`;
 }
 
 export async function getQIAdvice(question: string, context?: string, handbookContent?: string): Promise<string> {
-  const prompt = `You are a QI Academic Consultant at AdventHealth.
-${handbookContent ? `Handbook context (apply these rules and terminology):\n${handbookContent}\n` : ''}
-${context ? `Project context: ${context}\n` : ''}
-Resident question: ${question}
-
-Respond concisely and academically. Cite specific handbook steps if provided.`;
+  const prompt = `${handbookContent ? `Context from the QI handbook:\n${handbookContent}\n\n` : ''}${context ? `Project context: ${context}\n\n` : ''}Resident question: ${question}`;
   return askAI(prompt);
 }
 
@@ -232,11 +227,30 @@ Updates and Barriers: ${projectData.updates_and_barriers || 'None provided'}`;
   return askAI(prompt);
 }
 
-export async function getSuggestedTags(title: string, category: string): Promise<string> {
-  const prompt = `For a QI project titled "${title}" in the category "${category}", output exactly 4-5 relevant medical or QI keywords as hashtags.
-Format: #Keyword1, #Keyword2, #Keyword3, #Keyword4
-No other text.`;
-  return askAI(prompt);
+/**
+ * Returns a JSON array of tag strings like ["HPVVaccination", "QualityImprovement"]
+ * Uses JSON mode — no prose possible.
+ */
+export async function getSuggestedTags(title: string, category: string): Promise<string[]> {
+  const prompt = `Return a JSON array of exactly 5 short medical or QI keyword tags for this project.
+Each tag must be a single CamelCase word (no spaces, no # prefix, no punctuation).
+Project: "${title}" | Category: "${category}"
+Example output: ["SepsisBundle","PatientSafety","PDSA","Outpatient","OutcomeMetric"]`;
+
+  try {
+    const raw = await invokeAI(prompt, 'json');
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((t: any) => String(t).replace(/[^\w]/g, '').trim())
+        .filter(t => t.length > 1 && t.length < 35)
+        .slice(0, 5);
+    }
+    return [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getProtocolSectionAdvice(section: string, question: string): Promise<string> {
