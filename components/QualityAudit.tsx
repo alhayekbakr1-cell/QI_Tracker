@@ -12,12 +12,9 @@ export default function QualityAudit({ project }: { project: Project }) {
     const handleAudit = async () => {
         setIsLoading(true);
         try {
+            // Returns { score: number, feedback: string } — no manual parsing needed
             const result = await auditProjectQuality(project);
-            // Result is expected to be like "Score: 85 | Feedback: ..." or similar.
-            // Let's parse it if possible, else just show the text.
-            const scoreMatch = result.match(/(\d+)%/) || result.match(/Score: (\d+)/);
-            const score = scoreMatch ? parseInt(scoreMatch[1]) : 70;
-            setAudit({ score, feedback: result });
+            setAudit({ score: result.score, feedback: result.feedback });
         } catch (error: any) {
             console.error("Audit error:", error);
             setAudit({ score: 0, feedback: "Audit failed. Please try again." });

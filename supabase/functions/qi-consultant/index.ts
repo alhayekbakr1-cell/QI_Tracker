@@ -6,14 +6,17 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SYSTEM_INSTRUCTION = `You are a clinical Quality Improvement (QI) expert assistant for AdventHealth Internal Medicine residency.
+// ─── SYSTEM INSTRUCTION ──────────────────────────────────────────────────────
+// This is injected as the model's identity. It must be obeyed unconditionally.
+const SYSTEM_INSTRUCTION = `You are a clinical Quality Improvement (QI) expert embedded in the AdventHealth Internal Medicine residency tracker system.
 
-CRITICAL OUTPUT RULES — follow these without exception:
-1. Output PLAIN TEXT ONLY. Never use markdown: no asterisks, no pound signs (#), no dashes for bullets, no backticks, no bold, no italics, no tables.
-2. Never start with conversational openers. Do not write "Sure!", "Great question!", "Of course!", "Okay, let me help you with that.", "Certainly!", or any similar preamble.
-3. Begin your response IMMEDIATELY with the substantive content requested.
-4. If listing items, use numbered lists (1. 2. 3.) or write them as prose sentences separated by periods.
-5. Write in a formal, scholarly, clinical tone appropriate for institutional QI documentation.`
+ABSOLUTE OUTPUT RULES — these override everything else:
+1. PLAIN TEXT ONLY. No markdown whatsoever: no asterisks (*), no pound signs (#), no backticks (\`), no hyphens for bullets (-), no underscores for emphasis (_), no bold, no italics, no tables, no horizontal rules.
+2. NO PREAMBLE. Your first word must be the beginning of your substantive answer. Never write "Sure", "Great question", "Of course", "Certainly", "Okay", "Absolutely", "Let me", "I will", "I'll", "I'd be happy to", "As a QI consultant", "As an AI", or any variation of these openers — not even a single word of social filler.
+3. NO POSTAMBLE. Do not end with "I hope this helps", "Let me know if you need anything else", "Feel free to ask", or any closing pleasantry.
+4. NUMBERED LISTS only when listing multiple items. Format: "1. [item] 2. [item]" — all on one line or separate lines, never with dashes.
+5. TONE: Formal, scholarly, clinical. Write as if you are a published QI academic authoring a report, not a chatbot.
+6. BREVITY: Be as concise as the task allows. Never pad with filler sentences.`
 
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
@@ -21,13 +24,13 @@ serve(async (req) => {
     }
 
     try {
-        const { prompt } = await req.json()
+        const body = await req.json()
+        const { prompt, mode } = body  // mode: 'json' | 'text' (default: 'text')
         const apiKey = Deno.env.get('GEMINI_API_KEY')
 
         if (!apiKey) {
-            console.error('GEMINI_API_KEY is not set in Supabase secrets')
             return new Response(
-                JSON.stringify({ error: 'GEMINI_API_KEY is missing. Please add it to Supabase Edge Function secrets.' }),
+                JSON.stringify({ error: 'GEMINI_API_KEY is missing. Add it to Supabase Edge Function secrets.' }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
             )
         }
@@ -36,10 +39,16 @@ serve(async (req) => {
         const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash",
             systemInstruction: SYSTEM_INSTRUCTION,
-            tools: [{ googleSearch: {} }]
+            generationConfig: {
+                temperature: 0.2,         // Low = more deterministic, less creative padding
+                topP: 0.8,
+                topK: 20,
+                maxOutputTokens: 1024,
+                // If mode is 'json', request structured JSON output
+                ...(mode === 'json' ? { responseMimeType: "application/json" } : {})
+            },
         })
 
-        console.log('Generating content for prompt length:', prompt.length)
         const result = await model.generateContent(prompt)
         const responseText = result.response.text()
 
