@@ -14,6 +14,15 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 
+/** Strip conversational AI openers that appear before the actual content */
+function stripPreamble(text: string): string {
+  // Matches one or two leading sentences that are social filler
+  const openerPattern = /^(okay[,!.]?\s*|ok[,!.]?\s*|sure[,!.]?\s*|great[,!.]?\s*|certainly[,!.]?\s*|of course[,!.]?\s*|absolutely[,!.]?\s*)?(i (will|am|understand|see|can|know|have|need|get|want)|i'm (ready|happy|going|here|about)|let me|here (is|are)|i'll|i've|i'd|as a |as an )[^.!?]*[.!?]\s*/gi;
+  const cleaned = text.replace(openerPattern, '').trim();
+  // Only use cleaned version if something meaningful remains
+  return cleaned.length > 20 ? cleaned : text.trim();
+}
+
 export async function askAI(prompt: string) {
   const supabase = createClient();
   const { data, error } = await supabase.functions.invoke('qi-consultant', {
@@ -21,7 +30,7 @@ export async function askAI(prompt: string) {
   });
 
   if (error) throw error;
-  return stripMarkdown(data.text);
+  return stripPreamble(stripMarkdown(data.text));
 }
 
 export async function improveWriting(text: string, fieldContext: string) {
@@ -192,21 +201,4 @@ export async function getSuggestedTags(title: string, category: string) {
 export async function getProtocolSectionAdvice(section: string, question: string) {
   const prompt = `
     You are a Quality Improvement (QI) Academic Consultant at AdventHealth.
-    A resident is currently filling out the "${section}" section of their QI Protocol.
-    
-    Resident's Question: "${question}"
-    
-    Provide a professional, academic, and encouraging answer that helps them fill this specific section correctly according to QI best practices (e.g., SQUIRE guidelines, PDSA methodology).
-    Be concise but high-value.
-  `;
-  return askAI(prompt);
-}
-
-export async function getLiveConferenceDeadline(conferenceName: string) {
-  const prompt = `
-    You are a Quality Improvement (QI) Academic Scout.
-    Search the web for the official abstract submission deadline for the next "${conferenceName}" conference.
-    
-    CRITICAL:
-    1. Look for the exact date and year (e.g., Nov 24, 2026).
-    2. Identi
+    A resident is currently filling out the "${section}" sec

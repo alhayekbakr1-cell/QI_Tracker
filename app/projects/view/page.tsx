@@ -240,7 +240,8 @@ export default function ProjectDetailPage() {
                             </Section>
                         )}
 
-                        {/* Impact Section */}
+                        {/* Impact Section — only shown when at least one value is non-zero */}
+                        {((project.total_patients_impacted || 0) > 0 || (Number(project.estimated_cost_savings) || 0) > 0) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 bg-slate-50/50 rounded-[2.5rem] px-8 border border-slate-100">
                             <div className="space-y-2">
                                 <dt className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -264,6 +265,7 @@ export default function ProjectDetailPage() {
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">Calculated based on institutional value</p>
                             </div>
                         </div>
+                        )}
 
                         {/* Metrics Section */}
                         <Section title="Project Metrics" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
@@ -432,10 +434,4 @@ export default function ProjectDetailPage() {
                 <ProtocolWizard
                     projectId={project.id}
                     projectTitle={project.title}
-                    onClose={() => setIsWizardOpen(false)}
-                />
-            )}
-            {project && (
-                <PublicationAssistant
-                    project={project}
-                    isOpen={isPubAssistantOpen}
+                    onClose={() => s

@@ -278,8 +278,9 @@ export default function EditProjectPage() {
         fetchData();
     }, [id, router]);
 
-    const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin');
-    const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin');
+    // All users are available for linking; Faculty/Admin shown first then the rest
+    const facultyProfiles = allProfiles; // "Link to Registered User" shows everyone
+    const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin' && p.role !== 'Operator');
 
     const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -597,6 +598,4 @@ export default function EditProjectPage() {
                                         Download .pptx
                                     </a>
                                 </div>
-                                <FileUploader
-                                    projectId={id!}
-              
+               
