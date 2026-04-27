@@ -61,7 +61,7 @@ export default function ActivityFeed() {
 
                 // 4. Fetch recent audit logs (handling potential missing table)
                 const { data: auditLogs, error: aError } = await supabase
-                    .from('audit_log')
+                    .from('audit_logs')
                     .select('id, field_name, new_value, created_at, project_id, user_id')
                     .order('created_at', { ascending: false })
                     .limit(10);
