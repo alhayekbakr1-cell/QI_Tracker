@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Upload, FileCheck, Loader2 } from "lucide-react";
+import { useMsal } from "@azure/msal-react";
+import { loginRequest } from "@/utils/auth/msalConfig";
 
 interface FileUploaderProps {
     projectId: string;
@@ -16,49 +18,83 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
     const [isLinking, setIsLinking] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
     const supabase = createClient();
+    const { instance, accounts } = useMsal();
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
             const file = e.target.files?.[0];
             if (!file) return;
 
-            if (file.size > 25 * 1024 * 1024) {
-                alert("File is too large! Maximum limit is 25MB.");
-                return;
-            }
-
             setUploading(true);
 
-            const fileExt = file.name.split('.').pop();
-            const filePath = `${projectId}/${fieldName}_${Date.now()}.${fileExt}`;
-
-            // Upload to Supabase Storage
-            const { error: uploadError } = await supabase.storage
-                .from('project-documents')
-                .upload(filePath, file);
-
-            if (uploadError) {
-                console.error('Storage upload error:', uploadError);
-                throw new Error(`Storage error: ${uploadError.message}`);
+            // 1. Get Access Token for Graph
+            let tokenResponse;
+            try {
+                tokenResponse = await instance.acquireTokenSilent({
+                    ...loginRequest,
+                    account: accounts[0]
+                });
+            } catch (error) {
+                // Fallback to popup if silent acquisition fails
+                tokenResponse = await instance.acquireTokenPopup(loginRequest);
             }
 
-            // Get Public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('project-documents')
-                .getPublicUrl(filePath);
+            const accessToken = tokenResponse.accessToken;
 
-            // Update database
+            // 2. Upload to OneDrive
+            // Folder structure: /QI_Tracker/{projectId}/{fileName}
+            const fileName = encodeURIComponent(file.name);
+            const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/QI_Tracker/${projectId}/${fileName}:/content`;
+
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': file.type
+                },
+                body: file
+            });
+
+            if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json();
+                throw new Error(`OneDrive upload failed: ${errorData.error?.message || uploadResponse.statusText}`);
+            }
+
+            const uploadData = await uploadResponse.json();
+            const driveItemId = uploadData.id;
+
+            // 3. Create Shareable Link
+            const linkResponse = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${driveItemId}/createLink`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: 'view',
+                    scope: 'anonymous'
+                })
+            });
+
+            if (!linkResponse.ok) {
+                throw new Error('Failed to create shareable link');
+            }
+
+            const linkData = await linkResponse.json();
+            const finalUrl = linkData.link.webUrl;
+
+            // 4. Update database with OneDrive link
             const { error: updateError } = await supabase
                 .from('projects')
-                .update({ [fieldName]: publicUrl })
+                .update({ [fieldName]: finalUrl })
                 .eq('id', projectId);
 
             if (updateError) {
-                console.error('Database update error:', updateError);
                 throw new Error(`Database error: ${updateError.message}`);
             }
 
-            onUploadComplete(publicUrl);
+            onUploadComplete(finalUrl);
+            alert("File uploaded successfully to OneDrive!");
         } catch (error) {
             console.error('Error uploading file:', error);
             alert(error instanceof Error ? error.message : 'Error uploading file!');

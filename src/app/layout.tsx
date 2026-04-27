@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
+import MsalWrapper from "@/components/MsalWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,9 +30,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-slate-50 min-h-screen flex flex-col`}>
-        <AppShell>
-          {children}
-        </AppShell>
+        <MsalWrapper>
+          <AppShell>
+            {children}
+          </AppShell>
+        </MsalWrapper>
         <footer className="py-6 border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <p className="text-sm text-slate-500">

@@ -12,8 +12,7 @@ import { useEffect, useState } from "react";
 import { FileDown, RefreshCw } from "lucide-react";
 import { draftSummary, auditProjectQuality, suggestMetrics, improveWriting, generateAbstract } from "@/utils/ai";
 import SmartTextarea from "@/components/SmartTextarea";
-import { DEFAULT_CONFERENCES } from "@/constants/conferences";
-
+import { fetchRegistry, Conference } from "@/constants/conferences";
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
     const [isDrafting, setIsDrafting] = useState(false);
@@ -282,6 +281,7 @@ export default function EditProjectPage() {
 
     const [project, setProject] = useState<Project | null>(null);
     const [allProfiles, setAllProfiles] = useState<any[]>([]);
+    const [conferences, setConferences] = useState<Conference[]>([]);
     const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
     const [selectedProponentIds, setSelectedProponentIds] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -324,6 +324,10 @@ export default function EditProjectPage() {
                 .select('id, full_name, email, role')
                 .order('full_name');
             setAllProfiles(profiles || []);
+
+            // Fetch conferences
+            const registry = await fetchRegistry();
+            setConferences(registry);
 
             setIsLoading(false);
         }
@@ -616,9 +620,9 @@ export default function EditProjectPage() {
                             className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
                         >
                             <option value="">-- No Conference Targeted --</option>
-                            {Array.from(new Set(DEFAULT_CONFERENCES.map(c => c.group || 'Other'))).map(group => (
+                            {Array.from(new Set(conferences.map(c => c.group || 'Other'))).map(group => (
                                 <optgroup key={group} label={group}>
-                                    {DEFAULT_CONFERENCES.filter(c => (c.group || 'Other') === group).map(conf => (
+                                    {conferences.filter(c => (c.group || 'Other') === group).map(conf => (
                                         <option key={conf.id} value={conf.name}>
                                             {conf.name} — {conf.fullName}
                                         </option>

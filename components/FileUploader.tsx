@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Upload, FileCheck, Loader2 } from "lucide-react";
+import { useMsal } from "@azure/msal-react";
+import { loginRequest } from "@/utils/auth/msalConfig";
 
 interface FileUploaderProps {
     projectId: string;
@@ -16,6 +18,7 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
     const [isLinking, setIsLinking] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
     const supabase = createClient();
+    const { instance, accounts } = useMsal();
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
@@ -29,25 +32,70 @@ export default function FileUploader({ projectId, fieldName, onUploadComplete, c
 
             setUploading(true);
 
-            const fileExt = file.name.split('.').pop();
-            const filePath = `${projectId}/${fieldName}_${Date.now()}.${fileExt}`;
-
-            // Upload to Supabase Storage
-            const { error: uploadError } = await supabase.storage
-                .from('project-documents')
-                .upload(filePath, file);
-
-            if (uploadError) {
-                console.error('Storage upload error:', uploadError);
-                throw new Error(`Storage error: ${uploadError.message}`);
+            // 1. Get MSAL Token
+            let accessToken;
+            if (accounts.length === 0) {
+                const loginResponse = await instance.loginPopup(loginRequest);
+                accessToken = loginResponse.accessToken;
+            } else {
+                const request = {
+                    ...loginRequest,
+                    account: accounts[0]
+                };
+                try {
+                    const response = await instance.acquireTokenSilent(request);
+                    accessToken = response.accessToken;
+                } catch (err) {
+                    const loginResponse = await instance.loginPopup(loginRequest);
+                    accessToken = loginResponse.accessToken;
+                }
             }
 
-            // Get Public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('project-documents')
-                .getPublicUrl(filePath);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${fieldName}_${Date.now()}.${fileExt}`;
+            const filePath = `QI_Tracker/${projectId}/${fileName}`;
 
-            // Update database
+            // 2. Upload to OneDrive via Graph API
+            const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/${filePath}:/content`;
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': file.type || 'application/octet-stream'
+                },
+                body: file
+            });
+
+            if (!uploadResponse.ok) {
+                const err = await uploadResponse.json();
+                throw new Error(`Graph API error: ${err.error?.message || 'Upload failed'}`);
+            }
+
+            const driveItem = await uploadResponse.json();
+
+            // 3. Create shareable link
+            const shareUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${driveItem.id}/createLink`;
+            const shareResponse = await fetch(shareUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: 'view',
+                    scope: 'anonymous'
+                })
+            });
+
+            if (!shareResponse.ok) {
+                const err = await shareResponse.json();
+                throw new Error(`Graph API link creation error: ${err.error?.message || 'Link failed'}`);
+            }
+
+            const shareData = await shareResponse.json();
+            const publicUrl = shareData.link.webUrl;
+
+            // 4. Update Supabase
             const { error: updateError } = await supabase
                 .from('projects')
                 .update({ [fieldName]: publicUrl })

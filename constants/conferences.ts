@@ -68,6 +68,11 @@ export const DEFAULT_CONFERENCES: Conference[] = [
     // ── Radiology ─────────────────────────────────────────────────────────
     { id: 'RSNA',   name: 'RSNA Annual',    fullName: 'Radiological Society of North America Annual Meeting',           month: 10, day: 25, website: 'https://www.rsna.org/annual-meeting',                                                      group: 'Radiology' },
 
+    // ── Florida / Regional ────────────────────────────────────────────────
+    { id: 'FMA',    name: 'FMA Annual',     fullName: 'Florida Medical Association Annual Meeting',                     month: 7,  day: 1,  website: 'https://www.flmedical.org/',                                                               group: 'Florida / Regional' },
+    { id: 'FL_ACP', name: 'FL ACP',         fullName: 'Florida Chapter ACP Annual Scientific Meeting',                  month: 9,  day: 1,  website: 'https://www.floridaacp.org/',                                                              group: 'Florida / Regional' },
+    { id: 'FHA',    name: 'FHA Annual',     fullName: 'Florida Hospital Association Annual Meeting',                    month: 10, day: 1,  website: 'https://www.fha.org/',                                                                     group: 'Florida / Regional' },
+    
     // ── Other Major Specialties ───────────────────────────────────────────
     { id: 'AAP',    name: 'AAP NCE',        fullName: 'American Academy of Pediatrics National Conference & Exhibition',month: 9,  day: 1,  website: 'https://aapexperience.org/',                                                               group: 'Pediatrics' },
     { id: 'ACS',    name: 'ACS Clin Cong',  fullName: 'American College of Surgeons Clinical Congress',                 month: 9,  day: 15, website: 'https://www.facs.org/for-medical-professionals/education/clinical-congress/',            group: 'Surgery' },
