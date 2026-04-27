@@ -10,27 +10,8 @@ import DeleteProjectButton from "@/components/DeleteProjectButton";
 import FileUploader from "@/components/FileUploader";
 import Section from "@/components/Section";
 import { useEffect, useState } from "react";
-import { draftSummary, auditProjectQuality, suggestMetrics, generateSMARTAim } from "@/utils/ai";
+import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
 
-const CATEGORIES = [
-    "Clinical Quality",
-    "Patient Safety",
-    "Operational Efficiency",
-    "Patient Experience",
-    "Educational/Research",
-    "Equity & Access"
-];
-
-const SUBCATEGORIES = [
-    "Workflow Optimization",
-    "Documentation/EMR",
-    "Patient Education",
-    "Staff Training",
-    "Cost Reduction",
-    "Access to Care",
-    "Clinical Protocols",
-    "Medication Safety"
-];
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
@@ -387,10 +368,9 @@ export default function EditProjectPage() {
                                             defaultValue={project.status}
                                             className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
                                         >
-                                            <option value="Idea">Idea / Conceptualization</option>
-                                            <option value="Pre-Intervention">Pre-Intervention (Data Collection)</option>
-                                            <option value="Intervention Ongoing">Intervention Ongoing</option>
-                                            <option value="Sustain the Gains">Sustain the Gains / Post-Intervention</option>
+                                            {PROJECT_STATUSES.map(s => (
+                                                <option key={s.value} value={s.value}>{s.label}</option>
+                                            ))}
                                         </select>
                                         <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
                                     </div>
@@ -398,32 +378,34 @@ export default function EditProjectPage() {
 
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Category</label>
-                                    <input
+                                    <select
                                         name="category"
-                                        list="categories-list"
                                         defaultValue={project.category || ''}
-                                        placeholder="e.g., Clinical Quality"
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
-                                    />
-                                    <datalist id="categories-list">
-                                        {CATEGORIES.map(c => <option key={c} value={c} />)}
-                                    </datalist>
+                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                    >
+                                        <option value="">-- Select Category --</option>
+                                        {project.category && !PROJECT_CATEGORIES.includes(project.category) && (
+                                            <option value={project.category}>{project.category} (Legacy)</option>
+                                        )}
+                                        {PROJECT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Specialty Focus</label>
-                                    <input
+                                    <select
                                         name="subcategory"
-                                        list="subcategories-list"
                                         defaultValue={project.subcategory || ''}
-                                        placeholder="e.g., Workflow Optimization"
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
-                                    />
-                                    <datalist id="subcategories-list">
-                                        {SUBCATEGORIES.map(s => <option key={s} value={s} />)}
-                                    </datalist>
+                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                    >
+                                        <option value="">-- Select Sub-Category --</option>
+                                        {project.subcategory && !PROJECT_SUBCATEGORIES.includes(project.subcategory) && (
+                                            <option value={project.subcategory}>{project.subcategory} (Legacy)</option>
+                                        )}
+                                        {PROJECT_SUBCATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
                                 </div>
 
                                 <div className="space-y-3">
@@ -591,10 +573,9 @@ export default function EditProjectPage() {
                                         className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
                                     >
                                         <option value="">-- No Conference Targeted --</option>
-                                        <option value="ACP">ACP National Meeting</option>
-                                        <option value="SHM">SHM Converge (Hospital Medicine)</option>
-                                        <option value="SGIM">SGIM Annual Meeting</option>
-                                        <option value="AHRD">AdventHealth GME Research Day</option>
+                                        {CONFERENCE_OPTIONS.map(conf => (
+                                            <option key={conf.id} value={conf.id}>{conf.name}</option>
+                                        ))}
                                     </select>
                                     <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
                                 </div>

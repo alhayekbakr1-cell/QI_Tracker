@@ -4,6 +4,8 @@ import { Search } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useTransition } from "react";
 
+import { PROJECT_CATEGORIES, PROJECT_STATUSES } from "@/constants/projectData";
+
 export default function ProjectFilters() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -65,10 +67,9 @@ export default function ProjectFilters() {
                     className="bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold px-3 py-2 outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue transition-all cursor-pointer"
                 >
                     <option value="">All Statuses</option>
-                    <option value="Idea">Idea</option>
-                    <option value="Pre-Intervention">Pre-Intervention</option>
-                    <option value="Intervention Ongoing">Intervention Ongoing</option>
-                    <option value="Sustain the Gains">Sustain the Gains</option>
+                    {PROJECT_STATUSES.map(status => (
+                        <option key={status.value} value={status.value}>{status.label}</option>
+                    ))}
                 </select>
 
                 <select
@@ -77,8 +78,9 @@ export default function ProjectFilters() {
                     className="bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold px-3 py-2 outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue transition-all cursor-pointer"
                 >
                     <option value="">All Categories</option>
-                    <option value="Inpatient">Inpatient</option>
-                    <option value="Outpatient">Outpatient</option>
+                    {PROJECT_CATEGORIES.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                    ))}
                 </select>
             </div>
         </div>

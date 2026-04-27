@@ -10,26 +10,8 @@ import { useEffect, useState } from "react";
 import { draftSummary, generateSMARTAim, suggestMetrics, checkDuplication } from "@/utils/ai";
 import { Project } from "@/types";
 import { sendEmail, TEMPLATES } from "@/utils/email";
+import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
 
-const CATEGORIES = [
-    "Clinical Quality",
-    "Patient Safety",
-    "Operational Efficiency",
-    "Patient Experience",
-    "Educational/Research",
-    "Equity & Access"
-];
-
-const SUBCATEGORIES = [
-    "Workflow Optimization",
-    "Documentation/EMR",
-    "Patient Education",
-    "Staff Training",
-    "Cost Reduction",
-    "Access to Care",
-    "Clinical Protocols",
-    "Medication Safety"
-];
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
@@ -251,39 +233,35 @@ export default function NewProjectPage() {
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Initial Status</label>
                                     <select id="status-select" name="status" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer">
-                                        <option value="Idea">Idea</option>
-                                        <option value="Pre-Intervention">Pre-Intervention</option>
-                                        <option value="Intervention Ongoing">Intervention Ongoing</option>
-                                        <option value="Sustain the Gains">Sustain the Gains</option>
+                                        {PROJECT_STATUSES.map(s => (
+                                            <option key={s.value} value={s.value}>{s.label}</option>
+                                        ))}
                                     </select>
                                 </div>
 
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category</label>
-                                    <input
+                                    <select
                                         name="category"
-                                        list="categories-list"
-                                        placeholder="e.g., Clinical Quality"
-                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
-                                    />
-                                    <datalist id="categories-list">
-                                        {CATEGORIES.map(c => <option key={c} value={c} />)}
-                                    </datalist>
+                                        required
+                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                    >
+                                        <option value="">-- Select Category --</option>
+                                        {PROJECT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Category</label>
-                                    <input
+                                    <select
                                         name="subcategory"
-                                        list="subcategories-list"
-                                        placeholder="e.g., Workflow Optimization"
-                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
-                                    />
-                                    <datalist id="subcategories-list">
-                                        {SUBCATEGORIES.map(s => <option key={s} value={s} />)}
-                                    </datalist>
+                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                    >
+                                        <option value="">-- Select Sub-Category --</option>
+                                        {PROJECT_SUBCATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
                                 </div>
 
                                 <div className="space-y-3">
@@ -442,10 +420,9 @@ export default function NewProjectPage() {
                                         className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
                                     >
                                         <option value="">-- Select Target Venue --</option>
-                                        <option value="ACP">ACP National Meeting</option>
-                                        <option value="SHM">SHM Converge (Hospital Medicine)</option>
-                                        <option value="SGIM">SGIM Annual Meeting</option>
-                                        <option value="AHRD">AdventHealth GME Research Day</option>
+                                        {CONFERENCE_OPTIONS.map(conf => (
+                                            <option key={conf.id} value={conf.id}>{conf.name}</option>
+                                        ))}
                                     </select>
                                     <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
                                         <LayoutGrid className="w-4 h-4 text-slate-300" />
