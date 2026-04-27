@@ -272,6 +272,7 @@ export default function EditProjectPage() {
             title: formData.get('title') as string,
             status: formData.get('status') as any,
             category: formData.get('category') as string,
+            subcategory: formData.get('subcategory') as string,
             faculty: formData.get('faculty_name') as string,
             faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
             primary_outcome: formData.get('primary_outcome') as string,
@@ -368,6 +369,28 @@ export default function EditProjectPage() {
                                 <option value="Intervention Ongoing">Intervention Ongoing</option>
                                 <option value="Sustain the Gains">Sustain the Gains</option>
                             </select>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category</label>
+                            <input
+                                name="category"
+                                defaultValue={project.category || ''}
+                                placeholder="e.g., Outpatient"
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Category</label>
+                            <input
+                                name="subcategory"
+                                defaultValue={project.subcategory || ''}
+                                placeholder="e.g., Clinical Workflow"
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
+                            />
                         </div>
 
                         <div className="space-y-3">

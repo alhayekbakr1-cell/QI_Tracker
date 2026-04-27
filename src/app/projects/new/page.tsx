@@ -106,6 +106,7 @@ export default function NewProjectPage() {
             title: formData.get('title') as string,
             status: formData.get('status') as any,
             category: formData.get('category') as string,
+            subcategory: formData.get('subcategory') as string,
             faculty: formData.get('faculty_name') as string,
             faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
             proponents: Array.from(new Set([...manualProponents, ...linkedProponentNames])),
@@ -113,6 +114,7 @@ export default function NewProjectPage() {
             proponent_ids: selectedProponentIds,
             lead_proponent_ids: selectedLeadIds,
             primary_outcome: formData.get('primary_outcome') as string,
+            target_conference: formData.get('target_conference') as string || null,
             updates_and_barriers: formData.get('updates_and_barriers') as string,
             total_patients_impacted: parseInt(formData.get('total_patients_impacted') as string) || 0,
             estimated_cost_savings: parseFloat(formData.get('estimated_cost_savings') as string) || 0,
@@ -237,6 +239,11 @@ export default function NewProjectPage() {
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category</label>
                             <input name="category" placeholder="e.g., Outpatient" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300" />
                         </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Category</label>
+                            <input name="subcategory" placeholder="e.g., Clinical Workflow" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300" />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -351,6 +358,20 @@ export default function NewProjectPage() {
                             placeholder="e.g., Increase rate of counseling from 20% to 50%..."
                             className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[100px] resize-none"
                         />
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Targeting Conference</label>
+                        <select
+                            name="target_conference"
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                        >
+                            <option value="">-- No Conference Targeted --</option>
+                            <option value="ACP National (Internal Medicine)">ACP National (Internal Medicine)</option>
+                            <option value="SHM Converge (Hospital Medicine)">SHM Converge (Hospital Medicine)</option>
+                            <option value="SGIM Annual Meeting">SGIM Annual Meeting</option>
+                            <option value="AdventHealth Research Day">AdventHealth Research Day</option>
+                        </select>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
