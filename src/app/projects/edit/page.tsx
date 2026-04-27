@@ -503,10 +503,10 @@ export default function EditProjectPage() {
                             className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
                         >
                             <option value="">-- No Conference Targeted --</option>
-                            <option value="ACP National (Internal Medicine)">ACP National (Internal Medicine)</option>
-                            <option value="SHM Converge (Hospital Medicine)">SHM Converge (Hospital Medicine)</option>
-                            <option value="SGIM Annual Meeting">SGIM Annual Meeting</option>
-                            <option value="AdventHealth Research Day">AdventHealth Research Day</option>
+                            <option value="ACP">ACP National (Internal Medicine)</option>
+                            <option value="SHM">SHM Converge (Hospital Medicine)</option>
+                            <option value="SGIM">SGIM Annual Meeting</option>
+                            <option value="AHRD">AdventHealth Research Day</option>
                         </select>
                     </div>
 

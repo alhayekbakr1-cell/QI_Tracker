@@ -35,8 +35,27 @@ export default function ConferenceCountdown({ targetConferenceId }: ConferenceCo
     }
 
     const conferences = registry.length > 0 ? registry : DEFAULT_CONFERENCES;
-    const conf = conferences.find(c => c.id === targetConferenceId);
-    if (!conf) return null;
+    const conf = conferences.find(c => 
+        c.id === targetConferenceId || 
+        c.name === targetConferenceId || 
+        c.fullName === targetConferenceId ||
+        (targetConferenceId?.includes("ACP") && c.id === "ACP") ||
+        (targetConferenceId?.includes("SHM") && c.id === "SHM") ||
+        (targetConferenceId?.includes("SGIM") && c.id === "SGIM") ||
+        (targetConferenceId?.includes("Research Day") && c.id === "AHRD")
+    );
+
+    if (!conf) {
+        return (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Targeting Conference</p>
+                <div className="flex items-center justify-between">
+                    <p className="text-sm font-black text-slate-700">{targetConferenceId}</p>
+                    <Trophy className="w-4 h-4 text-slate-300" />
+                </div>
+            </div>
+        );
+    }
 
     const deadlineDate = getNextDeadline(conf);
     const isPast = false;

@@ -115,6 +115,14 @@ export const DEFAULT_CONFERENCES: Conference[] = [
         month: 11, // December
         day: 5,
         website: 'https://www.hematology.org/meetings/annual-meeting'
+    },
+    {
+        id: 'AHRD',
+        name: 'AdventHealth Research Day',
+        fullName: 'AdventHealth Orlando Annual Research Day',
+        month: 3, // April
+        day: 15,
+        website: 'https://www.adventhealthresearchinstitute.com/'
     }
 ];
 
