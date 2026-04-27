@@ -4,13 +4,33 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Project } from "@/types";
 import PHIWarning from "@/components/PHIWarning";
-import { ArrowLeft, Save, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Loader2, LayoutGrid, Users, Target, TrendingUp, Trophy, Layers, Info, FileText, FileDown, RefreshCw, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
 import FileUploader from "@/components/FileUploader";
+import Section from "@/components/Section";
 import { useEffect, useState } from "react";
-import { FileDown, RefreshCw } from "lucide-react";
-import { draftSummary, auditProjectQuality, suggestMetrics } from "@/utils/ai";
+import { draftSummary, auditProjectQuality, suggestMetrics, generateSMARTAim } from "@/utils/ai";
+
+const CATEGORIES = [
+    "Clinical Quality",
+    "Patient Safety",
+    "Operational Efficiency",
+    "Patient Experience",
+    "Educational/Research",
+    "Equity & Access"
+];
+
+const SUBCATEGORIES = [
+    "Workflow Optimization",
+    "Documentation/EMR",
+    "Patient Education",
+    "Staff Training",
+    "Cost Reduction",
+    "Access to Care",
+    "Clinical Protocols",
+    "Medication Safety"
+];
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
     const [value, setValue] = useState(initialValue);
@@ -344,267 +364,324 @@ export default function EditProjectPage() {
                 </div>
             </div>
 
-            <form onSubmit={handleUpdate} className="space-y-8 bg-white p-10 rounded-3xl border border-slate-200 shadow-sm">
-                <div className="grid grid-cols-1 gap-8">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Project Title</label>
-                        <input
-                            name="title"
-                            required
-                            defaultValue={project.title}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Current Status</label>
-                            <select
-                                name="status"
-                                defaultValue={project.status}
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
-                            >
-                                <option value="Idea">Idea</option>
-                                <option value="Pre-Intervention">Pre-Intervention</option>
-                                <option value="Intervention Ongoing">Intervention Ongoing</option>
-                                <option value="Sustain the Gains">Sustain the Gains</option>
-                            </select>
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category</label>
-                            <input
-                                name="category"
-                                defaultValue={project.category || ''}
-                                placeholder="e.g., Outpatient"
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Category</label>
-                            <input
-                                name="subcategory"
-                                defaultValue={project.subcategory || ''}
-                                placeholder="e.g., Clinical Workflow"
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
-                            <div className="flex flex-col gap-2">
+            <form onSubmit={handleUpdate} className="space-y-12 pb-20">
+                <div className="grid grid-cols-1 gap-12">
+                    <Section title="Core Project Information" icon={<LayoutGrid className="w-5 h-5 text-advent-blue" />}>
+                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Project Title</label>
                                 <input
-                                    name="faculty_name"
-                                    placeholder="Enter mentor's full name..."
-                                    defaultValue={project.faculty || ''}
-                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                    name="title"
+                                    required
+                                    defaultValue={project.title}
+                                    className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
                                 />
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1 italic">Link to Registered User (Required for Portal Access)</label>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Current Lifecycle Status</label>
+                                    <div className="relative">
+                                        <select
+                                            name="status"
+                                            defaultValue={project.status}
+                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
+                                        >
+                                            <option value="Idea">Idea / Conceptualization</option>
+                                            <option value="Pre-Intervention">Pre-Intervention (Data Collection)</option>
+                                            <option value="Intervention Ongoing">Intervention Ongoing</option>
+                                            <option value="Sustain the Gains">Sustain the Gains / Post-Intervention</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Category</label>
+                                    <input
+                                        name="category"
+                                        list="categories-list"
+                                        defaultValue={project.category || ''}
+                                        placeholder="e.g., Clinical Quality"
+                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                    />
+                                    <datalist id="categories-list">
+                                        {CATEGORIES.map(c => <option key={c} value={c} />)}
+                                    </datalist>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Specialty Focus</label>
+                                    <input
+                                        name="subcategory"
+                                        list="subcategories-list"
+                                        defaultValue={project.subcategory || ''}
+                                        placeholder="e.g., Workflow Optimization"
+                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                    />
+                                    <datalist id="subcategories-list">
+                                        {SUBCATEGORIES.map(s => <option key={s} value={s} />)}
+                                    </datalist>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">PDSA Cycle Iteration</label>
+                                    <input
+                                        type="number"
+                                        name="pdsa_cycle"
+                                        defaultValue={project.pdsa_cycle || 1}
+                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    <Section title="Project Stakeholders" icon={<Users className="w-5 h-5 text-emerald-500" />}>
+                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor / PI</label>
+                                    <div className="space-y-4">
+                                        <input
+                                            name="faculty_name"
+                                            placeholder="Mentor's full name..."
+                                            defaultValue={project.faculty || ''}
+                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                        />
+                                        <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block italic">Link to System Account</label>
+                                            <select
+                                                name="faculty_id"
+                                                defaultValue={project.faculty_id || ""}
+                                                className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-advent-blue/10 text-xs font-bold text-slate-600"
+                                            >
+                                                <option value="">-- No Account Linked --</option>
+                                                {facultyProfiles.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead Investigators</label>
+                                    <div className="space-y-4">
+                                        <input
+                                            name="lead_proponents_text"
+                                            placeholder="Other investigators (manual list)..."
+                                            defaultValue={project.lead_proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedLeadIds.includes(p.id))).join(', ')}
+                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 text-xs font-bold transition-all"
+                                        />
+                                        <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">Registered Members:</p>
+                                            <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2">
+                                                {residentProfiles.map(p => (
+                                                    <label key={p.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white transition-colors cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedLeadIds.includes(p.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setSelectedLeadIds([...selectedLeadIds, p.id]);
+                                                                else setSelectedLeadIds(selectedLeadIds.filter(id => id !== p.id));
+                                                            }}
+                                                            className="w-4 h-4 rounded border-slate-300 text-advent-navy focus:ring-advent-navy"
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-600 group-hover:text-advent-navy transition-colors">{p.full_name}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    <Section title="Extended Performance & Impact" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
+                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-end ml-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        Primary Outcome Goal (SMART Aim)
+                                        <Sparkles className="w-3 h-3 text-advent-blue/40" />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            const titleVal = (document.getElementsByName('title')[0] as HTMLInputElement).value;
+                                            const currentAim = (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value;
+                                            if (!titleVal) return alert("Please enter a title first.");
+                                            const btn = document.getElementById('edit-smart-aim-btn');
+                                            if (btn) btn.innerHTML = '<span class="animate-spin text-emerald-500">🌀</span> Polishing...';
+                                            try {
+                                                const smart = await generateSMARTAim(titleVal, currentAim);
+                                                (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value = smart;
+                                            } catch (e: any) {
+                                                alert("AI Error: " + e.message);
+                                            } finally {
+                                                if (btn) btn.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg> Optimize Aim';
+                                            }
+                                        }}
+                                        id="edit-smart-aim-btn"
+                                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100 active:scale-95 shadow-sm shadow-emerald-500/10"
+                                    >
+                                        <Sparkles className="w-3 h-3" />
+                                        Optimize Aim
+                                    </button>
+                                </div>
+                                <textarea
+                                    name="primary_outcome"
+                                    defaultValue={project.primary_outcome || ''}
+                                    placeholder="Describe the main goal of this project..."
+                                    className="w-full p-6 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[120px] resize-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                        Patients Impacted
+                                        <Users className="w-3 h-3 text-slate-400" />
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            type="number"
+                                            name="total_patients_impacted"
+                                            defaultValue={project.total_patients_impacted || 0}
+                                            placeholder="e.g., 150"
+                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all pl-14"
+                                        />
+                                        <Users className="absolute left-6 top-5 w-5 h-5 text-slate-300 group-focus-within:text-advent-blue transition-colors" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                        Estimated Cost Savings ($)
+                                        <Target className="w-3 h-3 text-slate-400" />
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            type="number"
+                                            name="estimated_cost_savings"
+                                            step="0.01"
+                                            defaultValue={project.estimated_cost_savings || 0}
+                                            placeholder="e.g., 5000.00"
+                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all pl-14"
+                                        />
+                                        <span className="absolute left-6 top-5 text-xl font-black text-slate-300 group-focus-within:text-emerald-500 transition-colors">$</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    <Section title="Academic Target & Publication" icon={<Trophy className="w-5 h-5 text-amber-500" />}>
+                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Conference Pathway</label>
+                                <div className="relative">
                                     <select
-                                        name="faculty_id"
-                                        defaultValue={project.faculty_id || ""}
-                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-advent-blue/10 text-xs font-bold text-slate-600 cursor-pointer"
+                                        name="target_conference"
+                                        defaultValue={project.target_conference || ""}
+                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
                                     >
-                                        <option value="">-- [None Selected] --</option>
-                                        {facultyProfiles.map(p => (
-                                            <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
-                                        ))}
+                                        <option value="">-- No Conference Targeted --</option>
+                                        <option value="ACP">ACP National Meeting</option>
+                                        <option value="SHM">SHM Converge (Hospital Medicine)</option>
+                                        <option value="SGIM">SGIM Annual Meeting</option>
+                                        <option value="AHRD">AdventHealth GME Research Day</option>
                                     </select>
+                                    <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead(s)</label>
-                            <div className="space-y-2">
-                                <input
-                                    name="lead_proponents_text"
-                                    placeholder="Manual names (if not in system)..."
-                                    defaultValue={project.lead_proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedLeadIds.includes(p.id))).join(', ')}
-                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 text-xs font-bold transition-all mb-2"
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                    Abstract Summary
+                                    <FileText className="w-3 h-3 text-slate-400" />
+                                </label>
+                                <textarea
+                                    name="abstract_summary"
+                                    defaultValue={project.abstract_summary || ''}
+                                    placeholder="Draft your executive summary or abstract here..."
+                                    className="w-full p-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[180px] resize-none"
                                 />
-                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-h-40 overflow-y-auto">
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 italic">Link Registered Members:</p>
-                                    <div className="grid grid-cols-1 gap-1">
-                                        {residentProfiles.map(p => (
-                                            <label key={p.id} className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-advent-navy cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedLeadIds.includes(p.id)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) setSelectedLeadIds([...selectedLeadIds, p.id]);
-                                                        else setSelectedLeadIds(selectedLeadIds.filter(id => id !== p.id));
-                                                    }}
-                                                    className="w-3 h-3 rounded text-advent-navy"
-                                                />
-                                                {p.full_name}
-                                            </label>
-                                        ))}
+                            </div>
+                        </div>
+                    </Section>
+
+                    <Section title="Updates and Barriers" icon={<Info className="w-5 h-5 text-advent-lightblue" />}>
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                             <AIUpdateSection initialValue={project.updates_and_barriers || ''} />
+                        </div>
+                    </Section>
+
+                    <Section title="Project Depot" icon={<FileText className="w-5 h-5 text-slate-400" />}>
+                        <div className="space-y-8 bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between px-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Template</span>
+                                            <span className="text-[10px] text-slate-300 font-bold italic">Standard GME Requirement</span>
+                                        </div>
+                                        <a
+                                            href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
+                                            download
+                                            className="flex items-center gap-2 text-advent-blue text-[10px] font-black uppercase tracking-widest hover:underline"
+                                        >
+                                            <FileDown className="w-3 h-3" />
+                                            Download
+                                        </a>
                                     </div>
+                                    <FileUploader
+                                        projectId={id!}
+                                        fieldName="protocol_url"
+                                        currentUrl={project.protocol_url}
+                                        onUploadComplete={(url) => setProject({ ...project, protocol_url: url })}
+                                    />
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Proponents</label>
-                            <div className="space-y-2">
-                                <input
-                                    name="proponents_text"
-                                    placeholder="Manual names (if not in system)..."
-                                    defaultValue={project.proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedProponentIds.includes(p.id))).join(', ')}
-                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 text-xs font-bold transition-all mb-2"
-                                />
-                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-h-40 overflow-y-auto">
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 italic">Link Registered Members:</p>
-                                    <div className="grid grid-cols-1 gap-1">
-                                        {residentProfiles.map(p => (
-                                            <label key={p.id} className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-advent-navy cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedProponentIds.includes(p.id)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) setSelectedProponentIds([...selectedProponentIds, p.id]);
-                                                        else setSelectedProponentIds(selectedProponentIds.filter(id => id !== p.id));
-                                                    }}
-                                                    className="w-3 h-3 rounded text-advent-navy"
-                                                />
-                                                {p.full_name}
-                                            </label>
-                                        ))}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between px-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Presentation Template</span>
+                                            <span className="text-[10px] text-slate-300 font-bold italic">AdventHealth Branded .pptx</span>
+                                        </div>
+                                        <a
+                                            href="/QI_Tracker/templates/AdventHealth IM GME QI Template.pptx"
+                                            download
+                                            className="flex items-center gap-2 text-advent-blue text-[10px] font-black uppercase tracking-widest hover:underline"
+                                        >
+                                            <FileDown className="w-3 h-3" />
+                                            Download
+                                        </a>
                                     </div>
+                                    <FileUploader
+                                        projectId={id!}
+                                        fieldName="presentation_url"
+                                        currentUrl={project.presentation_url}
+                                        onUploadComplete={(url) => setProject({ ...project, presentation_url: url })}
+                                    />
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Outcome</label>
-                        <div className="space-y-6">
-                            <textarea
-                                name="primary_outcome"
-                                defaultValue={project.primary_outcome || ''}
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[100px] resize-none"
-                            />
-                            <MetricSuggester title={project.title} onSelect={() => { }} />
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Targeting Conference</label>
-                        <select
-                            name="target_conference"
-                            defaultValue={project.target_conference || ""}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
-                        >
-                            <option value="">-- No Conference Targeted --</option>
-                            <option value="ACP">ACP National (Internal Medicine)</option>
-                            <option value="SHM">SHM Converge (Hospital Medicine)</option>
-                            <option value="SGIM">SGIM Annual Meeting</option>
-                            <option value="AHRD">AdventHealth Research Day</option>
-                        </select>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Total Patients Impacted</label>
-                            <input
-                                type="number"
-                                name="total_patients_impacted"
-                                defaultValue={project.total_patients_impacted || 0}
-                                placeholder="e.g., 150"
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Estimated Cost Savings ($)</label>
-                            <input
-                                type="number"
-                                name="estimated_cost_savings"
-                                step="0.01"
-                                defaultValue={project.estimated_cost_savings || 0}
-                                placeholder="e.g., 5000.00"
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Publication Abstract / Summary (Draft)</label>
-                        <textarea
-                            name="abstract_summary"
-                            defaultValue={project.abstract_summary || ''}
-                            placeholder="Draft your abstract here or use it to store key results for publication..."
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300 min-h-[150px] resize-none"
-                        />
-                    </div>
-
-                    <AIUpdateSection initialValue={project.updates_and_barriers || ''} />
-
-                    <div className="space-y-6 pt-10 border-t border-slate-100">
-                        <div>
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Project Depot</h3>
-                            <p className="text-slate-500 text-sm font-medium mt-1">Manage institutional templates and project documents.</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Template</span>
-                                    <a
-                                        href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
-                                        download
-                                        className="flex items-center gap-2 text-advent-blue text-xs font-bold hover:underline"
-                                    >
-                                        <FileDown className="w-3 h-3" />
-                                        Download .docx
-                                    </a>
-                                </div>
-                                <FileUploader
-                                    projectId={id!}
-                                    fieldName="protocol_url"
-                                    currentUrl={project.protocol_url}
-                                    onUploadComplete={(url) => setProject({ ...project, protocol_url: url })}
-                                />
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Presentation Template</span>
-                                    <a
-                                        href="/QI_Tracker/templates/AdventHealth IM GME QI Template.pptx"
-                                        download
-                                        className="flex items-center gap-2 text-advent-blue text-xs font-bold hover:underline"
-                                    >
-                                        <FileDown className="w-3 h-3" />
-                                        Download .pptx
-                                    </a>
-                                </div>
-                                <FileUploader
-                                    projectId={id!}
-                                    fieldName="presentation_url"
-                                    currentUrl={project.presentation_url}
-                                    onUploadComplete={(url) => setProject({ ...project, presentation_url: url })}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    </Section>
                 </div>
 
-                <div className="flex justify-end pt-6 border-t border-slate-100">
+                <div className="flex justify-end pt-10 border-t border-slate-100">
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="flex items-center gap-2 bg-advent-blue text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-advent-dark-blue transition-all shadow-xl shadow-advent-blue/20 active:scale-95 group disabled:opacity-50"
+                        className="flex items-center gap-3 bg-advent-blue text-white px-12 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:bg-advent-dark-blue transition-all shadow-2xl shadow-advent-blue/30 active:scale-95 group disabled:opacity-50"
                     >
-                        <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        {isSaving ? "Saving..." : "Save Changes"}
+                        <Save className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                        {isSaving ? "Syncing..." : "Save Project Changes"}
                     </button>
                 </div>
             </form >
