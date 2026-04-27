@@ -201,3 +201,33 @@ export async function generateAbstract(project: any) {
   `;
   return askAI(prompt);
 }
+
+export async function improveWriting(text: string, context?: string) {
+  const prompt = `
+    You are a Quality Improvement (QI) Academic Consultant.
+    Improve the following text to make it more professional, scholarly, and concise for a medical quality improvement project tracker.
+    ${context ? `The specific context for this text is: ${context}` : ''}
+    Maintain the original meaning but enhance the academic tone.
+    
+    Text: "${text}"
+    
+    Output ONLY the improved text.
+  `;
+  return askAI(prompt);
+}
+
+export async function draftProtocol(pico: { p: string; i: string; c: string; o: string }) {
+  const prompt = `
+    You are a Quality Improvement (QI) Academic Consultant.
+    Based on the following PICO components, draft a formal QI Project Protocol (approx 300 words).
+    
+    Population (P): ${pico.p}
+    Intervention (I): ${pico.i}
+    Comparison (C): ${pico.c}
+    Outcome (O): ${pico.o}
+    
+    The protocol should include sections for Background, SMART Aim, Methods (PDSA approach), and Planned Measures.
+    Maintain a highly professional, academic tone suitable for IRB submission or institutional review.
+  `;
+  return askAI(prompt);
+}
