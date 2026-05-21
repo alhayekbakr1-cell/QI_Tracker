@@ -26,56 +26,56 @@ export default function ProjectCard({ project }: { project: Project }) {
         <Link
             href={`/projects/view?id=${project.id}`}
             prefetch={false}
-            className={`group glass-card p-6 flex flex-col h-full relative overflow-hidden active:scale-[0.98] hover:-translate-y-1.5 hover:shadow-lg transition-all duration-300 ${
-                isRed ? 'ring-2 ring-red-500/50 bg-red-50/10' :
-                isYellow ? 'ring-2 ring-amber-400/50 bg-amber-50/10' :
-                isImpacted ? 'border-emerald-200/80 shadow-md shadow-emerald-500/5 hover:shadow-lg hover:shadow-emerald-500/15 bg-gradient-to-br from-white to-emerald-50/10' :
-                'hover:border-advent-navy'
+            className={`group academic-card p-6 flex flex-col h-full relative overflow-hidden active:scale-[0.98] transition-all duration-500 ${
+                isRed ? 'ring-1.5 ring-red-500/30 bg-red-50/10' :
+                isYellow ? 'ring-1.5 ring-amber-400/30 bg-amber-50/10' :
+                isImpacted ? 'border-emerald-200/60 shadow-md shadow-emerald-500/5 bg-gradient-to-br from-white to-emerald-50/5' :
+                ''
             }`}
         >
             {/* Stale Warning Ribbon */}
             {(isRed || isYellow) && (
-                <div className={`absolute -right-12 top-6 rotate-45 px-14 py-1 flex items-center gap-1.5 shadow-sm z-10 ${isRed ? 'bg-red-500 text-white' : 'bg-amber-400 text-advent-navy'
+                <div className={`absolute -right-10 top-5 rotate-45 px-12 py-0.5 flex items-center gap-1 justify-center shadow-xs z-10 ${isRed ? 'bg-rose-600 text-white' : 'bg-amber-400 text-slate-900'
                     }`}>
-                    <AlertTriangle className="w-2.5 h-2.5" />
-                    <span className="text-[8px] font-black uppercase tracking-widest">
+                    <AlertTriangle className="w-2 h-2" />
+                    <span className="text-[7px] font-black uppercase tracking-[0.15em]">
                         {isRed ? 'Urgent' : 'Stale'}
                     </span>
                 </div>
             )}
 
             {/* Hover Indicator */}
-            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all duration-300 pointer-events-none">
-                <ChevronRight className="w-5 h-5 text-advent-cobalt" />
+            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-2 transition-all duration-500 pointer-events-none">
+                <ChevronRight className="w-4 h-4 text-advent-navy" />
             </div>
 
-            {/* Gradient Line on Hover */}
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-advent-navy to-advent-green transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+            {/* Fine line highlight on hover */}
+            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy to-advent-green transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
 
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-1.5 mb-4">
                 <StatusBadge status={project.status} />
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                <span className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.15em] bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200/60 shadow-2xs">
                     Cycle {project.pdsa_cycle}
                 </span>
                 {project.faculty_approved_protocol && project.faculty_approved_pdsa && (
-                    <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-100 animate-in fade-in zoom-in duration-500">
-                        <FileCheck className="w-3 h-3" />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Signed Off</span>
+                    <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md border border-emerald-200/50 shadow-2xs animate-in fade-in zoom-in duration-500">
+                        <FileCheck className="w-3 h-3 text-emerald-600" />
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em]">Approved</span>
                     </div>
                 )}
             </div>
 
-            <h3 className="text-lg font-bold text-slate-800 mb-3 leading-tight group-hover:text-advent-navy transition-colors line-clamp-2">
+            <h3 className="text-base font-serif font-bold text-slate-800 mb-4 leading-snug group-hover:text-advent-navy transition-colors line-clamp-2">
                 {project.title}
             </h3>
 
             {/* Visual Stage Progress Bar */}
             <div className="mb-4 mt-2">
-                <div className="flex items-center justify-between mb-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                    <span>Stage Progress</span>
-                    <span className={stageConfig.color.replace('bg-', 'text-')}>{stageConfig.progress}%</span>
+                <div className="flex items-center justify-between mb-1 text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    <span>Research Stage Progress</span>
+                    <span className={`font-mono ${stageConfig.color.replace('bg-', 'text-')}`}>{stageConfig.progress}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                     <div
                         className={`h-full ${stageConfig.color} transition-all duration-500 rounded-full`}
                         style={{ width: `${stageConfig.progress}%` }}
@@ -83,22 +83,22 @@ export default function ProjectCard({ project }: { project: Project }) {
                 </div>
             </div>
 
-            <div className="mt-auto space-y-4">
+            <div className="mt-auto space-y-3.5 pt-4 border-t border-slate-100/80">
                 <div className="flex items-center gap-2 text-slate-500">
-                    <User className="w-3.5 h-3.5 text-advent-cobalt/70" />
-                    <span className="text-xs font-semibold truncate text-slate-600">
-                        {project.lead_proponents[0] || 'Unassigned'}
+                    <User className="w-3.5 h-3.5 text-advent-navy/60" />
+                    <span className="text-[11px] font-semibold truncate text-slate-650">
+                        {project.lead_proponents[0] || 'Unassigned Investigator'}
                     </span>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100/80">
-                    <div className={`flex items-center gap-2 ${isRed ? 'text-red-500 font-bold' : isYellow ? 'text-amber-600 font-bold' : 'text-slate-400'}`}>
+                <div className="flex items-center justify-between">
+                    <div className={`flex items-center gap-1.5 ${isRed ? 'text-rose-600 font-bold' : isYellow ? 'text-amber-600 font-bold' : 'text-slate-400'}`}>
                         <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">
+                        <span className="text-[9px] font-black uppercase tracking-[0.15em]">
                             {format(new Date(project.last_updated_date), 'MMM d, yyyy')}
                         </span>
                         {(isRed || isYellow) && (
-                            <span className="text-[8px] opacity-60">({daysSinceUpdate}d)</span>
+                            <span className="text-[8px] opacity-60">({daysSinceUpdate}d ago)</span>
                         )}
                     </div>
                 </div>

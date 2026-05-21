@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Lora } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import MsalWrapper from "@/components/MsalWrapper";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const lora = Lora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
+});
 
 export const metadata: Metadata = {
   title: "QI Project Tracker | AdventHealth",
@@ -28,8 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-slate-50 min-h-screen flex flex-col`}>
+    <html lang="en" className={`${inter.variable} ${lora.variable}`}>
+      <body className="bg-slate-50 min-h-screen flex flex-col font-sans antialiased text-slate-900">
         <MsalWrapper>
           <AppShell>
             {children}

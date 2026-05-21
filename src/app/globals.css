@@ -40,6 +40,7 @@
   --image-gradient-accent: var(--gradient-accent);
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-serif), Georgia, serif;
   --font-mono: ui-monospace, monospace;
 
   /* Custom text sizes */
@@ -60,4 +61,22 @@ body {
 
 .glass-card {
   @apply bg-white rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300;
+}
+
+/* Premium Academic Utilities */
+.academic-card {
+  @apply bg-white rounded-3xl border border-slate-200/40 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.03),0_8px_20px_-6px_rgba(0,0,0,0.015)] hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06),0_12px_24px_-8px_rgba(0,0,0,0.03)] hover:border-slate-300/60 transition-all duration-500;
+}
+
+.academic-heading {
+  font-family: var(--font-serif), Georgia, serif;
+  @apply tracking-tight font-bold text-advent-navy;
+}
+
+.academic-subheading {
+  @apply text-[10px] font-black uppercase tracking-[0.25em] text-slate-400;
+}
+
+.academic-divider {
+  @apply border-t border-slate-200/60 my-6;
 }

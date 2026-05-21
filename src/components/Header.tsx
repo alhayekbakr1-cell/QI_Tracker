@@ -66,34 +66,34 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
     ]
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/80 backdrop-blur-xl shadow-sm transition-all duration-300">
+        <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 bg-white/90 backdrop-blur-xl shadow-xs transition-all duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
                     {/* Logo Section */}
                     <div className="flex items-center gap-8">
                         <Link href="/" prefetch={false} className="flex items-center gap-3 group">
-                            <div className="bg-gradient-to-br from-advent-navy to-advent-cobalt text-white p-2 rounded-lg shadow-lg group-hover:shadow-advent-cobalt/30 transition-all duration-300">
-                                <Activity className="w-5 h-5" />
+                            <div className="bg-gradient-to-br from-advent-navy to-advent-cobalt text-white p-2 rounded-xl shadow-sm border border-white/10 transition-all duration-300">
+                                <Activity className="w-4 h-4 text-advent-green" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-bold text-lg leading-none text-transparent bg-clip-text bg-gradient-to-r from-advent-navy to-advent-cobalt">
+                                <span className="font-serif italic font-bold text-lg tracking-tight text-advent-navy">
                                     QI Chief
                                 </span>
-                                <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
-                                    tracker
+                                <span className="text-[9px] font-black tracking-[0.25em] text-slate-400 uppercase leading-none">
+                                    academic tracker
                                 </span>
                             </div>
                         </Link>
 
                         <div className="hidden lg:flex items-center gap-2">
                             <span className="text-slate-300">/</span>
-                            <span className="text-[9px] font-black uppercase tracking-widest bg-slate-100/80 text-advent-navy px-3 py-1 rounded-full border border-slate-200/60 shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-slate-50 text-slate-500 px-3 py-1 rounded-lg border border-slate-200/50 shadow-2xs">
                                 {getPageTitle(pathname)}
                             </span>
                         </div>
 
                         {/* Desktop Navigation */}
-                        <nav className="hidden md:flex items-center gap-1.5">
+                        <nav className="hidden md:flex items-center gap-1">
                             {navItems.map((item) => {
                                 const isActive = pathname === item.href
                                 return (
@@ -101,13 +101,13 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                                         key={item.href}
                                         href={item.href}
                                         prefetch={false}
-                                        className={`relative px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-2 border
+                                        className={`relative px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border
                                             ${isActive
-                                                ? 'bg-advent-navy/10 text-advent-navy border-advent-navy/10 shadow-sm'
-                                                : 'text-slate-500 hover:text-advent-navy hover:bg-slate-50 border-transparent'
+                                                ? 'bg-slate-50 text-advent-navy border-slate-200/80 shadow-2xs'
+                                                : 'text-slate-500 hover:text-advent-navy hover:bg-slate-50/50 border-transparent'
                                             }`}
                                     >
-                                        <item.icon className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-advent-navy' : 'text-slate-400'}`} />
+                                        <item.icon className={`w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-105 ${isActive ? 'text-advent-navy' : 'text-slate-400'}`} />
                                         {item.label}
                                     </Link>
                                 )
@@ -127,16 +127,16 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                         {/* User Profile & Actions (Desktop) */}
                         <div className="hidden md:flex items-center gap-6">
                             <div className="flex flex-col items-end">
-                                <span className="text-[11px] font-black text-slate-800 tracking-tight leading-none mb-1">
+                                <span className="text-[11px] font-bold text-slate-800 tracking-tight leading-none mb-1">
                                     {displayName}
                                 </span>
-                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border shadow-sm ${role === 'Admin'
-                                    ? 'bg-rose-500/10 text-rose-600 border-rose-200'
+                                <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-0.5 rounded-md border shadow-2xs ${role === 'Admin'
+                                    ? 'bg-rose-500/5 text-rose-600 border-rose-200/60'
                                     : role === 'Faculty'
-                                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
+                                        ? 'bg-emerald-500/5 text-emerald-600 border-emerald-200/60'
                                         : role === 'Operator'
-                                            ? 'bg-advent-cobalt/10 text-advent-cobalt border-advent-cobalt/20'
-                                            : 'bg-slate-100 text-slate-500 border-slate-200'
+                                            ? 'bg-advent-cobalt/5 text-advent-cobalt border-advent-cobalt/10'
+                                            : 'bg-slate-50 text-slate-500 border-slate-200/80'
                                     }`}>
                                     {role === 'Admin' ? 'Overseer' : role || 'Viewer'}
                                 </span>
@@ -144,7 +144,7 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                             <div className="h-8 w-px bg-slate-200" />
                             <button
                                 onClick={handleLogout}
-                                className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-rose-600 transition-all px-4 py-2 rounded-xl hover:bg-rose-50"
+                                className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-rose-600 transition-all px-3 py-1.5 rounded-lg hover:bg-rose-50/50"
                             >
                                 <LogOut className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
                                 <span>Logout</span>
