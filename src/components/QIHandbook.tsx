@@ -32,7 +32,9 @@ import {
     Database,
     Calculator,
     Sparkles,
-    Loader2
+    Loader2,
+    Search,
+    Filter
 } from 'lucide-react';
 
 import { createClient } from '@/utils/supabase/client';
@@ -59,7 +61,7 @@ if (typeof window !== 'undefined') {
 
 // --- Types ---
 interface ContentBlock {
-    type: 'text' | 'checklist' | 'tip' | 'table' | 'prompt' | 'comparison' | 'irb-tool' | 'diagram' | 'pico-builder' | 'five-whys' | 'pdsa-worksheet' | 'pareto-chart';
+    type: 'text' | 'checklist' | 'tip' | 'table' | 'prompt' | 'comparison' | 'irb-tool' | 'diagram' | 'pico-builder' | 'five-whys' | 'pdsa-worksheet' | 'pareto-chart' | 'idea-selector';
     content?: string;
     title?: string;
     items?: string[];
@@ -482,6 +484,25 @@ graph TD
                 ]
             }
         ]
+    },
+    {
+        id: 'ideas-bank',
+        title: '12. High-Impact QI Ideas',
+        icon: <Lightbulb className="w-5 h-5" />,
+        sections: [
+            {
+                title: 'High-Impact QI Project Registry',
+                blocks: [
+                    {
+                        type: 'text',
+                        content: "Struggling to find a residency graduation project? These pre-vetted templates align with AdventHealth clinical priorities and are designed to easily yield abstracts for national GME, ACP, and SHM research days. Explore and tailor them directly using the interactive bank below."
+                    },
+                    {
+                        type: 'idea-selector'
+                    }
+                ]
+            }
+        ]
     }
 ];
 
@@ -899,6 +920,431 @@ const PromptBox = ({ title, promptText }: { title: string; promptText: string })
     );
 };
 
+// --- Interactive Project Idea Selector ---
+const ProjectIdeaSelector = ({ onSelectIdea }: { onSelectIdea?: (query: string) => void }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('All');
+    const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [copiedId, setCopiedId] = useState<number | null>(null);
+
+    const categories = ['All', 'Quality & Safety', 'Operational & Transitions', 'High Value & Ethics', 'Outpatient'];
+
+    const ideas = [
+        {
+            id: 1,
+            title: "Inpatient Hypoglycemia Safety",
+            category: "Quality & Safety",
+            gap: "Inappropriate sliding-scale insulin monotherapy and excessive basal dosing lead to severe inpatient hypoglycemia, prolonging hospital stays and increasing mortality.",
+            aim: "Decrease the incidence of inpatient hypoglycemia (blood glucose <70 mg/dL) on General Medicine Wards by 35% within 6 months of intervention.",
+            intervention: "Remove 'sliding-scale only' order templates from admission sets; implement automated EMR weight-based basal-bolus calculators; standardize immediate nurse rescue dextrose protocols.",
+            outcome: "Number of blood glucose readings <70 mg/dL per 1,000 patient-days.",
+            process: "Percentage of diabetic admissions ordered on weight-based basal-bolus therapy vs. sliding-scale alone.",
+            balancing: "Rate of severe hyperglycemia (>250 mg/dL) resulting in acute clinical escalations or DKA.",
+            emr: "Epic SmartPhrase checklist `.glycemicrounds` to document daily necessity of insulin adjustments.",
+            venue: "ACP Quality Care Symposium, SHM Converge, local GME Research Day."
+        },
+        {
+            id: 2,
+            title: "First-Day Discharge Optimization",
+            category: "Operational & Transitions",
+            gap: "Inpatient discharge delays prevent bed turn-around, causing Emergency Department boarding. Most discharges occur late in the afternoon despite patients being clinically stable in the morning.",
+            aim: "Increase the proportion of patients discharged from the General Internal Medicine service before 12:00 PM from a baseline of 15% to 45% by June 2027.",
+            intervention: "Mandate a 4:00 PM 'Pre-Discharge huddle with pharmacy, nursing, and case management; implement a 'Pending Discharge' EMR flag to prioritize morning medication reconciliations.",
+            outcome: "Percentage of discharges executed before 12:00 PM.",
+            process: "Percentage of discharge summaries signed and ready by 9:00 AM on the day of discharge.",
+            balancing: "30-day all-cause readmission rate (ensuring patients are not discharged prematurely).",
+            emr: "Epic smart flag showing 'Ready for Morning Discharge' to alert transportation teams.",
+            venue: "SHM Converge (Hospital Medicine), IHI National Forum."
+        },
+        {
+            id: 3,
+            title: "Geriatric Preventive Vaccination",
+            category: "Outpatient",
+            gap: "High-risk geriatric patients often miss opportunities to receive pneumococcal and influenza vaccines due to short outpatient appointment times and high physician cognitive load.",
+            aim: "Achieve a 90% compliance rate for pneumococcal vaccination among patients aged >= 65 seen at resident continuity clinics by December 2026.",
+            intervention: "Establish Medical Assistant (MA)-driven immunization screening at intake huddle; create standing EMR order sets allowing MAs to prepare and administer vaccines directly.",
+            outcome: "Percentage of clinic patients >= 65 with documented up-to-date vaccine compliance.",
+            process: "Percentage of encounters where the MA completed the vaccination screening checklist.",
+            balancing: "Patient clinic throughput time (ensuring vaccine administration steps do not stall patient flow).",
+            emr: "Epic Health Maintenance utility configuration for active alert triggers.",
+            venue: "SGIM Annual Meeting, AAIM Academy."
+        },
+        {
+            id: 4,
+            title: "Lab Reduction & High-Value Care",
+            category: "High Value & Ethics",
+            gap: "Repetitive daily lab draws (CBC/BMP) on stable inpatients lead to hospital-acquired anemia, patient discomfort, and excessive costs without changing clinical management.",
+            aim: "Reduce routine daily CBC and BMP lab draws on General Medicine Wards by 30% within 4 months of program launch.",
+            intervention: "Remove 'recurring daily' checkboxes from standard admission templates, requiring daily active order entry; distribute weekly resident team audit scorecards.",
+            outcome: "Average number of CBC and BMP lab draws per patient-day on participating units.",
+            process: "Percentage of resident orders utilizing recurring 'daily' options.",
+            balancing: "Readmission or rapid response activation rates due to delayed diagnosis of severe anemia or electrolyte fluctuations.",
+            emr: "Incorporate 'Choosing Wisely' clinical decision alerts in Epic when ordering labs.",
+            venue: "ACP Internal Medicine Meeting, Lown Institute Conference."
+        },
+        {
+            id: 5,
+            title: "COPD Care Bundle Adherence",
+            category: "Operational & Transitions",
+            gap: "Inadequate transition planning and inhaler technique instruction for COPD patients lead to high early post-discharge exacerbation and readmission rates.",
+            aim: "Decrease 30-day all-cause readmissions for patients admitted with acute COPD exacerbation by 20% by October 2026.",
+            intervention: "Deliver a standardized pre-discharge teaching bundle including pharmacist-led inhaler technique checks; schedule nurse practitioner follow-up phone calls within 48 hours.",
+            outcome: "30-day all-cause COPD readmission rates.",
+            process: "Percentage of discharged COPD patients who received the complete pre-discharge teaching bundle.",
+            balancing: "Emergency Department visits for COPD within 7 days of discharge.",
+            emr: "Epic COPD smart discharge order set containing automated post-acute referrals.",
+            venue: "ATS International Conference, CHEST Annual Meeting."
+        },
+        {
+            id: 6,
+            title: "Inpatient Code Status Clarification",
+            category: "High Value & Ethics",
+            gap: "Lack of early goals-of-care discussions results in code status mismatch, exposing terminally ill patients to undesired invasive interventions and causing family distress.",
+            aim: "Achieve 100% documentation of code status within the first 12 hours of admission for all General Medicine patients by December 2026.",
+            intervention: "Mandate an admission note EMR checkbox linked to mandatory code status field entry; hold interactive resident workshops on conducting high-quality goals-of-care conversations.",
+            outcome: "Percentage of admissions with documented code status within 12 hours.",
+            process: "Percentage of admission notes utilizing the standardized goals-of-care checklist.",
+            balancing: "Patient/family satisfaction scores on communication; time to palliative care consultation.",
+            emr: "Epic SmartSet checkpoint blocking order signature until code status field is updated.",
+            venue: "AAHPM Annual Assembly, local Bioethics Symposium."
+        },
+        {
+            id: 7,
+            title: "Foley Necessity & CAUTI Prevention",
+            category: "Quality & Safety",
+            gap: "Indwelling urinary catheters are frequently left in place without clear medical indications, directly causing hospital-acquired CAUTIs and increasing patient discomfort.",
+            aim: "Reduce the rate of CAUTIs on inpatient medical wards by 40% and catheter-days by 25% within 6 months.",
+            intervention: "Implement daily nurse-led Foley necessity assessments during multidisciplinary rounds; enforce strict standardized aseptic insertion bundle kits.",
+            outcome: "Catheter-associated UTI rate per 1,000 device-days; total catheter-days.",
+            process: "Percentage of patient huddles where Foley necessity was actively discussed and documented.",
+            balancing: "Rate of emergency recatheterization within 24 hours of catheter removal.",
+            emr: "Automated daily Epic alert asking physician to justify catheter retention or order removal.",
+            venue: "IDWeek (Infectious Diseases), APIC Annual Conference."
+        },
+        {
+            id: 8,
+            title: "Sepsis 3-Hour Bundle Execution",
+            category: "Quality & Safety",
+            gap: "Delays in early fluid resuscitation and antibiotic administration for patients in severe sepsis increase progression to septic shock and elevate hospital mortality.",
+            aim: "Increase compliance with the CMS Sepsis 3-hour bundle in the Emergency Department and Medical Wards from 62% to 85% by June 2027.",
+            intervention: "Deploy an EMR real-time alert trigger based on systemic inflammatory response criteria; implement a nurse-driven rapid sepsis protocol kit (pre-packaged blood culture vials and IV fluids).",
+            outcome: "CMS Sepsis 3-Hour Bundle compliance rate; inpatient sepsis-related mortality.",
+            process: "Time from arrival to antibiotic administration (minutes).",
+            balancing: "Rates of fluid overload or urgent ICU escalations in patients with congestive heart failure or severe CKD.",
+            emr: "Best Practice Advisory (BPA) alert in Epic prompting rapid order set execution.",
+            venue: "SCCM Critical Care Congress, Society of Hospital Medicine."
+        },
+        {
+            id: 9,
+            title: "Inpatient Telemetry Stewardship",
+            category: "High Value & Ethics",
+            gap: "Repetitive, non-indicated telemetry monitoring in low-risk ward patients leads to alarm fatigue, patient sleep disruption, and increased healthcare costs without clinical benefit.",
+            aim: "Reduce non-clinically indicated telemetry patient-days on general medicine wards by 35% within 5 months of implementation.",
+            intervention: "Remove 'indefinite' telemetry orders, implementing an automated 48-hour hard-stop in the EMR unless explicitly renewed; introduce nurse-led daily telemetry necessity checks during multidisciplinary rounds.",
+            outcome: "Total telemetry-days per 1,000 patient-days on participating medical units.",
+            process: "Percentage of telemetry orders with an active, documented clinical indication at 24 hours.",
+            balancing: "Rate of undetected clinically significant arrhythmia events or rapid response/ICU escalations within 24 hours of telemetry discontinuation.",
+            emr: "EMR automated prompt triggering at 48 hours requiring clinical justification to renew telemetry.",
+            venue: "Lown Institute Conference, Society of Hospital Medicine (SHM) Converge."
+        },
+        {
+            id: 10,
+            title: "Transition of Care Clinic Referrals",
+            category: "Operational & Transitions",
+            gap: "Poorly coordinated discharge transitions for high-readmission-risk patients (CHF, COPD, End-Stage Renal Disease) lead to rapid outpatient decompensation and high 30-day hospital readmission rates.",
+            aim: "Ensure 80% of high-readmission-risk patients discharged from the General Medicine service have a booked outpatient Transition of Care Clinic (TCC) appointment within 7-10 days of discharge by September 2026.",
+            intervention: "Enforce a mandatory case-manager checklist during discharge planning; integrate direct EMR booking slots for TCC appointments into the resident discharge workflow.",
+            outcome: "30-day all-cause readmission rate for high-risk patients discharged from participating medicine teams.",
+            process: "Percentage of eligible high-risk patients discharged with a scheduled TCC appointment booked prior to departure.",
+            balancing: "Rate of post-discharge emergency department visits within 7 days of discharge (ensuring TCC visits do not just shift readmissions to ED visits).",
+            emr: "Automated EMR sidebar alert flagging high LACE-index scores and prompt direct-scheduling booking link.",
+            venue: "IHI National Forum, AAIM Academic Internal Medicine Week."
+        },
+        {
+            id: 11,
+            title: "CIWA Protocol Optimization",
+            category: "Quality & Safety",
+            gap: "Non-standardized administration of benzodiazepines and inconsistent Clinical Institute Withdrawal Assessment for Alcohol (CIWA) scoring lead to either severe withdrawal progression (delirium tremens) or excessive over-sedation.",
+            aim: "Decrease the rate of severe alcohol withdrawal complications and ICU escalations by 40% within 6 months.",
+            intervention: "Implement a symptom-triggered CIWA-Ar order set; mandating standard nurse scoring certification; institute a clinical pathway for dexmedetomidine or phenobarbital adjunctive therapy.",
+            outcome: "Rate of ICU transfers for acute alcohol withdrawal; average hospital length of stay for patients on CIWA protocol.",
+            process: "Percentage of CIWA score assessments completed within 15 minutes of the ordered assessment intervals.",
+            balancing: "Rates of severe patient over-sedation requiring rapid response activation or medication reversal agents.",
+            emr: "Best Practice Advisory (BPA) alert in Epic prompting the physician to transition from scheduled to symptom-triggered benzodiazepines when CIWA remains low.",
+            venue: "ACP Quality Care Symposium, American Society of Addiction Medicine (ASAM)."
+        },
+        {
+            id: 12,
+            title: "Outpatient Diabetic Retinopathy Screening",
+            category: "Outpatient",
+            gap: "Low-income and minority patients with type 2 diabetes face significant barriers to receiving annual dilated eye exams, leading to delayed diagnosis and progression of diabetic retinopathy.",
+            aim: "Increase annual diabetic retinopathy screening compliance in resident continuity clinics from a baseline of 40% to 75% by December 2026.",
+            intervention: "Implement a handheld, non-mydriatic teleretinal camera in the resident clinic; train clinic Medical Assistants to perform photography during regular visit intake huddles.",
+            outcome: "Percentage of active diabetic clinic patients with a documented retinal screening exam within the last 12 months.",
+            process: "Percentage of scheduled diabetic clinic visits where retinal screening photography was successfully completed.",
+            balancing: "Total duration of clinic visit (minutes) to ensure additional imaging does not delay clinic patient flow.",
+            emr: "Configure an EMR health maintenance checklist that directly links teleretinal report uploads to care quality tracking.",
+            venue: "SGIM Annual Meeting, American Diabetes Association (ADA) Scientific Sessions."
+        },
+        {
+            id: 13,
+            title: "Social Determinants of Health Screening",
+            category: "Outpatient",
+            gap: "Unaddressed social barriers (food insecurity, housing instability, utility distress) lead to poor clinical compliance, missed appointments, and poor disease control in vulnerable outpatient populations.",
+            aim: "Screen 85% of active clinic patients for SDOH using a standardized screening tool during routine primary care encounters within 6 months.",
+            intervention: "Implement the PRAPARE screening tool during check-in via electronic clinic tablets; hardwire automated referrals to community health workers based on positive responses.",
+            outcome: "Percentage of patients with at least one identified social need who were successfully connected to a community resource within 30 days.",
+            process: "Percentage of checked-in primary care visits with a completed SDOH PRAPARE screening questionnaire.",
+            balancing: "No-show rates for referred community resource appointments (monitoring whether screening leads to successful connections).",
+            emr: "EMR automated flowsheets that pull PRAPARE survey results directly into the resident's clinic note template.",
+            venue: "APHA Annual Meeting, SGIM Annual Meeting."
+        },
+        {
+            id: 14,
+            title: "Bedside Procedure Consent Standardization",
+            category: "High Value & Ethics",
+            gap: "Bedside invasive clinical procedures (thoracentesis, paracentesis, lumbar puncture) frequently lack standardized informed consent documentation, leaving patients unaware of procedural risks and exposing physicians to legal liability.",
+            aim: "Achieve 100% compliance with complete, standardized informed consent documentation prior to any resident-performed bedside invasive procedure by November 2026.",
+            intervention: "Mandate a standard pre-procedural checklist and 'Time Out' form containing explicit patient risk disclosures; hold hands-on resident training sessions regarding structured consent conversations.",
+            outcome: "Percentage of resident bedside procedures with complete, signed, and documented standardized consent forms.",
+            process: "Percentage of procedures where the resident documented a 'Time Out' checklist in the EMR.",
+            balancing: "Patient satisfaction score on procedural communication and informed choice.",
+            emr: "Build an Epic procedural note template that blocks note completion until the consent verification field and date are updated.",
+            venue: "Association for Hospital Medical Education (AHME), local GME Quality Day."
+        },
+        {
+            id: 15,
+            title: "Meds-to-Beds Discharge Prescription Delivery",
+            category: "Operational & Transitions",
+            gap: "Discharge medication discrepancies and difficulty obtaining medications post-discharge are major contributors to early post-hospitalization adverse events and 30-day readmissions.",
+            aim: "Increase the rate of bedside medication delivery ('Meds-to-Beds' pharmacy program) for patients discharged from the General Medicine service from 20% to 60% by January 2027.",
+            intervention: "Streamline hospital pharmacy prescription delivery workflow; mandate resident completion of discharge order sets 4 hours prior to planned departure to allow pharmacy prep time.",
+            outcome: "Rate of post-discharge adverse drug events within 14 days of discharge; 30-day readmission rate.",
+            process: "Percentage of discharges utilizing the bedside Meds-to-Beds program.",
+            balancing: "Outpatient pharmacy operational strain (number of delayed deliveries past the planned discharge hour).",
+            emr: "Epic discharge navigator checkpoint reminding residents to select 'Deliver to bedside' in the discharge prescription section.",
+            venue: "ASHP Midyear Clinical Meeting, SHM Converge."
+        },
+        {
+            id: 16,
+            title: "Peripheral IV Stewardship & Dwell-Time Compliance",
+            category: "Quality & Safety",
+            gap: "Overutilization of unnecessary peripheral intravenous lines and failure to regularly assess line patency lead to high rates of phlebitis, local infection, and patient discomfort.",
+            aim: "Reduce the average number of redundant peripheral IV days and decrease clinical phlebitis events by 35% on medicine wards within 6 months.",
+            intervention: "Implement a nurse-driven daily PIV assessment checklist; institute a hard stop prompting removal of PIV lines that have been inactive for >24 hours unless indicated.",
+            outcome: "Rate of hospital-acquired PIV phlebitis per 1,000 patient-days; total PIV-days.",
+            process: "Percentage of active PIV lines that have been assessed and documented by nursing staff every 12 hours.",
+            balancing: "Rates of emergency re-insertion of PIV lines for acute medication administration.",
+            emr: "Dynamic EMR notification alerting nurses and doctors of PIV lines with zero active IV medications or fluids for 24 consecutive hours.",
+            venue: "Infusion Nurses Society (INS) Annual Conference, local Patient Safety Symposium."
+        }
+    ];
+
+    const filtered = ideas.filter(idea => {
+        const matchesTab = activeTab === 'All' || idea.category === activeTab;
+        const matchesSearch = idea.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            idea.gap.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            idea.aim.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesTab && matchesSearch;
+    });
+
+    const copyTemplate = (idea: typeof ideas[0]) => {
+        const text = `PROJECT CHARTER TEMPLATE: ${idea.title.toUpperCase()}
+Clinical Domain: ${idea.category}
+
+PROBLEM STATEMENT:
+${idea.gap}
+
+SMART AIM:
+${idea.aim}
+
+CORE INTERVENTIONS:
+${idea.intervention}
+
+FAMILY OF MEASURES:
+- Outcome Measure: ${idea.outcome}
+- Process Measure: ${idea.process}
+- Balancing Measure: ${idea.balancing}
+
+EMR INTEGRATION & CLINICAL SYSTEM TOOLS:
+${idea.emr}
+
+PROPOSED SUBMISSION VENUES:
+${idea.venue}
+`;
+        navigator.clipboard.writeText(text);
+        setCopiedId(idea.id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    return (
+        <div className="space-y-6 my-6">
+            <div className="bg-slate-50 border border-slate-200/60 rounded-3xl p-6 space-y-4">
+                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+                    {/* Search bar */}
+                    <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Search high-impact ideas (e.g. sepsis, vaccine)..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold focus:outline-none focus:border-advent-blue transition-colors text-slate-800"
+                        />
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200/60">
+                    {categories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => { setActiveTab(cat); setExpandedId(null); }}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                activeTab === cat
+                                    ? 'bg-advent-navy text-white shadow-md'
+                                    : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200/60'
+                            }`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* List of ideas */}
+            <div className="grid grid-cols-1 gap-4">
+                {filtered.map(idea => {
+                    const isExpanded = expandedId === idea.id;
+                    return (
+                        <div
+                            key={idea.id}
+                            className={`bg-white border rounded-3xl transition-all duration-300 shadow-sm overflow-hidden ${
+                                isExpanded
+                                    ? 'border-advent-blue ring-4 ring-advent-blue/5'
+                                    : 'border-slate-200/80 hover:border-slate-300 hover:shadow-md'
+                            }`}
+                        >
+                            {/* Card header */}
+                            <div
+                                onClick={() => setExpandedId(isExpanded ? null : idea.id)}
+                                className="p-6 flex items-center justify-between gap-4 cursor-pointer"
+                            >
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200/40">
+                                            {idea.category}
+                                        </span>
+                                    </div>
+                                    <h4 className="text-lg font-black text-slate-900 font-serif hover:text-advent-blue transition-colors">
+                                        {idea.title}
+                                    </h4>
+                                </div>
+                                <div className="shrink-0 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                                    <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90 text-advent-blue' : ''}`} />
+                                </div>
+                            </div>
+
+                            {/* Card Expanded Content */}
+                            {isExpanded && (
+                                <div className="border-t border-slate-100 p-8 space-y-8 bg-slate-50/30 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    {/* The Problem Section */}
+                                    <div className="space-y-2">
+                                        <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400">The Clinical Gap (Problem Statement)</h5>
+                                        <p className="text-sm font-semibold text-slate-700 leading-relaxed">{idea.gap}</p>
+                                    </div>
+
+                                    {/* Aim Statement */}
+                                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100/60">
+                                        <h5 className="text-[9px] font-black uppercase tracking-widest text-emerald-700 mb-1">SMART Aim Statement</h5>
+                                        <p className="text-sm font-bold text-emerald-900 leading-relaxed italic">"{idea.aim}"</p>
+                                    </div>
+
+                                    {/* Proposed Interventions */}
+                                    <div className="space-y-2">
+                                        <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Core Interventions</h5>
+                                        <p className="text-sm font-semibold text-slate-700 leading-relaxed">{idea.intervention}</p>
+                                    </div>
+
+                                    {/* Trio of Measures Table */}
+                                    <div className="space-y-3">
+                                        <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400">The Family of Measures</h5>
+                                        <div className="overflow-hidden border border-slate-200/80 rounded-2xl shadow-sm bg-white">
+                                            <table className="w-full text-xs text-left">
+                                                <thead className="bg-slate-50 border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="px-4 py-3 font-black uppercase text-slate-500 tracking-wider">Measure Type</th>
+                                                        <th className="px-4 py-3 font-black uppercase text-slate-500 tracking-wider">Operational Definition</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    <tr>
+                                                        <td className="px-4 py-3 font-black text-slate-900 flex items-center gap-1.5">
+                                                            <div className="w-2 h-2 rounded-full bg-advent-navy" />
+                                                            Outcome Measure
+                                                        </td>
+                                                        <td className="px-4 py-3 font-semibold text-slate-600">{idea.outcome}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td className="px-4 py-3 font-black text-slate-900 flex items-center gap-1.5">
+                                                            <div className="w-2 h-2 rounded-full bg-advent-green" />
+                                                            Process Measure
+                                                        </td>
+                                                        <td className="px-4 py-3 font-semibold text-slate-600">{idea.process}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td className="px-4 py-3 font-black text-slate-900 flex items-center gap-1.5">
+                                                            <div className="w-2 h-2 rounded-full bg-amber-500" />
+                                                            Balancing Measure
+                                                        </td>
+                                                        <td className="px-4 py-3 font-semibold text-slate-600">{idea.balancing}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* EMR & Venues Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="p-4 bg-white border border-slate-200/60 rounded-2xl shadow-sm space-y-1.5">
+                                            <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Epic EMR Integration</h5>
+                                            <p className="text-xs font-semibold text-slate-600 leading-relaxed">{idea.emr}</p>
+                                        </div>
+                                        <div className="p-4 bg-white border border-slate-200/60 rounded-2xl shadow-sm space-y-1.5">
+                                            <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Target Dissemination Venues</h5>
+                                            <p className="text-xs font-semibold text-slate-600 leading-relaxed">{idea.venue}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-100 justify-end">
+                                        <button
+                                            onClick={() => copyTemplate(idea)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors shadow"
+                                        >
+                                            {copiedId === idea.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                            {copiedId === idea.id ? 'Copied Template!' : 'Copy Protocol'}
+                                        </button>
+                                        {onSelectIdea && (
+                                            <button
+                                                onClick={() => onSelectIdea(idea.title)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-advent-navy text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-advent-navy/90 transition-colors shadow"
+                                            >
+                                                <Sparkles className="w-3 h-3" />
+                                                AI Tailor to My Unit
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 // --- Main Interface Component ---
 
 export default function QIHandbook({ onBack }: { onBack: () => void }) {
@@ -1056,6 +1502,12 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
                                         }
                                         if (block.type === 'pareto-chart') {
                                             return <ParetoChart key={bIdx} />;
+                                        }
+                                        if (block.type === 'idea-selector') {
+                                            return <ProjectIdeaSelector key={bIdx} onSelectIdea={(title) => {
+                                                setAiQuery(`I want to tailor the "${title}" project to my specific unit (e.g., Ward 4 West). What are some localized barriers my resident team might face, and how can we adapt the process and balancing measures?`);
+                                                setSidebarOpen(true);
+                                            }} />;
                                         }
                                         return null;
                                     })}
