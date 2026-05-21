@@ -175,6 +175,36 @@ export default function ProjectDetailPage() {
         'Impacted (Completed)': { active: 'bg-emerald-600 border-emerald-600', bg: 'bg-emerald-50 text-emerald-700', text: 'text-emerald-600' }
     };
 
+    const HEADER_STYLES: Record<string, { bg: string, border: string, glow: string }> = {
+        'Idea': {
+            bg: 'from-violet-50/70 via-violet-50/30 to-white/10',
+            border: 'border-violet-100',
+            glow: 'bg-violet-500'
+        },
+        'Pre-Intervention': {
+            bg: 'from-blue-50/70 via-blue-50/30 to-white/10',
+            border: 'border-blue-100',
+            glow: 'bg-blue-500'
+        },
+        'Intervention Ongoing': {
+            bg: 'from-amber-50/70 via-amber-50/30 to-white/10',
+            border: 'border-amber-100',
+            glow: 'bg-amber-500'
+        },
+        'Sustain the Gains': {
+            bg: 'from-cyan-50/70 via-cyan-50/30 to-white/10',
+            border: 'border-cyan-100',
+            glow: 'bg-cyan-500'
+        },
+        'Impacted (Completed)': {
+            bg: 'from-emerald-50/70 via-emerald-50/30 to-white/10',
+            border: 'border-emerald-100',
+            glow: 'bg-emerald-500'
+        }
+    };
+
+    const headerStyle = HEADER_STYLES[project.status] || HEADER_STYLES['Idea'];
+
     return (
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
             <Link href="/projects" prefetch={false} className="flex items-center gap-2 text-slate-500 hover:text-advent-blue transition-colors text-sm font-semibold group">
@@ -211,70 +241,81 @@ export default function ProjectDetailPage() {
                 </div>
             )}
 
+            {/* Premium Status-Colored Hero Header Banner */}
+            <div className={`relative overflow-hidden rounded-[2.5rem] border ${headerStyle.border} bg-gradient-to-br ${headerStyle.bg} p-8 md:p-10 shadow-sm animate-in fade-in duration-500`}>
+                {/* Decorative status glow */}
+                <div className={`absolute -right-24 -top-24 w-80 h-80 rounded-full blur-[100px] opacity-10 ${headerStyle.glow}`} />
+                
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <StatusBadge status={project.status} />
+                            <span className="text-xs text-slate-400 flex items-center gap-1 font-semibold">
+                                <Clock className="w-3.5 h-3.5" />
+                                Updated {format(new Date(project.last_updated_date), 'MMM d, yyyy')}
+                            </span>
+                        </div>
+                        <h1 className="text-3xl md:text-4.5xl font-black text-slate-900 tracking-tight leading-tight max-w-4xl">
+                            {project.title}
+                        </h1>
+                        <div className="mt-3">
+                            <ProjectTags title={project.title} category={project.category || ""} />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <ProjectReportGenerator project={project} metrics={metrics} />
+                        <NudgeButton project={project} variant="full" />
+                        <Link
+                            href={`/projects/edit?id=${id}`}
+                            prefetch={false}
+                            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:border-advent-blue hover:text-advent-blue transition-all"
+                        >
+                            <Edit3 className="w-4 h-4" />
+                            Edit Project
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
+            {/* Workflow progression indicator card */}
+            <div className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Initiative Progression Workflow</p>
+                <div className="flex items-center w-full max-w-3xl px-2">
+                    {workflow.map((step, idx) => {
+                        const stepColors = STEP_COLORS[step] || STEP_COLORS['Idea'];
+                        const isCompleted = idx < currentIndex;
+                        const isCurrent = idx === currentIndex;
+                        const isPastOrCurrent = idx <= currentIndex;
+
+                        return (
+                            <div key={step} className="flex-1 flex items-center last:flex-none">
+                                <div className="relative flex flex-col items-center">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all shadow-sm ${
+                                        isCurrent ? `${stepColors.active} text-white` :
+                                        isCompleted ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-300 font-normal'
+                                    }`}>
+                                        {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                                    </div>
+                                    <span className={`absolute top-10 whitespace-nowrap text-[9px] font-black uppercase tracking-widest ${
+                                        isPastOrCurrent ? 'text-slate-700' : 'text-slate-300'
+                                    }`}>
+                                        {step.split(' ')[0]}
+                                    </span>
+                                </div>
+                                {idx < workflow.length - 1 && (
+                                    <div className={`flex-1 h-[2px] mx-2 ${idx < currentIndex ? 'bg-emerald-600' : 'bg-slate-200'}`} />
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="h-6" />
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Main Content */}
                 <div className="lg:col-span-3 space-y-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-200 pb-6">
-                        <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <StatusBadge status={project.status} />
-                                <span className="text-xs text-slate-400 flex items-center gap-1 font-semibold">
-                                    <Clock className="w-3.5 h-3.5" />
-                                    Updated {format(new Date(project.last_updated_date), 'MMM d, yyyy')}
-                                </span>
-                            </div>
-                            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
-                                {project.title}
-                            </h1>
-                            <ProjectTags title={project.title} category={project.category || ""} />
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <ProjectReportGenerator project={project} metrics={metrics} />
-                            <NudgeButton project={project} variant="full" />
-                            <Link
-                                href={`/projects/edit?id=${id}`}
-                                prefetch={false}
-                                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:border-advent-blue hover:text-advent-blue transition-all"
-                            >
-                                <Edit3 className="w-4 h-4" />
-                                Edit Project
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* 5-Stage Workflow Indicator */}
-                    <div className="flex items-center w-full max-w-3xl mt-8 mb-4 px-2">
-                        {workflow.map((step, idx) => {
-                            const stepColors = STEP_COLORS[step] || STEP_COLORS['Idea'];
-                            const isCompleted = idx < currentIndex;
-                            const isCurrent = idx === currentIndex;
-                            const isPastOrCurrent = idx <= currentIndex;
-
-                            return (
-                                <div key={step} className="flex-1 flex items-center last:flex-none">
-                                    <div className="relative flex flex-col items-center">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all shadow-sm ${
-                                            isCurrent ? `${stepColors.active} text-white` :
-                                            isCompleted ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-300 font-normal'
-                                        }`}>
-                                            {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : idx + 1}
-                                        </div>
-                                        <span className={`absolute top-10 whitespace-nowrap text-[9px] font-black uppercase tracking-widest ${
-                                            isPastOrCurrent ? 'text-slate-700' : 'text-slate-300'
-                                        }`}>
-                                            {step.split(' ')[0]}
-                                        </span>
-                                    </div>
-                                    {idx < workflow.length - 1 && (
-                                        <div className={`flex-1 h-[2px] mx-2 ${idx < currentIndex ? 'bg-emerald-600' : 'bg-slate-200'}`} />
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <div className="h-10" />
-
                     <PHIWarning />
 
                     {/* Fluid Client-side Tabs */}
