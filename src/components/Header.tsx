@@ -21,7 +21,6 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
     const formatName = (email?: string, name?: string | null) => {
         if (name) return name;
         if (!email) return "User";
-        // Clean dots and capitalize parts for dot-formatted emails
         return email.split('@')[0]
             .split('.')
             .map(part => part.charAt(0).toUpperCase() + part.slice(1))
@@ -66,20 +65,57 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
     ]
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 bg-white/90 backdrop-blur-xl shadow-xs transition-all duration-300">
+        <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl shadow-2xs border-b border-slate-200/50 transition-all duration-300">
+            {/* Upper Tier: Institutional branding and User Session Profile */}
+            <div className="w-full bg-slate-50/80 border-b border-slate-200/20 py-1.5">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-advent-green animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                            AdventHealth GME Clinical Quality & Scholarly Registry
+                        </span>
+                    </div>
+
+                    <div className="hidden md:flex items-center gap-4 text-[10px] font-bold text-slate-600">
+                        <div className="flex items-center gap-2 border-r border-slate-200/40 pr-4">
+                            <span className="font-serif italic font-semibold text-slate-800 text-[11px]">
+                                {displayName}
+                            </span>
+                            <span className={`text-[8px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded border shadow-3xs ${
+                                role === 'Admin'
+                                    ? 'bg-rose-500/5 text-rose-600 border-rose-200/40'
+                                    : role === 'Faculty'
+                                        ? 'bg-emerald-500/5 text-emerald-600 border-emerald-200/40'
+                                        : 'bg-advent-cobalt/5 text-advent-cobalt border-advent-cobalt/10'
+                            }`}>
+                                {role === 'Admin' ? 'Overseer' : role || 'Viewer'}
+                            </span>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="group flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-650 transition-all"
+                        >
+                            <LogOut className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Lower Tier: Main Branding and Navigation Links */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16 items-center">
+                <div className="flex justify-between h-14 items-center">
                     {/* Logo Section */}
-                    <div className="flex items-center gap-8">
-                        <Link href="/" prefetch={false} className="flex items-center gap-3 group">
-                            <div className="bg-gradient-to-br from-advent-navy to-advent-cobalt text-white p-2 rounded-xl shadow-sm border border-white/10 transition-all duration-300">
-                                <Activity className="w-4 h-4 text-advent-green" />
+                    <div className="flex items-center gap-6">
+                        <Link href="/" prefetch={false} className="flex items-center gap-2.5 group">
+                            <div className="bg-gradient-to-br from-advent-navy to-advent-cobalt text-white p-1.5 rounded-lg border border-white/10 transition-all duration-300">
+                                <Activity className="w-3.5 h-3.5 text-advent-green" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-serif italic font-bold text-lg tracking-tight text-advent-navy">
+                                <span className="font-serif italic font-bold text-base tracking-tight text-advent-navy leading-none">
                                     QI Chief
                                 </span>
-                                <span className="text-[9px] font-black tracking-[0.25em] text-slate-400 uppercase leading-none">
+                                <span className="text-[8px] font-black tracking-[0.2em] text-slate-400 uppercase leading-none mt-0.5">
                                     academic tracker
                                 </span>
                             </div>
@@ -87,77 +123,50 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
 
                         <div className="hidden lg:flex items-center gap-2">
                             <span className="text-slate-300">/</span>
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-slate-50 text-slate-500 px-3 py-1 rounded-lg border border-slate-200/50 shadow-2xs">
+                            <span className="text-[8px] font-black uppercase tracking-[0.15em] bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-200/30">
                                 {getPageTitle(pathname)}
                             </span>
                         </div>
-
-                        {/* Desktop Navigation */}
-                        <nav className="hidden md:flex items-center gap-1">
-                            {navItems.map((item) => {
-                                const isActive = pathname === item.href
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        prefetch={false}
-                                        className={`relative px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border
-                                            ${isActive
-                                                ? 'bg-slate-50 text-advent-navy border-slate-200/80 shadow-2xs'
-                                                : 'text-slate-500 hover:text-advent-navy hover:bg-slate-50/50 border-transparent'
-                                            }`}
-                                    >
-                                        <item.icon className={`w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-105 ${isActive ? 'text-advent-navy' : 'text-slate-400'}`} />
-                                        {item.label}
-                                    </Link>
-                                )
-                            })}
-                        </nav>
                     </div>
 
-                    {/* Mobile Menu Toggle */}
-                    <div className="flex items-center gap-4">
+                    {/* Desktop Navigation */}
+                    <nav className="hidden md:flex items-center gap-1.5">
+                        {navItems.map((item) => {
+                            const isActive = pathname === item.href
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    prefetch={false}
+                                    className={`relative px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-1.5 border
+                                        ${isActive
+                                            ? 'bg-slate-50 text-advent-navy border-slate-200/80 shadow-3xs font-black'
+                                            : 'text-slate-500 hover:text-advent-navy hover:bg-slate-50/50 border-transparent font-bold'
+                                        }`}
+                                >
+                                    <item.icon className={`w-3.5 h-3.5 ${isActive ? 'text-advent-navy' : 'text-slate-400'}`} />
+                                    {item.label}
+                                </Link>
+                            )
+                        })}
+                    </nav>
+
+                    {/* Mobile Menu Toggle Button */}
+                    <div className="flex items-center gap-3 md:hidden">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden p-2 text-advent-navy hover:bg-slate-100 rounded-lg transition-colors border border-slate-100"
+                            className="p-1.5 text-advent-navy hover:bg-slate-100 rounded-lg transition-colors border border-slate-200/60"
                         >
-                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                         </button>
-
-                        {/* User Profile & Actions (Desktop) */}
-                        <div className="hidden md:flex items-center gap-6">
-                            <div className="flex flex-col items-end">
-                                <span className="text-[11px] font-bold text-slate-800 tracking-tight leading-none mb-1">
-                                    {displayName}
-                                </span>
-                                <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-0.5 rounded-md border shadow-2xs ${role === 'Admin'
-                                    ? 'bg-rose-500/5 text-rose-600 border-rose-200/60'
-                                    : role === 'Faculty'
-                                        ? 'bg-emerald-500/5 text-emerald-600 border-emerald-200/60'
-                                        : role === 'Operator'
-                                            ? 'bg-advent-cobalt/5 text-advent-cobalt border-advent-cobalt/10'
-                                            : 'bg-slate-50 text-slate-500 border-slate-200/80'
-                                    }`}>
-                                    {role === 'Admin' ? 'Overseer' : role || 'Viewer'}
-                                </span>
-                            </div>
-                            <div className="h-8 w-px bg-slate-200" />
-                            <button
-                                onClick={handleLogout}
-                                className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-rose-600 transition-all px-3 py-1.5 rounded-lg hover:bg-rose-50/50"
-                            >
-                                <LogOut className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-                                <span>Logout</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile Navigation Menu */}
+            {/* Mobile Navigation Dropdown Menu */}
             {isMobileMenuOpen && (
-                <div className="md:hidden absolute top-16 left-0 w-full bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-xl p-4 flex flex-col gap-4 animate-in slide-in-from-top-2 duration-200">
-                    <nav className="flex flex-col gap-2">
+                <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-slate-200/40 shadow-xl p-4 flex flex-col gap-4 animate-in slide-in-from-top-2 duration-200 z-50">
+                    <nav className="flex flex-col gap-1.5">
                         {navItems.map((item) => {
                             const isActive = pathname === item.href
                             return (
@@ -166,29 +175,29 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                                     href={item.href}
                                     prefetch={false}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 transition-all
+                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all border
                                         ${isActive
-                                            ? 'bg-advent-navy text-white shadow-md shadow-advent-navy/20'
-                                            : 'text-slate-600 hover:bg-slate-50'
+                                            ? 'bg-slate-50 text-advent-navy border-slate-200/60 shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-50/50 border-transparent'
                                         }`}
                                 >
-                                    <item.icon className={`w-5 h-5 ${isActive ? 'text-advent-green' : 'text-slate-400'}`} />
+                                    <item.icon className={`w-4 h-4 ${isActive ? 'text-advent-navy' : 'text-slate-400'}`} />
                                     {item.label}
                                 </Link>
                             )
                         })}
                     </nav>
 
-                    <div className="border-t border-slate-100 pt-4 mt-2">
-                        <div className="flex items-center justify-between px-2 mb-4">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Signed in as</span>
-                            <span className="text-sm font-bold text-advent-navy">{userEmail?.split('@')[0]}</span>
+                    <div className="border-t border-slate-200/60 pt-4 mt-2">
+                        <div className="flex items-center justify-between px-2 mb-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            <span>Signed in as</span>
+                            <span className="font-serif italic font-bold text-slate-800 tracking-tight lowercase">{userEmail}</span>
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-100 transition-colors"
+                            className="w-full flex items-center justify-center gap-2 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-rose-100 transition-colors border border-rose-200/40"
                         >
-                            <LogOut className="w-4 h-4" />
+                            <LogOut className="w-3.5 h-3.5" />
                             Sign Out
                         </button>
                     </div>

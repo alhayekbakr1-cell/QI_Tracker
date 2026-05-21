@@ -1348,6 +1348,8 @@ ${idea.venue}
 // --- Main Interface Component ---
 
 export default function QIHandbook({ onBack }: { onBack: () => void }) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<'All' | 'Diagnostics' | 'Execution' | 'Reporting'>('All');
     const [activeChapter, setActiveChapter] = useState(chapters[0]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [aiQuery, setAiQuery] = useState('');
@@ -1355,12 +1357,59 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
+    // Metadata & Milestones for Academic Timeline
+    const chapterMeta: Record<string, { category: 'Diagnostics' | 'Execution' | 'Reporting'; milestone: string }> = {
+        overview: { category: 'Diagnostics', milestone: 'PGY-1 Q1: Aim Selection' },
+        background: { category: 'Diagnostics', milestone: 'PGY-1 Q2: Lit Review' },
+        outcomes: { category: 'Diagnostics', milestone: 'PGY-1 Q3: SMART Aim' },
+        'ideas-bank': { category: 'Diagnostics', milestone: 'PGY-1 Q4: Idea Sourcing' },
+        methods: { category: 'Execution', milestone: 'PGY-2 Q1: PDSA Design' },
+        measures: { category: 'Execution', milestone: 'PGY-2 Q2: Measures Trio' },
+        hippa: { category: 'Execution', milestone: 'PGY-2 Q3: HIPAA Security' },
+        'team-roles': { category: 'Execution', milestone: 'PGY-2 Q4: RACI & Roles' },
+        analysis: { category: 'Reporting', milestone: 'PGY-3 Q1: Statistical Plan' },
+        results: { category: 'Reporting', milestone: 'PGY-3 Q2: SQUIRE Reporting' },
+        sustainability: { category: 'Reporting', milestone: 'PGY-3 Q3: Sustain & Spread' },
+        ethical: { category: 'Reporting', milestone: 'PGY-3 Q4: IRB Determination' }
+    };
+
     // Hydration guard
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // Scroll to top on chapter change
+    // Filter chapters dynamically by search query and category
+    const filteredChapters = chapters.filter(chapter => {
+        const meta = chapterMeta[chapter.id];
+        if (selectedCategory !== 'All' && meta?.category !== selectedCategory) {
+            return false;
+        }
+
+        if (searchQuery.trim() !== '') {
+            const query = searchQuery.toLowerCase();
+            const matchesTitle = chapter.title.toLowerCase().includes(query);
+            const matchesSections = chapter.sections.some(section =>
+                section.title.toLowerCase().includes(query) ||
+                section.blocks.some(block =>
+                    (block.content && block.content.toLowerCase().includes(query)) ||
+                    (block.title && block.title.toLowerCase().includes(query)) ||
+                    (block.items && block.items.some(item => item.toLowerCase().includes(query)))
+                )
+            );
+            return matchesTitle || matchesSections;
+        }
+
+        return true;
+    });
+
+    // Auto-select first matching chapter if active gets filtered out
+    useEffect(() => {
+        if (filteredChapters.length > 0 && !filteredChapters.some(c => c.id === activeChapter.id)) {
+            setActiveChapter(filteredChapters[0]);
+        }
+    }, [searchQuery, selectedCategory]);
+
+    // Scroll to top of main area on chapter change
     useEffect(() => {
         const main = document.querySelector('main');
         if (main) main.scrollTo(0, 0);
@@ -1373,9 +1422,7 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
         setIsAiLoading(true);
         setAiResponse(null);
         try {
-            // Include chapter content for "smart" context
             const chapterText = activeChapter.sections.map(s => `Section: ${s.title}\n${s.blocks.filter(b => b.type === 'text').map(b => b.content).join('\n')}`).join('\n\n');
-
             const response = await getQIAdvice(aiQuery, undefined, chapterText);
             setAiResponse(response);
         } catch (e: any) {
@@ -1388,69 +1435,177 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
 
     return (
         <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-white text-slate-900 font-sans">
-            {/* Nav Sidebar */}
-            <div className="w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
-                <div className="p-8 pb-4">
+            {/* Left Nav Control Panel */}
+            <div className="w-[22rem] border-r border-slate-100 flex flex-col bg-slate-50/40 shrink-0">
+                <div className="p-6 pb-4 border-b border-slate-100 bg-white">
                     <button
                         onClick={onBack}
-                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-advent-blue transition-colors mb-6 group"
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-advent-blue transition-colors mb-4 group"
                     >
                         <ArrowRight className="w-3 h-3 rotate-180 group-hover:-translate-x-1 transition-transform" />
                         Back to Resources
                     </button>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                         <div className="p-2 bg-advent-navy text-white rounded-xl shadow-lg shadow-advent-navy/10">
-                            <BookOpen className="w-5 h-5" />
+                            <BookOpen className="w-4 h-4" />
                         </div>
                         QI Handbook
                     </h2>
-                    <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Academic Curriculum v2.0</p>
+                    <p className="mt-1 text-[9px] font-black uppercase tracking-widest text-slate-400">Academic Curriculum v2.0</p>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-                    {chapters.map(chapter => (
-                        <button
-                            key={chapter.id}
-                            onClick={() => setActiveChapter(chapter)}
-                            className={`w - full flex items - center gap - 4 px - 5 py - 4 rounded - 2xl transition - all group ${activeChapter.id === chapter.id
-                                ? 'bg-white shadow-xl shadow-slate-200/50 border border-slate-100'
-                                : 'hover:bg-slate-100/50 text-slate-500'
-                                } `}
-                        >
-                            <div className={`${activeChapter.id === chapter.id ? 'text-advent-navy' : 'text-slate-300 group-hover:text-slate-400'} `}>
-                                {chapter.icon}
-                            </div>
-                            <span className={`text - xs font - black uppercase tracking - widest ${activeChapter.id === chapter.id ? 'text-slate-900' : ''} `}>
-                                {chapter.title}
-                            </span>
-                        </button>
-                    ))}
-                </nav>
+                {/* Search Bar & Category Quick Filters */}
+                <div className="p-4 bg-white border-b border-slate-100 space-y-3">
+                    <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search chapters or text..."
+                            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200/80 rounded-xl outline-none focus:ring-4 focus:ring-advent-navy/5 focus:border-advent-navy text-xs font-bold text-slate-700 transition-all"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] font-black uppercase tracking-wider"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1">
+                        {(['All', 'Diagnostics', 'Execution', 'Reporting'] as const).map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-widest transition-all ${
+                                    selectedCategory === cat
+                                        ? 'bg-advent-navy text-white shadow-sm'
+                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200/60'
+                                }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Vertical Chapters Timeline */}
+                <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 relative scrollbar-thin">
+                    {/* Vertical timeline connector */}
+                    <div className="absolute left-6 top-8 bottom-8 w-[1.5px] bg-slate-200" />
+
+                    {filteredChapters.length === 0 ? (
+                        <div className="text-center py-10 text-slate-400">
+                            <Info className="w-5 h-5 mx-auto mb-2 text-slate-300" />
+                            <p className="text-[9px] font-black uppercase tracking-widest">No matching modules found</p>
+                        </div>
+                    ) : (
+                        filteredChapters.map((chapter) => {
+                            const meta = chapterMeta[chapter.id];
+                            const isActive = activeChapter.id === chapter.id;
+
+                            return (
+                                <div key={chapter.id} className="relative pl-6 group">
+                                    {/* Timeline Node dot */}
+                                    <div className={`absolute left-0.5 top-3 w-3 h-3 rounded-full border-2 transition-all flex items-center justify-center z-10 ${
+                                        isActive
+                                            ? 'bg-advent-navy border-advent-navy scale-110 shadow shadow-advent-navy/20'
+                                            : 'bg-white border-slate-300 group-hover:border-slate-400'
+                                    }`}>
+                                        {isActive && <div className="w-1 h-1 bg-white rounded-full" />}
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <button
+                                            onClick={() => setActiveChapter(chapter)}
+                                            className={`w-full flex flex-col text-left rounded-xl p-2.5 border transition-all ${
+                                                isActive
+                                                    ? 'bg-white border-slate-200 shadow-sm font-black'
+                                                    : 'border-transparent hover:bg-slate-100/40 text-slate-500 hover:text-slate-800'
+                                            }`}
+                                        >
+                                            <span className={`text-[8.5px] font-black uppercase tracking-widest mb-0.5 ${
+                                                isActive ? 'text-advent-navy' : 'text-slate-400'
+                                            }`}>
+                                                {meta?.milestone}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`${isActive ? 'text-advent-navy animate-pulse' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                                                    {chapter.icon}
+                                                </div>
+                                                <span className={`text-xs font-black uppercase tracking-wider ${
+                                                    isActive ? 'text-slate-900' : 'text-slate-600'
+                                                }`}>
+                                                    {chapter.title}
+                                                </span>
+                                            </div>
+                                        </button>
+
+                                        {/* Table of Contents for Active Chapter */}
+                                        {isActive && chapter.sections.length > 0 && (
+                                            <div className="pl-3 pr-2 py-1.5 space-y-1.5 bg-slate-50/50 rounded-xl border border-slate-100/50 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5 pl-1">In this chapter:</div>
+                                                {chapter.sections.map((section, sIdx) => (
+                                                    <button
+                                                        key={sIdx}
+                                                        onClick={() => {
+                                                            const el = document.getElementById(`section-${chapter.id}-${sIdx}`);
+                                                            if (el) {
+                                                                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                            }
+                                                        }}
+                                                        className="w-full flex items-center gap-1.5 text-left py-0.5 text-[9.5px] font-bold text-slate-500 hover:text-advent-blue transition-colors group/item"
+                                                    >
+                                                        <ChevronRight className="w-2.5 h-2.5 text-slate-300 group-hover/item:text-advent-blue transition-colors shrink-0" />
+                                                        <span className="truncate">{section.title}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto bg-white relative">
-                <main className="max-w-3xl mx-auto px-12 py-16">
-                    <header className="mb-16 space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-500">
-                            <CheckSquare className="w-3 h-3" /> Essential Module
+            {/* Right Curriculum Canvas */}
+            <div className="flex-1 overflow-y-auto bg-slate-50/30 relative">
+                <main className="max-w-4xl mx-auto px-8 md:px-12 py-12">
+                    <header className="mb-10 space-y-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200/80 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-3xs">
+                            <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />
+                            {chapterMeta[activeChapter.id]?.milestone}
                         </div>
-                        <h1 className="text-5xl font-black text-slate-900 leading-tight">
+                        <h1 className="text-4xl font-black text-slate-900 leading-tight tracking-tight">
                             {activeChapter.title}
                         </h1>
                     </header>
 
-                    <div className="space-y-20">
+                    <div className="space-y-12">
                         {activeChapter.sections.map((section, idx) => (
-                            <section key={idx} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                <h3 className="text-2xl font-black text-slate-900 border-b-4 border-advent-blue/20 pb-4 inline-block">
+                            <section
+                                key={idx}
+                                id={`section-${activeChapter.id}-${idx}`}
+                                className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 scroll-mt-6"
+                            >
+                                <h3 className="text-xl font-black text-slate-900 border-b-2 border-slate-200 pb-3 flex items-center gap-2">
+                                    <span className="w-1.5 h-6 bg-advent-blue rounded-full" />
                                     {section.title}
                                 </h3>
 
-                                <div className="space-y-8 pt-4">
+                                <div className="space-y-6">
                                     {section.blocks.map((block, bIdx) => {
                                         if (block.type === 'text') {
-                                            return <p key={bIdx} className="text-lg text-slate-600 leading-relaxed font-medium">{block.content}</p>;
+                                            return (
+                                                <p key={bIdx} className="text-sm text-slate-600 leading-relaxed font-semibold">
+                                                    {block.content}
+                                                </p>
+                                            );
                                         }
                                         if (block.type === 'diagram') {
                                             return <MermaidDiagram key={bIdx} definition={block.diagramDefinition!} title={block.title} />;
@@ -1469,20 +1624,20 @@ export default function QIHandbook({ onBack }: { onBack: () => void }) {
                                         }
                                         if (block.type === 'table') {
                                             return (
-                                                <div key={bIdx} className="overflow-hidden border border-slate-100 rounded-3xl shadow-sm my-8">
-                                                    <table className="w-full text-sm text-left">
-                                                        <thead className="bg-slate-50 border-b border-slate-100">
+                                                <div key={bIdx} className="overflow-hidden border border-slate-200/60 rounded-2xl shadow-3xs my-6 bg-white">
+                                                    <table className="w-full text-xs text-left">
+                                                        <thead className="bg-slate-50 border-b border-slate-200/60">
                                                             <tr>
                                                                 {block.headers?.map(h => (
-                                                                    <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">{h}</th>
+                                                                    <th key={h} className="px-5 py-3.5 text-[9px] font-black uppercase tracking-widest text-slate-500">{h}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
-                                                        <tbody className="divide-y divide-slate-50">
+                                                        <tbody className="divide-y divide-slate-100">
                                                             {block.rows?.map((row, rIdx) => (
                                                                 <tr key={rIdx} className="hover:bg-slate-50/50 transition-colors">
                                                                     {row.map((cell, cIdx) => (
-                                                                        <td key={cIdx} className="px-6 py-5 font-bold text-slate-700">{cell}</td>
+                                                                        <td key={cIdx} className="px-5 py-4 font-bold text-slate-700">{cell}</td>
                                                                     ))}
                                                                 </tr>
                                                             ))}
