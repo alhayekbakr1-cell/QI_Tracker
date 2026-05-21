@@ -7,7 +7,9 @@ import {
 } from "lucide-react";
 import { getProtocolSectionAdvice } from "@/utils/ai";
 import { generateProtocolDoc, ProtocolData } from "@/utils/protocolExport";
+import { uploadToSharedFolder } from "@/utils/oneDrive";
 import { createClient } from "@/utils/supabase/client";
+import { useMsal } from "@azure/msal-react";
 import { saveAs } from "file-saver";
 
 interface ProtocolWizardProps {
@@ -61,6 +63,7 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
     });
 
     const supabase = createClient();
+    const { instance, accounts } = useMsal();
 
     useEffect(() => {
         const fetchDirectory = async () => {
@@ -91,25 +94,41 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
         setIsSaving(true);
         try {
             const blob = await generateProtocolDoc(formData);
-            const fileName = `Protocol_${projectTitle.replace(/\s+/g, '_')}_${Date.now()}.docx`;
+            const fileName = `Protocol_${projectTitle.replace(/\s+/g, '_')}.docx`;
 
-            // 1. Download for user immediately
+            // 1. Download locally for the resident
             saveAs(blob, fileName);
 
-            // 2. Upload to Supabase Storage
-            // Path: Protocols/Category/ProjectTitle/FileName
-            // Note: In a real app, we'd fetch the category first or pass it in.
-            const path = `protocols/${projectId}/${fileName}`;
-            const { error: uploadError } = await supabase.storage
-                .from('attachments')
-                .upload(path, blob);
+            // 2. Upload to shared OneDrive folder
+            const { url: oneDriveUrl } = await uploadToSharedFolder(
+                instance,
+                accounts[0],
+                projectTitle,
+                fileName,
+                blob,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            );
 
-            if (uploadError) throw uploadError;
+            // 3. Fetch current user profile for attribution
+            const { data: { user } } = await supabase.auth.getUser();
+            const { data: profile } = user
+                ? await supabase.from('profiles').select('id, full_name').eq('id', user.id).single()
+                : { data: null };
 
-            // 3. Link to project
-            // Assuming projects table has a protocol_url or similar. 
-            // For now, let's just alert success or close.
-            alert("Protocol generated, downloaded, and saved to secure cloud storage!");
+            // 4. Save to project_files and update project protocol_url
+            await Promise.all([
+                supabase.from('project_files').insert({
+                    project_id: projectId,
+                    file_name: fileName,
+                    file_type: 'docx',
+                    file_url: oneDriveUrl,
+                    uploaded_by: profile?.id ?? null,
+                    uploaded_by_name: profile?.full_name ?? null,
+                }),
+                supabase.from('projects').update({ protocol_url: oneDriveUrl }).eq('id', projectId),
+            ]);
+
+            alert("Protocol generated, downloaded, and saved to the shared OneDrive folder!");
             onClose();
         } catch (error: any) {
             alert("Error: " + error.message);

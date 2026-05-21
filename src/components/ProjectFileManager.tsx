@@ -19,14 +19,15 @@ import { createClient } from "@/utils/supabase/client";
 import { ProjectFile, Profile } from "@/types";
 import { format } from "date-fns";
 import { useMsal } from "@azure/msal-react";
-import { loginRequest } from "@/utils/auth/msalConfig";
+import { uploadToSharedFolder } from "@/utils/oneDrive";
 
 interface ProjectFileManagerProps {
     projectId: string;
+    projectName?: string;
     currentUserProfile: Profile | null;
 }
 
-export default function ProjectFileManager({ projectId, currentUserProfile }: ProjectFileManagerProps) {
+export default function ProjectFileManager({ projectId, projectName, currentUserProfile }: ProjectFileManagerProps) {
     const [files, setFiles] = useState<ProjectFile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -61,61 +62,17 @@ export default function ProjectFileManager({ projectId, currentUserProfile }: Pr
 
             setUploading(true);
 
-            // 1. Acquire OneDrive token via MSAL
-            let tokenResponse;
-            try {
-                tokenResponse = await instance.acquireTokenSilent({
-                    ...loginRequest,
-                    account: accounts[0]
-                });
-            } catch (error) {
-                tokenResponse = await instance.acquireTokenPopup(loginRequest);
-            }
+            // 1. Upload to shared OneDrive folder
+            const { url: finalUrl } = await uploadToSharedFolder(
+                instance,
+                accounts[0],
+                projectName || projectId,
+                file.name,
+                file,
+                file.type
+            );
 
-            const accessToken = tokenResponse.accessToken;
-
-            // 2. Upload file to OneDrive
-            const fileName = encodeURIComponent(file.name);
-            const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/QI_Tracker/${projectId}/${fileName}:/content`;
-
-            const uploadResponse = await fetch(uploadUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': file.type
-                },
-                body: file
-            });
-
-            if (!uploadResponse.ok) {
-                const errorData = await uploadResponse.json();
-                throw new Error(`OneDrive upload failed: ${errorData.error?.message || uploadResponse.statusText}`);
-            }
-
-            const uploadData = await uploadResponse.json();
-            const driveItemId = uploadData.id;
-
-            // 3. Create Shareable View Link
-            const linkResponse = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${driveItemId}/createLink`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    type: 'view',
-                    scope: 'anonymous'
-                })
-            });
-
-            if (!linkResponse.ok) {
-                throw new Error('Failed to create shareable link');
-            }
-
-            const linkData = await linkResponse.json();
-            const finalUrl = linkData.link.webUrl;
-
-            // 4. Save file reference in project_files table
+            // 3. Save file reference in project_files table
             const { data: dbData, error: dbError } = await supabase
                 .from('project_files')
                 .insert([{
