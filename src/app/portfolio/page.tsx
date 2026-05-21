@@ -16,9 +16,11 @@ import {
     TrendingUp,
     Presentation,
     DollarSign,
-    Users
+    Users,
+    ChevronDown
 } from "lucide-react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/custom-ui";
 
 export default function PortfolioPage() {
     const [myProjects, setMyProjects] = useState<Project[]>([]);
@@ -98,7 +100,30 @@ export default function PortfolioPage() {
     }, [router, supabase]);
 
     if (isLoading) {
-        return <div className="flex justify-center items-center min-h-screen">Loading Portfolio...</div>;
+        return (
+            <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-pulse">
+                <header className="mb-12 space-y-2">
+                    <Skeleton className="h-10 w-80 rounded-xl" />
+                    <Skeleton className="h-4 w-96 rounded-lg" />
+                </header>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-1 space-y-6">
+                        <Skeleton className="h-[320px] rounded-[2.5rem]" />
+                        <Skeleton className="h-[120px] rounded-3xl" />
+                    </div>
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="flex justify-between items-center">
+                            <Skeleton className="h-8 w-48 rounded-xl" />
+                            <Skeleton className="h-6 w-20 rounded-full" />
+                        </div>
+                        <div className="space-y-4">
+                            <Skeleton className="h-44 rounded-[2rem]" />
+                            <Skeleton className="h-44 rounded-[2rem]" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     // Graduation Requirements Logic

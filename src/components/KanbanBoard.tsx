@@ -10,6 +10,7 @@ import {
     useSensors,
     DragOverlay,
     defaultDropAnimationSideEffects,
+    useDroppable,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -21,9 +22,47 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Project, ProjectStatus } from '@/types';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, GripVertical, ArrowRight } from 'lucide-react';
+import { Loader2, GripVertical } from 'lucide-react';
 
-const STAGES: ProjectStatus[] = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains'];
+const STAGES: ProjectStatus[] = ['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains', 'Impacted (Completed)'];
+
+const COLUMN_STYLES: Record<ProjectStatus, { border: string, bg: string, text: string, pill: string, headerBorder: string }> = {
+    'Idea': {
+        border: 'border-violet-100/80',
+        bg: 'bg-violet-50/5',
+        text: 'text-violet-700',
+        pill: 'bg-violet-50 text-violet-700 border-violet-100',
+        headerBorder: 'border-b-2 border-violet-400'
+    },
+    'Pre-Intervention': {
+        border: 'border-blue-100/80',
+        bg: 'bg-blue-50/5',
+        text: 'text-blue-700',
+        pill: 'bg-blue-50 text-blue-700 border-blue-100',
+        headerBorder: 'border-b-2 border-blue-400'
+    },
+    'Intervention Ongoing': {
+        border: 'border-amber-100/80',
+        bg: 'bg-amber-50/5',
+        text: 'text-amber-700',
+        pill: 'bg-amber-50 text-amber-700 border-amber-100',
+        headerBorder: 'border-b-2 border-amber-400'
+    },
+    'Sustain the Gains': {
+        border: 'border-cyan-100/80',
+        bg: 'bg-cyan-50/5',
+        text: 'text-cyan-700',
+        pill: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+        headerBorder: 'border-b-2 border-cyan-400'
+    },
+    'Impacted (Completed)': {
+        border: 'border-emerald-100/80',
+        bg: 'bg-emerald-50/5',
+        text: 'text-emerald-700',
+        pill: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        headerBorder: 'border-b-2 border-emerald-400'
+    }
+};
 
 interface KanbanCardProps {
     project: Project;
@@ -42,14 +81,14 @@ function KanbanCard({ project }: KanbanCardProps) {
     const style = {
         transform: CSS.Translate.toString(transform),
         transition,
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0.4 : 1,
     };
 
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative"
+            className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 group relative"
         >
             <div
                 {...attributes}
@@ -82,12 +121,20 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ status, projects }: KanbanColumnProps) {
+    const { setNodeRef } = useDroppable({
+        id: status,
+    });
+    const styles = COLUMN_STYLES[status] || COLUMN_STYLES['Idea'];
+
     return (
-        <div className="flex flex-col h-full bg-slate-50/50 rounded-[2.5rem] border border-slate-100/50 p-4 min-w-[300px]">
-            <div className="px-4 py-3 mb-4 flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-advent-navy">
+        <div 
+            ref={setNodeRef}
+            className={`flex flex-col h-full rounded-[2.5rem] border p-4 min-w-[300px] transition-all duration-300 ${styles.border} ${styles.bg}`}
+        >
+            <div className={`px-4 py-3 mb-4 flex items-center justify-between pb-3 ${styles.headerBorder}`}>
+                <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${styles.text}`}>
                     {status}
-                    <span className="ml-3 px-2 py-0.5 bg-advent-navy/5 text-advent-navy rounded-full text-[10px] tabular-nums">
+                    <span className={`ml-3 px-2 py-0.5 rounded-full text-[10px] border tabular-nums ${styles.pill}`}>
                         {projects.length}
                     </span>
                 </h3>
@@ -99,7 +146,7 @@ function KanbanColumn({ status, projects }: KanbanColumnProps) {
                         <KanbanCard key={project.id} project={project} />
                     ))}
                     {projects.length === 0 && (
-                        <div className="h-32 border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-slate-300">
+                        <div className={`h-32 border-2 border-dashed rounded-3xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-colors duration-300 bg-white/40 ${styles.text} ${styles.border}`}>
                             Empty Stage
                         </div>
                     )}
@@ -176,7 +223,6 @@ export default function KanbanBoard({ initialProjects }: { initialProjects: Proj
 
             if (error) {
                 console.error("Failed to update status in DB:", error);
-                // Rollback state? Or notify?
             }
         }
 
@@ -213,7 +259,7 @@ export default function KanbanBoard({ initialProjects }: { initialProjects: Proj
                 sideEffects: defaultDropAnimationSideEffects({
                     styles: {
                         active: {
-                            opacity: '0.5',
+                            opacity: '0.4',
                         },
                     },
                 }),
@@ -228,3 +274,4 @@ export default function KanbanBoard({ initialProjects }: { initialProjects: Proj
         </DndContext>
     );
 }
+

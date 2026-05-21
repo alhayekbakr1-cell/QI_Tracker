@@ -4,57 +4,69 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Project } from "@/types";
 import PHIWarning from "@/components/PHIWarning";
-import { ArrowLeft, Save, Sparkles, Loader2, LayoutGrid, Users, Target, TrendingUp, Trophy, Layers, Info, FileText, FileDown, RefreshCw, ChevronDown } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Loader2, LayoutGrid, Users, Target, TrendingUp, Trophy, Info, FileText, FileDown, RefreshCw, ChevronDown, CheckCircle2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
 import FileUploader from "@/components/FileUploader";
 import Section from "@/components/Section";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
 import { draftSummary, auditProjectQuality, suggestMetrics, generateSMARTAim } from "@/utils/ai";
+import { toast, CustomConfirmDialog, Skeleton } from "@/components/ui/custom-ui";
 
-
-function AIUpdateSection({ initialValue }: { initialValue: string }) {
+function AIUpdateSection({ initialValue, onChange }: { initialValue: string, onChange: (val: string) => void }) {
     const [value, setValue] = useState(initialValue);
     const [isDrafting, setIsDrafting] = useState(false);
 
+    useEffect(() => {
+        setValue(initialValue);
+    }, [initialValue]);
+
     const handleAIDraft = async () => {
         if (!value || value.length < 10) {
-            alert("Please enter some bullet points or notes first to help the AI draft a summary.");
+            toast.warning("Please enter some bullet points or notes first to help the AI draft a summary.");
             return;
         }
         setIsDrafting(true);
         try {
             const drafted = await draftSummary(value);
             setValue(drafted);
+            onChange(drafted);
+            toast.success("AI drafted summary successfully!");
         } catch (error: any) {
             console.error("AI Drafting error:", error);
-            alert(`AI Drafting failed: ${error.message || "Unknown error"}. Check Supabase or GEMINI_API_KEY.`);
+            toast.error(`AI Drafting failed: ${error.message || "Unknown error"}.`);
         } finally {
             setIsDrafting(false);
         }
     };
 
     return (
-        <div className="space-y-3">
-            <div className="flex justify-between items-end ml-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Updates and Barriers</label>
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 ml-1">
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Updates and Barriers</label>
+                    <span className="text-[10px] text-slate-300 font-bold italic">Quick bullet points or active barriers</span>
+                </div>
                 <button
                     type="button"
                     onClick={handleAIDraft}
                     disabled={isDrafting}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-3 py-1.5 rounded-lg hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50"
+                    className="flex items-center gap-2 self-start text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 hover:bg-advent-navy/10 px-4 py-2 rounded-xl transition-all border border-advent-navy/10 disabled:opacity-50 active:scale-[0.98]"
                 >
-                    {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {isDrafting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-advent-navy" /> : <Sparkles className="w-3.5 h-3.5 text-advent-navy" />}
                     Draft with AI
                 </button>
             </div>
             <textarea
                 name="updates_and_barriers"
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => {
+                    setValue(e.target.value);
+                    onChange(e.target.value);
+                }}
                 placeholder="Enter bullet points (e.g. - IRB approved, - Data collection started) then click 'Draft with AI'..."
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[150px] resize-none"
+                className="w-full p-5 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all min-h-[150px] resize-none text-sm placeholder:text-slate-300 shadow-inner"
             />
         </div>
     );
@@ -72,53 +84,56 @@ function AIAuditCard({ project }: { project: any }) {
             const score = scoreMatch ? parseInt(scoreMatch[0]) : 70;
             const feedback = result.replace(/Quality Score: \d+\.?\s*/i, '');
             setAudit({ score, feedback });
-        } catch (error) {
+            toast.success("AI quality audit completed successfully!");
+        } catch (error: any) {
             console.error("Audit failed:", error);
+            toast.error("AI Audit failed. Check your API settings.");
         } finally {
             setIsAuditing(false);
         }
     };
 
     return (
-        <div className="bg-advent-navy/5 border border-advent-navy/10 rounded-3xl p-6 space-y-4">
+        <div className="bg-advent-navy/5 border border-advent-navy/10 rounded-3xl p-6 space-y-4 hover:shadow-md transition-all duration-300">
             <div className="flex justify-between items-center text-advent-navy">
                 <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5" />
-                    <h3 className="text-xs font-black uppercase tracking-widest">AI Quality Assessment</h3>
+                    <CheckCircle2 className="w-4 h-4 text-advent-navy" />
+                    <h3 className="text-[10px] font-black uppercase tracking-widest">AI Quality Audit</h3>
                 </div>
                 <button
                     type="button"
                     onClick={runAudit}
                     disabled={isAuditing}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg border border-advent-navy/20 hover:bg-advent-navy/5 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest bg-white hover:bg-slate-50 transition-all border border-advent-navy/10 px-3 py-1.5 rounded-lg active:scale-95 disabled:opacity-50 shadow-sm"
                 >
-                    {isAuditing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                    {audit ? "Re-Audit" : "Run AI Audit"}
+                    {isAuditing ? <Loader2 className="w-3 h-3 animate-spin text-advent-navy" /> : <RefreshCw className="w-3 h-3 text-advent-navy" />}
+                    {audit ? "Re-Audit" : "Run Audit"}
                 </button>
             </div>
 
             {audit && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
-                    <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-3">
+                    <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-advent-navy/10">
+                        <div className="relative w-14 h-14 flex items-center justify-center flex-shrink-0">
                             <svg className="w-full h-full -rotate-90">
                                 <circle
-                                    cx="32" cy="32" r="28"
-                                    fill="none" stroke="currentColor" strokeWidth="4"
-                                    className="text-slate-200"
+                                    cx="28" cy="28" r="24"
+                                    fill="none" stroke="currentColor" strokeWidth="3"
+                                    className="text-slate-100"
                                 />
                                 <circle
-                                    cx="32" cy="32" r="28"
-                                    fill="none" stroke="currentColor" strokeWidth="4"
-                                    strokeDasharray="176"
-                                    strokeDashoffset={176 - (176 * audit.score) / 100}
-                                    className={audit.score > 80 ? 'text-emerald-500' : audit.score > 50 ? 'text-amber-500' : 'text-red-500'}
+                                    cx="28" cy="28" r="24"
+                                    fill="none" stroke="currentColor" strokeWidth="3"
+                                    strokeDasharray="150.8"
+                                    strokeDashoffset={150.8 - (150.8 * audit.score) / 100}
+                                    className={audit.score > 80 ? 'text-emerald-500' : audit.score > 50 ? 'text-amber-500' : 'text-rose-500'}
                                 />
                             </svg>
-                            <span className="absolute text-sm font-black text-slate-900">{audit.score}</span>
+                            <span className="absolute text-xs font-black text-slate-800">{audit.score}%</span>
                         </div>
                         <div className="flex-1">
-                            <p className="text-[10px] text-slate-600 font-bold leading-relaxed italic">
+                            <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Score Assessment</h4>
+                            <p className="text-[11px] text-slate-600 font-bold leading-normal italic mt-0.5">
                                 &quot;{audit.feedback}&quot;
                             </p>
                         </div>
@@ -127,65 +142,53 @@ function AIAuditCard({ project }: { project: any }) {
             )}
 
             {!audit && !isAuditing && (
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center py-4">
-                    Click to analyze project completeness and quality
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center py-2 italic">
+                    Analyze project completeness and audit GME academic requirements.
                 </p>
             )}
         </div>
     );
 }
 
-function ShieldCheck(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-            <path d="m9 12 2 2 4-4" />
-        </svg>
-    )
-}
-
-function MetricSuggester({ title, onSelect }: { title: string, onSelect: (val: string) => void }) {
+function MetricSuggester({ title }: { title: string }) {
     const [suggestions, setSuggestions] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
     const getSuggestions = async () => {
+        if (!title) {
+            toast.warning("Title is empty.");
+            return;
+        }
         setIsGenerating(true);
         try {
             const raw = await suggestMetrics(title);
             setSuggestions(raw);
+            toast.success("AI Metrics generated!");
         } catch (error) {
             console.error("Metric suggestion error:", error);
+            toast.error("AI metrics suggestion failed.");
         } finally {
             setIsGenerating(false);
         }
     };
 
     return (
-        <div className="space-y-4">
+        <div className="mt-4 space-y-4">
             <button
                 type="button"
                 onClick={getSuggestions}
                 disabled={isGenerating}
-                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-blue bg-advent-blue/5 px-4 py-2 rounded-xl hover:bg-advent-blue/10 transition-all border border-advent-blue/10 disabled:opacity-50"
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-4 py-2 rounded-xl hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50 active:scale-95"
             >
-                {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 Get AI Suggested Metrics
             </button>
 
             {suggestions && (
-                <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-3">AI Recommendations</p>
+                <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-inner animate-in fade-in slide-in-from-top-2 duration-300">
+                    <p className="text-[9px] font-black text-advent-navy uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Suggested Metrics
+                    </p>
                     <div className="text-xs text-slate-600 font-bold whitespace-pre-wrap leading-relaxed">
                         {suggestions}
                     </div>
@@ -205,6 +208,27 @@ export default function EditProjectPage() {
     const [selectedProponentIds, setSelectedProponentIds] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [updatesText, setUpdatesText] = useState("");
+    const [primaryOutcome, setPrimaryOutcome] = useState("");
+    const [title, setTitle] = useState("");
+    const [isPolishingAim, setIsPolishingAim] = useState(false);
+
+    // Custom Modal Dialog state
+    const [dialogState, setDialogState] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        cancelLabel?: string;
+        onConfirm?: () => void;
+        variant?: 'danger' | 'info';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+    });
+
     const router = useRouter();
     const supabase = createClient();
 
@@ -234,6 +258,9 @@ export default function EditProjectPage() {
 
             const proj = data as Project;
             setProject(proj);
+            setTitle(proj.title);
+            setPrimaryOutcome(proj.primary_outcome || "");
+            setUpdatesText(proj.updates_and_barriers || "");
             setSelectedLeadIds(proj.lead_proponent_ids || []);
             setSelectedProponentIds(proj.proponent_ids || []);
 
@@ -250,8 +277,25 @@ export default function EditProjectPage() {
         fetchData();
     }, [id, supabase, router]);
 
-    const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin');
-    const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin');
+    const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin' || p.role === 'Operator');
+    const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin' && p.role !== 'Operator');
+
+    const handleMakeSMART = async () => {
+        if (!title) {
+            toast.warning("Please enter a title first.");
+            return;
+        }
+        setIsPolishingAim(true);
+        try {
+            const smart = await generateSMARTAim(title, primaryOutcome);
+            setPrimaryOutcome(smart);
+            toast.success("Aim polished into SMART target!");
+        } catch (e: any) {
+            toast.error("AI Error: " + e.message);
+        } finally {
+            setIsPolishingAim(false);
+        }
+    };
 
     const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -260,7 +304,6 @@ export default function EditProjectPage() {
 
         const formData = new FormData(e.currentTarget);
 
-        // Combine manual names and linked profiles for labels
         const proponentsText = formData.get('proponents_text') as string;
         const leadProponentsText = formData.get('lead_proponents_text') as string;
 
@@ -271,19 +314,19 @@ export default function EditProjectPage() {
         const linkedLeadNames = allProfiles.filter(p => selectedLeadIds.includes(p.id)).map(p => p.full_name);
 
         const updates = {
-            title: formData.get('title') as string,
+            title: title,
             status: formData.get('status') as any,
             category: formData.get('category') as string,
             subcategory: formData.get('subcategory') as string,
             pdsa_cycle: parseInt(formData.get('pdsa_cycle') as string) || 1,
             faculty: formData.get('faculty_name') as string,
             faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
-            primary_outcome: formData.get('primary_outcome') as string,
+            primary_outcome: primaryOutcome,
             proponents: Array.from(new Set([...manualProponents, ...linkedProponentNames])),
             lead_proponents: Array.from(new Set([...manualLeads, ...linkedLeadNames])),
             proponent_ids: selectedProponentIds,
             lead_proponent_ids: selectedLeadIds,
-            updates_and_barriers: formData.get('updates_and_barriers') as string,
+            updates_and_barriers: updatesText,
             target_conference: formData.get('target_conference') as string || null,
             total_patients_impacted: parseInt(formData.get('total_patients_impacted') as string) || 0,
             estimated_cost_savings: parseFloat(formData.get('estimated_cost_savings') as string) || 0,
@@ -354,44 +397,78 @@ export default function EditProjectPage() {
 
         setIsSaving(false);
         if (error) {
-            alert(error.message);
+            toast.error(error.message);
         } else {
+            toast.success("Initiative updated successfully!");
             router.push(`/projects/view?id=${id}`);
             router.refresh();
         }
     };
 
     const handleDelete = async () => {
-        if (!id) return;
-        const { error } = await supabase.from('projects').delete().eq('id', id);
+        setIsDeleting(true);
+        const { error } = await supabase.from('projects').delete().eq('id', id!);
+        setIsDeleting(false);
         if (error) {
-            alert(error.message);
+            toast.error(error.message);
         } else {
+            toast.success("Initiative deleted successfully.");
             router.push('/projects');
             router.refresh();
         }
     };
 
+    const confirmDeleteWorkflow = () => {
+        setDialogState({
+            isOpen: true,
+            title: "Delete Initiative",
+            message: "Are you sure you want to delete this Quality Improvement project? This will permanently wipe all PDSA logs, metrics, files, and audit records. This action cannot be undone.",
+            confirmLabel: "Delete permanently",
+            cancelLabel: "Cancel",
+            variant: "danger",
+            onConfirm: () => {
+                setDialogState(prev => ({ ...prev, isOpen: false }));
+                handleDelete();
+            }
+        });
+    };
+
     if (isLoading) {
-        return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+        return (
+            <div className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <div className="flex justify-between items-center">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-72" />
+                    </div>
+                    <Skeleton className="h-10 w-32" />
+                </div>
+                <Skeleton className="h-12 w-full" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Skeleton className="h-40 md:col-span-2" />
+                    <Skeleton className="h-40 md:col-span-1" />
+                </div>
+                <Skeleton className="h-80 w-full" />
+            </div>
+        );
     }
 
     if (!project) return null;
 
     return (
-        <div className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Link href={`/projects/view?id=${id}`} prefetch={false} className="flex items-center gap-2 text-slate-500 hover:text-advent-blue mb-6 transition-colors text-sm font-semibold group">
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        <div className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
+            <Link href={`/projects/view?id=${id}`} prefetch={false} className="flex items-center gap-2 text-slate-500 hover:text-advent-navy mb-6 transition-colors text-xs font-black uppercase tracking-widest group">
+                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
                 Back to Details
             </Link>
 
-            <div className="mb-8 flex justify-between items-end">
+            <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Edit Project</h1>
-                    <p className="text-slate-500 mt-2 font-medium">Update the details for this QI initiative.</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Edit Initiative</h1>
+                    <p className="text-slate-500 mt-1 text-sm font-semibold">Make amendments below to audit logs and live PDSA operations.</p>
                 </div>
 
-                <DeleteProjectButton onDelete={handleDelete} />
+                <DeleteProjectButton onClick={confirmDeleteWorkflow} isPending={isDeleting} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-start">
@@ -399,47 +476,55 @@ export default function EditProjectPage() {
                     <PHIWarning />
                 </div>
                 <div className="lg:col-span-1">
-                    <AIAuditCard project={project} />
+                    <AIAuditCard project={{ ...project, title, primary_outcome }} />
                 </div>
             </div>
 
-            <form onSubmit={handleUpdate} className="space-y-12 pb-20">
-                <div className="grid grid-cols-1 gap-12">
-                    <Section title="Core Project Information" icon={<LayoutGrid className="w-5 h-5 text-advent-blue" />}>
-                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+            <form onSubmit={handleUpdate} className="space-y-10">
+                <div className="grid grid-cols-1 gap-10">
+                    
+                    {/* CORE PROJECT METADATA */}
+                    <Section title="Core Initiative Information" icon={<LayoutGrid className="w-5 h-5 text-advent-navy" />}>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Project Title</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                                    Project Title <span className="text-rose-500 font-bold">*</span>
+                                </label>
                                 <input
                                     name="title"
                                     required
-                                    defaultValue={project.title}
-                                    className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    placeholder="e.g., Smoking Cessation in Outpatient Clinic"
+                                    className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all text-sm shadow-inner"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Current Lifecycle Status</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Current Status</label>
                                     <div className="relative">
                                         <select
                                             name="status"
                                             defaultValue={project.status}
-                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm appearance-none"
                                         >
                                             {PROJECT_STATUSES.map(s => (
                                                 <option key={s.value} value={s.value}>{s.label}</option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                                        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Category</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                                        Primary Category <span className="text-rose-500 font-bold">*</span>
+                                    </label>
                                     <select
                                         name="category"
                                         defaultValue={project.category || ''}
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
                                     >
                                         <option value="">-- Select Category --</option>
                                         {project.category && !PROJECT_CATEGORIES.includes(project.category) && (
@@ -450,13 +535,13 @@ export default function EditProjectPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Specialty Focus</label>
                                     <select
                                         name="subcategory"
                                         defaultValue={project.subcategory || ''}
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
                                     >
                                         <option value="">-- Select Sub-Category --</option>
                                         {project.subcategory && !PROJECT_SUBCATEGORIES.includes(project.subcategory) && (
@@ -472,68 +557,106 @@ export default function EditProjectPage() {
                                         type="number"
                                         name="pdsa_cycle"
                                         defaultValue={project.pdsa_cycle || 1}
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all text-sm"
                                     />
                                 </div>
                             </div>
                         </div>
                     </Section>
 
+                    {/* PROJECT STAKEHOLDERS (TEAM) */}
                     <Section title="Project Stakeholders" icon={<Users className="w-5 h-5 text-emerald-500" />}>
-                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
+                            <div className="space-y-5">
+                                <div className="flex flex-col">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
+                                    <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Faculty advisor guiding the academic charter</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input
+                                        name="faculty_name"
+                                        placeholder="Dr. Full Name (Manual name)"
+                                        defaultValue={project.faculty || ''}
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-300 text-sm"
+                                    />
+                                    <select
+                                        name="faculty_id"
+                                        defaultValue={project.faculty_id || ""}
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                    >
+                                        <option value="">-- No Account Linked --</option>
+                                        {facultyProfiles.map(p => (
+                                            <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr className="border-slate-100 my-6" />
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* LEAD PROPONENTS */}
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor / PI</label>
-                                    <div className="space-y-4">
-                                        <input
-                                            name="faculty_name"
-                                            placeholder="Mentor's full name..."
-                                            defaultValue={project.faculty || ''}
-                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
-                                        />
-                                        <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block italic">Link to System Account</label>
-                                            <select
-                                                name="faculty_id"
-                                                defaultValue={project.faculty_id || ""}
-                                                className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-advent-blue/10 text-xs font-bold text-slate-600"
-                                            >
-                                                <option value="">-- No Account Linked --</option>
-                                                {facultyProfiles.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
-                                                ))}
-                                            </select>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead Investigators</label>
+                                        <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Principal investigators driving operations</span>
+                                    </div>
+                                    <input 
+                                        name="lead_proponents_text" 
+                                        placeholder="Comma-separated manual names..." 
+                                        defaultValue={project.lead_proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedLeadIds.includes(p.id))).join(', ')}
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
+                                    />
+                                    <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200 max-h-48 overflow-y-auto">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 italic">Link Registered Members:</p>
+                                        <div className="grid grid-cols-1 gap-1">
+                                            {residentProfiles.map(p => (
+                                                <label key={p.id} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedLeadIds.includes(p.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedLeadIds([...selectedLeadIds, p.id]);
+                                                            else setSelectedLeadIds(selectedLeadIds.filter(id => id !== p.id));
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-300 text-advent-navy focus:ring-advent-navy"
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-600 group-hover:text-advent-navy transition-colors">{p.full_name}</span>
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* TEAM MEMBERS */}
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead Investigators</label>
-                                    <div className="space-y-4">
-                                        <input
-                                            name="lead_proponents_text"
-                                            placeholder="Other investigators (manual list)..."
-                                            defaultValue={project.lead_proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedLeadIds.includes(p.id))).join(', ')}
-                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 text-xs font-bold transition-all"
-                                        />
-                                        <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
-                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">Registered Members:</p>
-                                            <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2">
-                                                {residentProfiles.map(p => (
-                                                    <label key={p.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white transition-colors cursor-pointer group">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedLeadIds.includes(p.id)}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) setSelectedLeadIds([...selectedLeadIds, p.id]);
-                                                                else setSelectedLeadIds(selectedLeadIds.filter(id => id !== p.id));
-                                                            }}
-                                                            className="w-4 h-4 rounded border-slate-300 text-advent-navy focus:ring-advent-navy"
-                                                        />
-                                                        <span className="text-xs font-bold text-slate-600 group-hover:text-advent-navy transition-colors">{p.full_name}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Team Members</label>
+                                        <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Collaborators and assistants on team</span>
+                                    </div>
+                                    <input 
+                                        name="proponents_text" 
+                                        placeholder="Comma-separated manual names..." 
+                                        defaultValue={project.proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedProponentIds.includes(p.id))).join(', ')}
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
+                                    />
+                                    <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200 max-h-48 overflow-y-auto">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 italic">Link Registered Members:</p>
+                                        <div className="grid grid-cols-1 gap-1">
+                                            {residentProfiles.map(p => (
+                                                <label key={p.id} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedProponentIds.includes(p.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedProponentIds([...selectedProponentIds, p.id]);
+                                                            else setSelectedProponentIds(selectedProponentIds.filter(id => id !== p.id));
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-300 text-advent-navy focus:ring-advent-navy"
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-600 group-hover:text-advent-navy transition-colors">{p.full_name}</span>
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
@@ -541,47 +664,40 @@ export default function EditProjectPage() {
                         </div>
                     </Section>
 
-                    <Section title="Extended Performance & Impact" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
-                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    {/* STRATEGIC AIMS & OUTCOMES */}
+                    <Section title="Strategic Aims & Outcomes" icon={<TrendingUp className="w-5 h-5 text-advent-navy" />}>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
-                                <div className="flex justify-between items-end ml-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        Primary Outcome Goal (SMART Aim)
-                                        <Sparkles className="w-3 h-3 text-advent-blue/40" />
-                                    </label>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 ml-1">
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            Primary Outcome Goal (SMART Aim)
+                                        </label>
+                                        <span className="text-[9px] text-slate-300 font-bold italic">Should be Specific, Measurable, Achievable, Relevant, and Time-bound</span>
+                                    </div>
                                     <button
                                         type="button"
-                                        onClick={async () => {
-                                            const titleVal = (document.getElementsByName('title')[0] as HTMLInputElement).value;
-                                            const currentAim = (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value;
-                                            if (!titleVal) return alert("Please enter a title first.");
-                                            const btn = document.getElementById('edit-smart-aim-btn');
-                                            if (btn) btn.innerHTML = '<span class="animate-spin text-emerald-500">🌀</span> Polishing...';
-                                            try {
-                                                const smart = await generateSMARTAim(titleVal, currentAim);
-                                                (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value = smart;
-                                            } catch (e: any) {
-                                                alert("AI Error: " + e.message);
-                                            } finally {
-                                                if (btn) btn.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg> Optimize Aim';
-                                            }
-                                        }}
-                                        id="edit-smart-aim-btn"
-                                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100 active:scale-95 shadow-sm shadow-emerald-500/10"
+                                        onClick={handleMakeSMART}
+                                        disabled={isPolishingAim}
+                                        className="flex items-center gap-2 self-start text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all border border-emerald-100 px-4 py-2 rounded-xl active:scale-[0.98] shadow-sm shadow-emerald-500/5 disabled:opacity-50"
                                     >
-                                        <Sparkles className="w-3 h-3" />
+                                        {isPolishingAim ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" /> : <Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
                                         Optimize Aim
                                     </button>
                                 </div>
                                 <textarea
                                     name="primary_outcome"
-                                    defaultValue={project.primary_outcome || ''}
-                                    placeholder="Describe the main goal of this project..."
-                                    className="w-full p-6 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[120px] resize-none"
+                                    value={primaryOutcome}
+                                    onChange={(e) => setPrimaryOutcome(e.target.value)}
+                                    placeholder="Describe the main outcome of this project..."
+                                    className="w-full p-5 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all min-h-[120px] resize-none text-sm placeholder:text-slate-300"
                                 />
+
+                                {/* DYNAMIC INTEGRATION: AI Metric Suggester directly in the Outcome Panel */}
+                                <MetricSuggester title={title} />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                                         Patients Impacted
@@ -592,10 +708,10 @@ export default function EditProjectPage() {
                                             type="number"
                                             name="total_patients_impacted"
                                             defaultValue={project.total_patients_impacted || 0}
-                                            placeholder="e.g., 150"
-                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all pl-14"
+                                            placeholder="Estimated count..."
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all pl-12 text-sm"
                                         />
-                                        <Users className="absolute left-6 top-5 w-5 h-5 text-slate-300 group-focus-within:text-advent-blue transition-colors" />
+                                        <Users className="absolute left-4 top-4 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors" />
                                     </div>
                                 </div>
 
@@ -610,120 +726,157 @@ export default function EditProjectPage() {
                                             name="estimated_cost_savings"
                                             step="0.01"
                                             defaultValue={project.estimated_cost_savings || 0}
-                                            placeholder="e.g., 5000.00"
-                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all pl-14"
+                                            placeholder="Annualized savings..."
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all pl-12 text-sm"
                                         />
-                                        <span className="absolute left-6 top-5 text-xl font-black text-slate-300 group-focus-within:text-emerald-500 transition-colors">$</span>
+                                        <span className="absolute left-4 top-3.5 text-base font-black text-slate-300 group-focus-within:text-emerald-500 transition-colors">$</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </Section>
 
-                    <Section title="Academic Target & Publication" icon={<Trophy className="w-5 h-5 text-amber-500" />}>
-                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    {/* ACADEMIC TARGET & PUBLICATION */}
+                    <Section title="Academic Pathway & Dissemination" icon={<Trophy className="w-5 h-5 text-amber-500" />}>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Conference Pathway</label>
                                 <div className="relative">
                                     <select
                                         name="target_conference"
                                         defaultValue={project.target_conference || ""}
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm appearance-none"
                                     >
                                         <option value="">-- No Conference Targeted --</option>
                                         {CONFERENCE_OPTIONS.map(conf => (
                                             <option key={conf.id} value={conf.id}>{conf.name}</option>
                                         ))}
                                     </select>
-                                    <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
 
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                                     Abstract Summary
-                                    <FileText className="w-3 h-3 text-slate-400" />
                                 </label>
                                 <textarea
                                     name="abstract_summary"
                                     defaultValue={project.abstract_summary || ''}
                                     placeholder="Draft your executive summary or abstract here..."
-                                    className="w-full p-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[180px] resize-none"
+                                    className="w-full p-5 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all min-h-[160px] resize-none text-sm placeholder:text-slate-300"
                                 />
                             </div>
                         </div>
                     </Section>
 
-                    <Section title="Updates and Barriers" icon={<Info className="w-5 h-5 text-advent-lightblue" />}>
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                             <AIUpdateSection initialValue={project.updates_and_barriers || ''} />
+                    {/* UPDATES & BARRIERS */}
+                    <Section title="Updates and Barriers" icon={<Info className="w-5 h-5 text-sky-500" />}>
+                        <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
+                             <AIUpdateSection initialValue={updatesText} onChange={setUpdatesText} />
                         </div>
                     </Section>
 
+                    {/* PROJECT DEPOT */}
                     <Section title="Project Depot" icon={<FileText className="w-5 h-5 text-slate-400" />}>
-                        <div className="space-y-8 bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between px-2">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Template</span>
-                                            <span className="text-[10px] text-slate-300 font-bold italic">Standard GME Requirement</span>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-4 flex flex-col justify-between">
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Protocol Template</span>
+                                            <a
+                                                href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
+                                                download
+                                                className="flex items-center gap-1.5 text-advent-navy text-[9px] font-black uppercase tracking-widest hover:underline"
+                                            >
+                                                <FileDown className="w-3.5 h-3.5" />
+                                                Get doc
+                                            </a>
                                         </div>
-                                        <a
-                                            href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
-                                            download
-                                            className="flex items-center gap-2 text-advent-blue text-[10px] font-black uppercase tracking-widest hover:underline"
-                                        >
-                                            <FileDown className="w-3 h-3" />
-                                            Download
-                                        </a>
+                                        <p className="text-[11px] text-slate-500 font-medium italic leading-relaxed">Required standard institutional GME Protocol form.</p>
                                     </div>
-                                    <FileUploader
-                                        projectId={id!}
-                                        fieldName="protocol_url"
-                                        currentUrl={project.protocol_url}
-                                        onUploadComplete={(url) => setProject({ ...project, protocol_url: url })}
-                                    />
+                                    <div className="mt-4">
+                                        <FileUploader
+                                            projectId={id!}
+                                            fieldName="protocol_url"
+                                            currentUrl={project.protocol_url}
+                                            onUploadComplete={(url) => setProject({ ...project, protocol_url: url })}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between px-2">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Presentation Template</span>
-                                            <span className="text-[10px] text-slate-300 font-bold italic">AdventHealth Branded .pptx</span>
+                                <div className="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-4 flex flex-col justify-between">
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Presentation Template</span>
+                                            <a
+                                                href="/QI_Tracker/templates/AdventHealth IM GME QI Template.pptx"
+                                                download
+                                                className="flex items-center gap-1.5 text-advent-navy text-[9px] font-black uppercase tracking-widest hover:underline"
+                                            >
+                                                <FileDown className="w-3.5 h-3.5" />
+                                                Get pptx
+                                            </a>
                                         </div>
-                                        <a
-                                            href="/QI_Tracker/templates/AdventHealth IM GME QI Template.pptx"
-                                            download
-                                            className="flex items-center gap-2 text-advent-blue text-[10px] font-black uppercase tracking-widest hover:underline"
-                                        >
-                                            <FileDown className="w-3 h-3" />
-                                            Download
-                                        </a>
+                                        <p className="text-[11px] text-slate-500 font-medium italic leading-relaxed">AdventHealth corporate branded .pptx template.</p>
                                     </div>
-                                    <FileUploader
-                                        projectId={id!}
-                                        fieldName="presentation_url"
-                                        currentUrl={project.presentation_url}
-                                        onUploadComplete={(url) => setProject({ ...project, presentation_url: url })}
-                                    />
+                                    <div className="mt-4">
+                                        <FileUploader
+                                            projectId={id!}
+                                            fieldName="presentation_url"
+                                            currentUrl={project.presentation_url}
+                                            onUploadComplete={(url) => setProject({ ...project, presentation_url: url })}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </Section>
                 </div>
 
-                <div className="flex justify-end pt-10 border-t border-slate-100">
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex items-center gap-3 bg-advent-blue text-white px-12 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:bg-advent-dark-blue transition-all shadow-2xl shadow-advent-blue/30 active:scale-95 group disabled:opacity-50"
-                    >
-                        <Save className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                        {isSaving ? "Syncing..." : "Save Project Changes"}
-                    </button>
+                {/* STICKY BOTTOM ACTIONS FOOTER */}
+                <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/60 px-6 py-4 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center animate-in slide-in-from-bottom duration-300">
+                    <div className="w-full max-w-4xl flex items-center justify-between">
+                        <Link 
+                            href={`/projects/view?id=${id}`} 
+                            className="px-6 py-3 rounded-2xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all hover:border-slate-300 active:scale-95"
+                        >
+                            Cancel
+                        </Link>
+                        
+                        <button
+                            type="submit"
+                            disabled={isSaving}
+                            className="flex items-center gap-2.5 bg-advent-navy hover:bg-advent-cobalt text-white px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-advent-navy/10 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 text-white" />
+                                    Save Changes
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
-            </form >
-        </div >
+            </form>
+
+            {/* Custom Modal Confirmation Dialog */}
+            <CustomConfirmDialog
+                isOpen={dialogState.isOpen}
+                title={dialogState.title}
+                message={dialogState.message}
+                confirmLabel={dialogState.confirmLabel}
+                cancelLabel={dialogState.cancelLabel}
+                onConfirm={dialogState.onConfirm || (() => setDialogState(prev => ({ ...prev, isOpen: false })))}
+                onCancel={() => setDialogState(prev => ({ ...prev, isOpen: false }))}
+                variant={dialogState.variant}
+            />
+        </div>
     )
 }

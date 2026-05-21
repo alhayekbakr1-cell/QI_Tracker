@@ -42,10 +42,46 @@ export default function KanbanPage() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-advent-navy border-t-transparent rounded-full animate-spin" />
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Loading Pipeline...</p>
+            <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+                {/* Header Skeleton */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200 pb-10">
+                    <div className="space-y-3 w-full md:max-w-xl">
+                        <div className="h-3 bg-slate-200 rounded w-1/4 animate-pulse" />
+                        <div className="h-10 bg-slate-200 rounded w-3/4 animate-pulse" />
+                        <div className="h-5 bg-slate-200 rounded w-full animate-pulse" />
+                    </div>
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="h-12 bg-slate-200 rounded-2xl w-32 animate-pulse" />
+                        <div className="h-12 bg-slate-200 rounded-2xl w-40 animate-pulse" />
+                    </div>
+                </div>
+
+                {/* PHI Warning Skeleton */}
+                <div className="h-12 bg-slate-100 rounded-2xl animate-pulse" />
+
+                {/* Pipeline Board Skeleton */}
+                <div className="flex gap-6 overflow-x-auto pb-10 -mx-8 px-8">
+                    {[1, 2, 3, 4, 5].map((col) => (
+                        <div key={col} className="flex flex-col h-[600px] bg-slate-50/50 rounded-[2.5rem] border border-slate-100/50 p-4 min-w-[300px] space-y-4">
+                            <div className="flex justify-between items-center px-4 py-3 mb-2 border-b border-slate-200/50 pb-3">
+                                <div className="h-4 bg-slate-200 rounded w-1/2 animate-pulse" />
+                                <div className="h-5 bg-slate-200 rounded-full w-8 animate-pulse" />
+                            </div>
+                            {[1, 2].map((card) => (
+                                <div key={card} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                                    <div className="h-4 bg-slate-200 rounded w-3/4 animate-pulse" />
+                                    <div className="h-3 bg-slate-100 rounded w-1/2 animate-pulse" />
+                                    <div className="flex items-center justify-between pt-2">
+                                        <div className="flex -space-x-2">
+                                            <div className="w-6 h-6 rounded-full bg-slate-200 animate-pulse" />
+                                            <div className="w-6 h-6 rounded-full bg-slate-200 animate-pulse" />
+                                        </div>
+                                        <div className="h-3 bg-slate-200 rounded w-12 animate-pulse" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
                 </div>
             </div>
         );

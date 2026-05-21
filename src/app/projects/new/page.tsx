@@ -3,57 +3,68 @@
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import PHIWarning from "@/components/PHIWarning";
-import { ArrowLeft, Save, Sparkles, Loader2, LayoutGrid, Users, Target, TrendingUp, Trophy, Layers, Info, FileText, FileDown } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Loader2, LayoutGrid, Users, Target, TrendingUp, Trophy, Info, FileText, FileDown, CheckSquare, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Section from "@/components/Section";
 import { useEffect, useState } from "react";
-import { draftSummary, generateSMARTAim, suggestMetrics, checkDuplication } from "@/utils/ai";
-import { Project } from "@/types";
+import { draftSummary, generateSMARTAim, checkDuplication } from "@/utils/ai";
 import { sendEmail, TEMPLATES } from "@/utils/email";
 import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
+import { toast, CustomConfirmDialog } from "@/components/ui/custom-ui";
 
-
-function AIUpdateSection({ initialValue }: { initialValue: string }) {
+function AIUpdateSection({ initialValue, onChange }: { initialValue: string, onChange: (val: string) => void }) {
     const [value, setValue] = useState(initialValue);
     const [isDrafting, setIsDrafting] = useState(false);
 
+    useEffect(() => {
+        setValue(initialValue);
+    }, [initialValue]);
+
     const handleAIDraft = async () => {
         if (!value || value.length < 10) {
-            alert("Please enter some bullet points or notes first to help the AI draft a summary.");
+            toast.warning("Please enter some bullet points or notes first to help the AI draft a summary.");
             return;
         }
         setIsDrafting(true);
         try {
             const drafted = await draftSummary(value);
             setValue(drafted);
+            onChange(drafted);
+            toast.success("AI drafted summary successfully!");
         } catch (error: any) {
             console.error("AI Drafting error:", error);
-            alert(`AI Drafting failed: ${error.message || "Unknown error"}. Check Supabase or GEMINI_API_KEY.`);
+            toast.error(`AI Drafting failed: ${error.message || "Unknown error"}.`);
         } finally {
             setIsDrafting(false);
         }
     };
 
     return (
-        <div className="space-y-3">
-            <div className="flex justify-between items-end ml-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Initial Updates/Barriers (Optional)</label>
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 ml-1">
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Initial Updates/Barriers (Optional)</label>
+                    <span className="text-[10px] text-slate-300 font-bold italic">Quick notes or current operational state</span>
+                </div>
                 <button
                     type="button"
                     onClick={handleAIDraft}
                     disabled={isDrafting}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 px-3 py-1.5 rounded-lg hover:bg-advent-navy/10 transition-all border border-advent-navy/10 disabled:opacity-50"
+                    className="flex items-center gap-2 self-start text-[10px] font-black uppercase tracking-widest text-advent-navy bg-advent-navy/5 hover:bg-advent-navy/10 px-4 py-2 rounded-xl transition-all border border-advent-navy/10 disabled:opacity-50 active:scale-[0.98]"
                 >
-                    {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {isDrafting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-advent-navy" /> : <Sparkles className="w-3.5 h-3.5 text-advent-navy" />}
                     Draft with AI
                 </button>
             </div>
             <textarea
                 name="updates_and_barriers"
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => {
+                    setValue(e.target.value);
+                    onChange(e.target.value);
+                }}
                 placeholder="Enter bullet points (e.g. - IRB approved, - Data collection started) then click 'Draft with AI'..."
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[150px] resize-none"
+                className="w-full p-5 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[150px] resize-none text-sm placeholder:text-slate-300"
             />
         </div>
     );
@@ -64,6 +75,27 @@ export default function NewProjectPage() {
     const [allProfiles, setAllProfiles] = useState<any[]>([]);
     const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
     const [selectedProponentIds, setSelectedProponentIds] = useState<string[]>([]);
+    const [updatesText, setUpdatesText] = useState("");
+    const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+    const [isPolishingAim, setIsPolishingAim] = useState(false);
+    const [primaryOutcome, setPrimaryOutcome] = useState("");
+    const [title, setTitle] = useState("");
+
+    // Custom Modal Dialog state
+    const [dialogState, setDialogState] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        cancelLabel?: string;
+        onConfirm?: () => void;
+        variant?: 'danger' | 'info';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+    });
+
     const router = useRouter();
     const supabase = createClient();
 
@@ -89,6 +121,60 @@ export default function NewProjectPage() {
     const facultyProfiles = allProfiles.filter(p => p.role === 'Faculty' || p.role === 'Admin' || p.role === 'Operator');
     const residentProfiles = allProfiles.filter(p => p.role !== 'Faculty' && p.role !== 'Admin' && p.role !== 'Operator');
 
+    const handleDuplicateCheck = async () => {
+        if (!title || title.length < 5) {
+            toast.warning("Please enter at least 5 characters for the project title first.");
+            return;
+        }
+        setIsCheckingDuplicates(true);
+        try {
+            const { data: projects } = await supabase.from('projects').select('title').limit(50);
+            const summaries = projects?.map(p => p.title).join(', ') || "";
+            const result = await checkDuplication(title, summaries);
+
+            setDialogState({
+                isOpen: true,
+                title: "AI Duplication Check Result",
+                message: result,
+                confirmLabel: "Understood",
+                cancelLabel: "",
+                onConfirm: () => setDialogState(prev => ({ ...prev, isOpen: false }))
+            });
+        } catch (e: any) {
+            toast.error("AI Error: " + e.message);
+        } finally {
+            setIsCheckingDuplicates(false);
+        }
+    };
+
+    const handleMakeSMART = async () => {
+        if (!title) {
+            toast.warning("Please enter a project title first.");
+            return;
+        }
+        setIsPolishingAim(true);
+        try {
+            const smart = await generateSMARTAim(title, primaryOutcome);
+            setPrimaryOutcome(smart);
+            toast.success("Primary Outcome polished into SMART Aim!");
+        } catch (e: any) {
+            toast.error("AI Error: " + e.message);
+        } finally {
+            setIsPolishingAim(false);
+        }
+    };
+
+    const handleOpenWizardAlert = () => {
+        setDialogState({
+            isOpen: true,
+            title: "Protocol AI Wizard Locked",
+            message: "The Protocol AI Wizard is available immediately after creating the project. Please save the project details first.",
+            confirmLabel: "Understood",
+            cancelLabel: "",
+            onConfirm: () => setDialogState(prev => ({ ...prev, isOpen: false }))
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSaving(true);
@@ -106,7 +192,7 @@ export default function NewProjectPage() {
         const linkedLeadNames = allProfiles.filter(p => selectedLeadIds.includes(p.id)).map(p => p.full_name);
 
         const newProject = {
-            title: formData.get('title') as string,
+            title: title,
             status: formData.get('status') as any,
             category: formData.get('category') as string,
             subcategory: formData.get('subcategory') as string,
@@ -116,9 +202,9 @@ export default function NewProjectPage() {
             lead_proponents: Array.from(new Set([...manualLeads, ...linkedLeadNames])),
             proponent_ids: selectedProponentIds,
             lead_proponent_ids: selectedLeadIds,
-            primary_outcome: formData.get('primary_outcome') as string,
+            primary_outcome: primaryOutcome,
             target_conference: formData.get('target_conference') as string || null,
-            updates_and_barriers: formData.get('updates_and_barriers') as string,
+            updates_and_barriers: updatesText,
             total_patients_impacted: parseInt(formData.get('total_patients_impacted') as string) || 0,
             estimated_cost_savings: parseFloat(formData.get('estimated_cost_savings') as string) || 0,
             abstract_summary: formData.get('abstract_summary') as string,
@@ -133,8 +219,9 @@ export default function NewProjectPage() {
 
         setIsSaving(false);
         if (error) {
-            alert(error.message);
+            toast.error(error.message);
         } else {
+            toast.success("Initiative created successfully!");
             // Trigger Email to Mentor
             const triggerEmail = async () => {
                 try {
@@ -175,48 +262,37 @@ export default function NewProjectPage() {
     };
 
     return (
-        <div className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Link href="/projects" prefetch={false} className="flex items-center gap-2 text-slate-500 hover:text-advent-blue mb-6 transition-colors text-sm font-semibold group">
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        <div className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
+            <Link href="/projects" prefetch={false} className="flex items-center gap-2 text-slate-500 hover:text-advent-navy mb-6 transition-colors text-xs font-black uppercase tracking-widest group">
+                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
                 Back to Masterlist
             </Link>
 
             <div className="mb-8">
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create New Project</h1>
-                <p className="text-slate-500 mt-2 font-medium">Enter the details for the new QI initiative.</p>
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create New Initiative</h1>
+                <p className="text-slate-500 mt-1 text-sm font-semibold">Enter details below to scaffold and register a new Quality Improvement project.</p>
             </div>
 
             <PHIWarning />
 
-            <form onSubmit={handleSubmit} className="space-y-8 bg-white p-10 rounded-3xl border border-slate-200 shadow-sm">
-                <div className="grid grid-cols-1 gap-12">
-                    <Section title="Core Information" icon={<LayoutGrid className="w-4 h-4 text-advent-blue" />}>
-                        <div className="space-y-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+            <form onSubmit={handleSubmit} className="space-y-10 mt-8">
+                <div className="grid grid-cols-1 gap-10">
+                    
+                    {/* SECTION 1: CORE PROJECT METADATA */}
+                    <Section title="Project Metadata" icon={<LayoutGrid className="w-5 h-5 text-advent-navy" />}>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
-                                <div className="flex justify-between items-end ml-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Project Title</label>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 ml-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                        Project Title <span className="text-rose-500 font-bold">*</span>
+                                    </label>
                                     <button
                                         type="button"
-                                        onClick={async () => {
-                                            const title = (document.getElementsByName('title')[0] as HTMLInputElement).value;
-                                            if (!title || title.length < 5) return alert("Please enter at least 5 characters for the title.");
-                                            const btn = document.getElementById('duplicate-check-btn');
-                                            if (btn) btn.innerHTML = '<span class="animate-spin text-[8px]">🌀</span> Checking...';
-                                            try {
-                                                const { data: projects } = await supabase.from('projects').select('title').limit(50);
-                                                const summaries = projects?.map(p => p.title).join(', ') || "";
-                                                const result = await checkDuplication(title, summaries);
-                                                alert("AI Duplicate Check:\n\n" + result);
-                                            } catch (e: any) {
-                                                alert("AI Error: " + e.message);
-                                            } finally {
-                                                if (btn) btn.innerHTML = '<svg class="w-3 h-3" ...>...</svg> Check Duplicates';
-                                            }
-                                        }}
-                                        id="duplicate-check-btn"
-                                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-all border border-amber-100"
+                                        onClick={handleDuplicateCheck}
+                                        disabled={isCheckingDuplicates}
+                                        className="flex items-center gap-2 self-start text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 hover:bg-amber-100 transition-all border border-amber-200/60 px-3 py-1.5 rounded-lg active:scale-[0.98] disabled:opacity-50 shadow-sm shadow-amber-500/5"
                                     >
-                                        <Sparkles className="w-3 h-3" />
+                                        {isCheckingDuplicates ? <Loader2 className="w-3 h-3 animate-spin text-amber-600" /> : <Sparkles className="w-3 h-3 text-amber-600" />}
                                         Check Duplicates
                                     </button>
                                 </div>
@@ -224,15 +300,21 @@ export default function NewProjectPage() {
                                     id="project-title-input"
                                     name="title"
                                     required
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
                                     placeholder="e.g., Smoking Cessation in Outpatient Clinic"
-                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
+                                    className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-300 text-sm shadow-inner"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Initial Status</label>
-                                    <select id="status-select" name="status" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer">
+                                    <select 
+                                        id="status-select" 
+                                        name="status" 
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                    >
                                         {PROJECT_STATUSES.map(s => (
                                             <option key={s.value} value={s.value}>{s.label}</option>
                                         ))}
@@ -240,11 +322,13 @@ export default function NewProjectPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Category</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                                        Category <span className="text-rose-500 font-bold">*</span>
+                                    </label>
                                     <select
                                         name="category"
                                         required
-                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
                                     >
                                         <option value="">-- Select Category --</option>
                                         {PROJECT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -252,12 +336,12 @@ export default function NewProjectPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Category</label>
                                     <select
                                         name="subcategory"
-                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
                                     >
                                         <option value="">-- Select Sub-Category --</option>
                                         {PROJECT_SUBCATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -270,63 +354,104 @@ export default function NewProjectPage() {
                                         type="number"
                                         name="pdsa_cycle"
                                         defaultValue={1}
-                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all text-sm"
                                     />
                                 </div>
                             </div>
                         </div>
                     </Section>
 
-                    <Section title="Project Team" icon={<Users className="w-4 h-4 text-emerald-500" />}>
-                        <div className="space-y-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-3">
+                    {/* SECTION 2: PROJECT TEAM & PEOPLE */}
+                    <Section title="Proponents & Governance" icon={<Users className="w-5 h-5 text-emerald-500" />}>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
+                            <div className="space-y-5">
+                                <div className="flex flex-col">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
-                                    <div className="flex flex-col gap-2">
-                                        <input
-                                            id="faculty-name-input"
-                                            name="faculty_name"
-                                            placeholder="e.g., Dr. Vernace"
-                                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all placeholder:text-slate-300"
-                                        />
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1 italic">Link to Registered User</label>
-                                            <select
-                                                id="faculty-id-select"
-                                                name="faculty_id"
-                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-advent-blue/10 text-xs font-bold text-slate-600 cursor-pointer"
-                                            >
-                                                <option value="">-- [None Selected] --</option>
-                                                {facultyProfiles.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
-                                                ))}
-                                            </select>
+                                    <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Faculty advisor guiding the academic charter</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input
+                                        id="faculty-name-input"
+                                        name="faculty_name"
+                                        placeholder="Dr. Full Name (Manual name)"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-300 text-sm"
+                                    />
+                                    <select
+                                        id="faculty-id-select"
+                                        name="faculty_id"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                    >
+                                        <option value="">-- Link registered user account --</option>
+                                        {facultyProfiles.map(p => (
+                                            <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr className="border-slate-100 my-6" />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* LEAD PROPONENTS */}
+                                <div className="space-y-4">
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead Proponents</label>
+                                        <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Principal investigators driving operations</span>
+                                    </div>
+                                    <input 
+                                        name="lead_proponents_text" 
+                                        placeholder="Comma-separated manual names..." 
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
+                                    />
+                                    <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200 max-h-48 overflow-y-auto">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 italic">Link Registered Members:</p>
+                                        <div className="grid grid-cols-1 gap-1">
+                                            {residentProfiles.map(p => (
+                                                <label key={p.id} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedLeadIds.includes(p.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedLeadIds([...selectedLeadIds, p.id]);
+                                                            else setSelectedLeadIds(selectedLeadIds.filter(id => id !== p.id));
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-300 text-advent-navy focus:ring-advent-navy"
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-600 group-hover:text-advent-navy transition-colors">{p.full_name}</span>
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead Proponents</label>
-                                    <div className="space-y-2">
-                                        <input name="lead_proponents_text" placeholder="Manual names (if not in system)..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-advent-blue/10 text-xs font-bold transition-all mb-2" />
-                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-h-40 overflow-y-auto">
-                                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 italic">Link Registered Members:</p>
-                                            <div className="grid grid-cols-1 gap-1">
-                                                {residentProfiles.map(p => (
-                                                    <label key={p.id} className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-advent-navy cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedLeadIds.includes(p.id)}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) setSelectedLeadIds([...selectedLeadIds, p.id]);
-                                                                else setSelectedLeadIds(selectedLeadIds.filter(id => id !== p.id));
-                                                            }}
-                                                            className="w-3 h-3 rounded text-advent-navy"
-                                                        />
-                                                        {p.full_name}
-                                                    </label>
-                                                ))}
-                                            </div>
+                                {/* ASSOCIATE PROPONENTS (TEAM MEMBERS) */}
+                                <div className="space-y-4">
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Team Members</label>
+                                        <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Co-investigators and project collaborators</span>
+                                    </div>
+                                    <input 
+                                        name="proponents_text" 
+                                        placeholder="Comma-separated manual names..." 
+                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
+                                    />
+                                    <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200 max-h-48 overflow-y-auto">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 italic">Link Registered Members:</p>
+                                        <div className="grid grid-cols-1 gap-1">
+                                            {residentProfiles.map(p => (
+                                                <label key={p.id} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedProponentIds.includes(p.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedProponentIds([...selectedProponentIds, p.id]);
+                                                            else setSelectedProponentIds(selectedProponentIds.filter(id => id !== p.id));
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-300 text-advent-navy focus:ring-advent-navy"
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-600 group-hover:text-advent-navy transition-colors">{p.full_name}</span>
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
@@ -334,46 +459,37 @@ export default function NewProjectPage() {
                         </div>
                     </Section>
 
-                    <Section title="Extended Performance & Impact" icon={<TrendingUp className="w-5 h-5 text-advent-blue" />}>
-                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    {/* SECTION 3: STRATEGIC AIMS & OUTCOMES */}
+                    <Section title="Strategic Aims & Outcomes" icon={<TrendingUp className="w-5 h-5 text-advent-navy" />}>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
-                                <div className="flex justify-between items-end ml-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        Primary Outcome Goal (SMART Aim)
-                                        <Sparkles className="w-3 h-3 text-advent-blue/40" />
-                                    </label>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 ml-1">
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            Primary Outcome Goal (SMART Aim)
+                                        </label>
+                                        <span className="text-[9px] text-slate-300 font-bold italic">Should be Specific, Measurable, Achievable, Relevant, and Time-bound</span>
+                                    </div>
                                     <button
                                         type="button"
-                                        onClick={async () => {
-                                            const titleInput = document.getElementsByName('title')[0] as HTMLInputElement;
-                                            const currentAim = (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value;
-                                            if (!titleInput.value) return alert("Please enter a project title first.");
-                                            const btn = document.getElementById('smart-aim-btn');
-                                            if (btn) btn.innerHTML = '<span class="animate-spin text-emerald-500">🌀</span> Polishing...';
-                                            try {
-                                                const smart = await generateSMARTAim(titleInput.value, currentAim);
-                                                (document.getElementsByName('primary_outcome')[0] as HTMLTextAreaElement).value = smart;
-                                            } catch (e: any) {
-                                                alert("AI Error: " + e.message);
-                                            } finally {
-                                                if (btn) btn.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg> Make SMART';
-                                            }
-                                        }}
-                                        id="smart-aim-btn"
-                                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100 shadow-sm shadow-emerald-500/10 active:scale-95"
+                                        onClick={handleMakeSMART}
+                                        disabled={isPolishingAim}
+                                        className="flex items-center gap-2 self-start text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all border border-emerald-100 px-4 py-2 rounded-xl active:scale-[0.98] shadow-sm shadow-emerald-500/5 disabled:opacity-50"
                                     >
-                                        <Sparkles className="w-3 h-3" />
+                                        {isPolishingAim ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" /> : <Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
                                         Make SMART
                                     </button>
                                 </div>
                                 <textarea
                                     name="primary_outcome"
+                                    value={primaryOutcome}
+                                    onChange={(e) => setPrimaryOutcome(e.target.value)}
                                     placeholder="e.g., By June 2024, decrease the rate of inpatient falls by 20% on Unit 4N..."
-                                    className="w-full p-6 bg-slate-50 border border-slate-200 rounded-[2rem] outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[120px] resize-none"
+                                    className="w-full p-5 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all min-h-[120px] resize-none text-sm placeholder:text-slate-300"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                                         Patients Impacted
@@ -384,9 +500,9 @@ export default function NewProjectPage() {
                                             type="number"
                                             name="total_patients_impacted"
                                             placeholder="Estimated count..."
-                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all pl-14"
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all pl-12 text-sm"
                                         />
-                                        <Users className="absolute left-6 top-5 w-5 h-5 text-slate-300 group-focus-within:text-advent-blue transition-colors" />
+                                        <Users className="absolute left-4 top-4 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors" />
                                     </div>
                                 </div>
 
@@ -401,108 +517,132 @@ export default function NewProjectPage() {
                                             name="estimated_cost_savings"
                                             step="0.01"
                                             placeholder="Annualized savings..."
-                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all pl-14"
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all pl-12 text-sm"
                                         />
-                                        <span className="absolute left-6 top-5 text-xl font-black text-slate-300 group-focus-within:text-emerald-500 transition-colors">$</span>
+                                        <span className="absolute left-4 top-3.5 text-base font-black text-slate-300 group-focus-within:text-emerald-500 transition-colors">$</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </Section>
 
-                    <Section title="Academic Target & Publication" icon={<Trophy className="w-5 h-5 text-amber-500" />}>
-                        <div className="space-y-8 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    {/* SECTION 4: ACADEMIC TARGET & PUBLICATION */}
+                    <Section title="Academic Pathway & Dissemination" icon={<Trophy className="w-5 h-5 text-amber-500" />}>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Conference Pathway</label>
-                                <div className="relative">
-                                    <select
-                                        name="target_conference"
-                                        className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all cursor-pointer appearance-none"
-                                    >
-                                        <option value="">-- Select Target Venue --</option>
-                                        {CONFERENCE_OPTIONS.map(conf => (
-                                            <option key={conf.id} value={conf.id}>{conf.name}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <LayoutGrid className="w-4 h-4 text-slate-300" />
-                                    </div>
-                                </div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Target Conference Venue</label>
+                                <select
+                                    name="target_conference"
+                                    className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                >
+                                    <option value="">-- Select Target Venue --</option>
+                                    {CONFERENCE_OPTIONS.map(conf => (
+                                        <option key={conf.id} value={conf.id}>{conf.name}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                                     Abstract Summary
-                                    <FileText className="w-3 h-3 text-slate-400" />
                                 </label>
                                 <textarea
                                     name="abstract_summary"
                                     placeholder="Draft your executive summary or abstract here..."
-                                    className="w-full p-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none focus:ring-4 focus:ring-advent-blue/10 focus:border-advent-blue text-slate-900 font-bold transition-all min-h-[180px] resize-none"
+                                    className="w-full p-5 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all min-h-[160px] resize-none text-sm placeholder:text-slate-300"
                                 />
                             </div>
                         </div>
                     </Section>
 
-                    <Section title="Updates and Barriers" icon={<Info className="w-5 h-5 text-advent-lightblue" />}>
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                             <AIUpdateSection initialValue="" />
+                    {/* SECTION 5: UPDATES & BARRIERS */}
+                    <Section title="Updates and Barriers" icon={<Info className="w-5 h-5 text-sky-500" />}>
+                        <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
+                             <AIUpdateSection initialValue="" onChange={setUpdatesText} />
                         </div>
                     </Section>
 
+                    {/* SECTION 6: INSTITUTIONAL DEPOT */}
                     <Section title="Project Depot (Protocols)" icon={<Save className="w-5 h-5 text-slate-400" />}>
-                        <div className="space-y-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="p-8 bg-slate-50 border border-slate-200 rounded-[2.5rem] space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Template</span>
+                        <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-4 flex flex-col justify-between">
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Protocol Template</span>
+                                        <p className="text-xs text-slate-500 font-medium italic leading-relaxed">Download the institutional QI template to ensure compliance with AdventHealth standards.</p>
                                     </div>
-                                    <div className="space-y-4">
-                                        <p className="text-xs text-slate-500 font-medium italic">Download the institutional QI template to ensure compliance with AdventHealth standards.</p>
-                                        <a
-                                            href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
-                                            download
-                                            className="flex items-center justify-center gap-3 w-full py-4 bg-white border border-slate-200 text-advent-navy rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm group"
-                                        >
-                                            <FileDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-                                            Download Template
-                                        </a>
-                                    </div>
+                                    <a
+                                        href="/QI_Tracker/templates/QI_Project_Protocol_Template_AdventHealth_IMGME_Tampa.docx"
+                                        download
+                                        className="flex items-center justify-center gap-2.5 w-full py-3.5 bg-white border border-slate-200/80 hover:border-slate-300 text-advent-navy rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm group active:scale-[0.98] mt-4"
+                                    >
+                                        <FileDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                                        Download Template
+                                    </a>
                                 </div>
 
-                                <div className="p-8 bg-emerald-50/50 border border-emerald-100 rounded-[2.5rem] space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Protocol AI Assistant</span>
+                                <div className="p-6 bg-emerald-50/20 border border-emerald-100 rounded-2xl space-y-4 flex flex-col justify-between">
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block">Protocol AI Assistant</span>
+                                        <p className="text-xs text-emerald-800/80 font-medium italic leading-relaxed">Unlock the Protocol AI Wizard after creating your project to draft full sections automatically.</p>
                                     </div>
-                                    <div className="space-y-4">
-                                        <p className="text-xs text-emerald-800 font-medium italic">Unlock the Protocol AI Wizard after creating your project to draft full sections automatically.</p>
-                                        <button
-                                            type="button"
-                                            className="flex items-center justify-center gap-3 w-full py-4 bg-white border border-emerald-200 text-emerald-700 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
-                                            onClick={() => alert("The Protocol AI Wizard is available immediately after creating the project. Please save the project details first.")}
-                                        >
-                                            <Sparkles className="w-4 h-4 text-emerald-500" />
-                                            Protocol AI Wizard
-                                        </button>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenWizardAlert}
+                                        className="flex items-center justify-center gap-2.5 w-full py-3.5 bg-white border border-emerald-200 hover:border-emerald-300 text-emerald-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm active:scale-[0.98] mt-4"
+                                    >
+                                        <Sparkles className="w-4 h-4 text-emerald-500" />
+                                        Protocol AI Wizard
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </Section>
                 </div>
 
-                <div className="flex justify-end pt-8 border-t border-slate-100">
-                    <button
-                        id="create-project-submit"
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex items-center gap-3 bg-advent-blue text-white px-12 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:bg-advent-dark-blue transition-all shadow-2xl shadow-advent-blue/30 active:scale-95 group disabled:opacity-50"
-                    >
-                        <Save className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                        {isSaving ? "Initializing..." : "Create QI Project"}
-                    </button>
+                {/* STICKY BOTTOM ACTIONS FOOTER */}
+                <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/60 px-6 py-4 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center animate-in slide-in-from-bottom duration-300">
+                    <div className="w-full max-w-4xl flex items-center justify-between">
+                        <Link 
+                            href="/projects" 
+                            className="px-6 py-3 rounded-2xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all hover:border-slate-300 active:scale-95"
+                        >
+                            Cancel
+                        </Link>
+                        
+                        <button
+                            id="create-project-submit"
+                            type="submit"
+                            disabled={isSaving}
+                            className="flex items-center gap-2.5 bg-advent-navy hover:bg-advent-cobalt text-white px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-advent-navy/10 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                    Creating...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 text-white" />
+                                    Save Initiative
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </form>
+
+            {/* Custom Modal Confirmation Dialog */}
+            <CustomConfirmDialog
+                isOpen={dialogState.isOpen}
+                title={dialogState.title}
+                message={dialogState.message}
+                confirmLabel={dialogState.confirmLabel}
+                cancelLabel={dialogState.cancelLabel}
+                onConfirm={dialogState.onConfirm || (() => setDialogState(prev => ({ ...prev, isOpen: false })))}
+                onCancel={() => setDialogState(prev => ({ ...prev, isOpen: false }))}
+                variant={dialogState.variant}
+            />
         </div>
     )
 }
