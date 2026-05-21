@@ -41,6 +41,9 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, monospace;
+
+  /* Custom text sizes */
+  --text-4_5xl: 2.5rem;
 }
 
 body {
