@@ -1,5 +1,6 @@
 export type ProjectStatus = 'Idea' | 'Pre-Intervention' | 'Intervention Ongoing' | 'Sustain the Gains' | 'Impacted (Completed)';
 export type UserRole = 'Operator' | 'Viewer' | 'Admin' | 'Faculty';
+export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
 export interface Profile {
     id: string;
@@ -37,7 +38,20 @@ export interface Project {
     total_patients_impacted?: number | null;
     estimated_cost_savings?: number | null;
     abstract_summary?: string | null;
+    charter?: ProjectCharter | null;
 }
+
+export interface ProjectCharter {
+    problemStatement: string;
+    aimStatement: string;
+    teamMembers: string;
+    scopeIn: string;
+    scopeOut: string;
+    timeline: string;
+    resources: string;
+    successMeasures: string;
+}
+
 
 export interface Comment {
     id: string;
@@ -74,5 +88,29 @@ export interface AuditLog {
     old_data: any;
     new_data: any;
     changed_by: string | null;
+    created_at: string;
+}
+
+export interface Task {
+    id: string;
+    project_id: string;
+    title: string;
+    description: string | null;
+    assignee_id: string | null;
+    assignee_name: string | null;
+    due_date: string | null;
+    status: TaskStatus;
+    created_by: string | null;
+    created_at: string;
+}
+
+export interface ProjectFile {
+    id: string;
+    project_id: string;
+    file_name: string;
+    file_type: string | null;
+    file_url: string;
+    uploaded_by: string | null;
+    uploaded_by_name: string | null;
     created_at: string;
 }

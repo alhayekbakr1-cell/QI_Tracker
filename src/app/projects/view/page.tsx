@@ -43,6 +43,8 @@ import ConferenceCountdown from "@/components/ConferenceCountdown";
 import FacultySignOff from "@/components/FacultySignOff";
 import ProjectComments from "@/components/ProjectComments";
 import PublicationAssistant from "@/components/PublicationAssistant";
+import TaskManager from "@/components/TaskManager";
+import ProjectFileManager from "@/components/ProjectFileManager";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailPage() {
@@ -259,6 +261,8 @@ export default function ProjectDetailPage() {
                                 </p>
                             </div>
                         </Section>
+
+                        <TaskManager projectId={project.id} currentUserProfile={userProfile} projectTitle={project.title} />
                     </div>
 
                     {/* Comments Section */}
@@ -269,6 +273,8 @@ export default function ProjectDetailPage() {
                 <div className="space-y-6">
                     <PDSAAnalyzer project={project} metrics={metrics} />
                     <QualityAudit project={project} />
+                    
+                    <ProjectFileManager projectId={project.id} currentUserProfile={userProfile} />
 
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-24">
                         <h3 className="font-black text-slate-400 mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
@@ -408,6 +414,7 @@ export default function ProjectDetailPage() {
             {project && (
                 <PublicationAssistant
                     project={project}
+                    metrics={metrics}
                     isOpen={isPubAssistantOpen}
                     onClose={() => setIsPubAssistantOpen(false)}
                 />

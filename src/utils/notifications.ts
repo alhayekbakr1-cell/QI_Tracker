@@ -17,6 +17,8 @@ export async function sendEmailNotification(params: {
     message: string;
     project_title: string;
     action_url?: string;
+    template_id?: string;
+    [key: string]: any;
 }) {
     // Basic validation
     if (!params.to_email) {
@@ -24,26 +26,25 @@ export async function sendEmailNotification(params: {
         return;
     }
 
+    const { template_id, ...restParams } = params;
     const templateParams = {
-        to_email: params.to_email,
-        to_name: params.to_name,
-        subject: params.subject,
-        message: params.message,
-        project_title: params.project_title,
-        action_url: params.action_url || window.location.origin
+        action_url: params.action_url || (typeof window !== 'undefined' ? window.location.origin : ''),
+        ...restParams
     };
 
     console.log('🔔 [Internal Notification System]:', templateParams);
 
-    if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
-        console.info('ℹ️ EmailJS not fully configured. Notification logged but not sent via email.');
+    const activeTemplateId = params.template_id || TEMPLATE_ID || process.env.NEXT_PUBLIC_EMAILJS_MENTOR_TEMPLATE_ID || '';
+
+    if (!SERVICE_ID || !activeTemplateId || !PUBLIC_KEY) {
+        console.info('ℹ️ EmailJS not fully configured. Notification logged but not sent via email. Template ID:', activeTemplateId);
         return { success: true, mode: 'log' };
     }
 
     try {
         const response = await emailjs.send(
             SERVICE_ID,
-            TEMPLATE_ID,
+            activeTemplateId,
             templateParams,
             PUBLIC_KEY
         );

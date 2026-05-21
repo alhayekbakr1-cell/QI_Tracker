@@ -11,6 +11,7 @@ import FileUploader from "@/components/FileUploader";
 import Section from "@/components/Section";
 import { useEffect, useState } from "react";
 import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
+import { draftSummary, auditProjectQuality, suggestMetrics, generateSMARTAim } from "@/utils/ai";
 
 
 function AIUpdateSection({ initialValue }: { initialValue: string }) {
@@ -274,6 +275,7 @@ export default function EditProjectPage() {
             status: formData.get('status') as any,
             category: formData.get('category') as string,
             subcategory: formData.get('subcategory') as string,
+            pdsa_cycle: parseInt(formData.get('pdsa_cycle') as string) || 1,
             faculty: formData.get('faculty_name') as string,
             faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
             primary_outcome: formData.get('primary_outcome') as string,
@@ -289,10 +291,66 @@ export default function EditProjectPage() {
             last_updated_date: new Date().toISOString(),
         };
 
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || null;
+
+        const fieldsToTrack = [
+            'title',
+            'status',
+            'category',
+            'subcategory',
+            'pdsa_cycle',
+            'faculty',
+            'faculty_id',
+            'primary_outcome',
+            'updates_and_barriers',
+            'target_conference',
+            'total_patients_impacted',
+            'estimated_cost_savings',
+            'abstract_summary'
+        ] as const;
+
+        const logsToInsert: any[] = [];
+        for (const field of fieldsToTrack) {
+            const oldValue = project[field];
+            const newValue = updates[field];
+
+            let isChanged = false;
+            if (field === 'estimated_cost_savings' || field === 'total_patients_impacted' || field === 'pdsa_cycle') {
+                const oldNum = Number(oldValue) || 0;
+                const newNum = Number(newValue) || 0;
+                isChanged = oldNum !== newNum;
+            } else {
+                const oldStr = (oldValue === null || oldValue === undefined) ? '' : String(oldValue).trim();
+                const newStr = (newValue === null || newValue === undefined) ? '' : String(newValue).trim();
+                isChanged = oldStr !== newStr;
+            }
+
+            if (isChanged) {
+                logsToInsert.push({
+                    project_id: id,
+                    user_id: userId,
+                    field_name: field,
+                    old_value: oldValue !== null && oldValue !== undefined ? String(oldValue) : null,
+                    new_value: newValue !== null && newValue !== undefined ? String(newValue) : null,
+                    action: 'UPDATE'
+                });
+            }
+        }
+
         const { error } = await supabase
             .from('projects')
             .update(updates)
             .eq('id', id);
+
+        if (!error && logsToInsert.length > 0) {
+            const { error: logError } = await supabase
+                .from('audit_logs')
+                .insert(logsToInsert);
+            if (logError) {
+                console.error("Failed to insert audit logs:", logError);
+            }
+        }
 
         setIsSaving(false);
         if (error) {

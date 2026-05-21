@@ -5,6 +5,7 @@ const STATUS_CONFIG: Record<ProjectStatus, { color: string, bg: string, border: 
     'Pre-Intervention': { color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
     'Intervention Ongoing': { color: 'text-advent-blue', bg: 'bg-advent-blue/10', border: 'border-advent-blue/20' },
     'Sustain the Gains': { color: 'text-advent-green', bg: 'bg-advent-green/10', border: 'border-advent-green/20' },
+    'Impacted (Completed)': { color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
 }
 
 export default function StatusBadge({ status }: { status: ProjectStatus }) {

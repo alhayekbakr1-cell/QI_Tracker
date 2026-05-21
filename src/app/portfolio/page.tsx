@@ -83,7 +83,7 @@ export default function PortfolioPage() {
                         const lowName = name.toLowerCase();
                         if (userFullName && lowName.includes(userFullName)) return true;
                         if (lowName.includes(emailPrefix)) return true;
-                        return emailParts.every(part => part.length > 2 ? lowName.includes(part) : true);
+                        return emailParts.every((part: string) => part.length > 2 ? lowName.includes(part) : true);
                     };
 
                     return (p.lead_proponents && p.lead_proponents.some(nameMatch)) ||

@@ -55,6 +55,7 @@ export default function Dashboard() {
     'Pre-Intervention': projects.filter(p => p.status === 'Pre-Intervention').length,
     'Intervention Ongoing': projects.filter(p => p.status === 'Intervention Ongoing').length,
     'Sustain the Gains': projects.filter(p => p.status === 'Sustain the Gains').length,
+    'Impacted (Completed)': projects.filter(p => p.status === 'Impacted (Completed)').length,
   };
 
   const statusChartData = [
@@ -62,6 +63,7 @@ export default function Dashboard() {
     { name: 'Pre-Intervention', value: stats['Pre-Intervention'] },
     { name: 'Intervention Ongoing', value: stats['Intervention Ongoing'] },
     { name: 'Sustain the Gains', value: stats['Sustain the Gains'] },
+    { name: 'Impacted (Completed)', value: stats['Impacted (Completed)'] },
   ].filter(d => d.value > 0);
 
   const categoryChartData = [
@@ -101,12 +103,13 @@ export default function Dashboard() {
       <PHIWarning />
 
       {/* Stats Grid - Professional Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
         <StatCard label="Total Portfolio" value={stats.Total} variant="primary" />
         <StatCard label="Phase: Idea" value={stats.Idea} variant="default" />
         <StatCard label="Pre-Interv." value={stats['Pre-Intervention']} variant="default" />
         <StatCard label="Ongoing" value={stats['Intervention Ongoing']} variant="default" />
         <StatCard label="Sustained" value={stats['Sustain the Gains']} variant="success" />
+        <StatCard label="Impacted" value={stats['Impacted (Completed)']} variant="success" />
       </div>
 
       {/* Charts Section */}
@@ -172,7 +175,7 @@ export default function Dashboard() {
                 Status Filter
               </h3>
               <div className="flex flex-wrap gap-2">
-                {['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains'].map(s => (
+                {['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains', 'Impacted (Completed)'].map(s => (
                   <Link
                     key={s}
                     href={`/projects?status=${s}`}

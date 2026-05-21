@@ -9,7 +9,13 @@ import {
     Presentation,
     TrendingUp,
     Clock,
-    CircleDot
+    CircleDot,
+    Paperclip,
+    Link2,
+    Trash2,
+    PlusCircle,
+    CheckCircle2,
+    ListTodo
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -24,6 +30,7 @@ interface ActivityItem {
     created_at: string;
     field_name?: string;
     new_value?: string;
+    old_value?: string;
 }
 
 export default function ActivityFeed() {
@@ -34,7 +41,7 @@ export default function ActivityFeed() {
     useEffect(() => {
         async function fetchActivity() {
             try {
-                // 1. Fetch recent comments (fetching user_id separately for now to avoid join error)
+                // 1. Fetch recent comments
                 const { data: comments, error: cError } = await supabase
                     .from('comments')
                     .select('id, content, created_at, project_id, user_id')
@@ -45,30 +52,39 @@ export default function ActivityFeed() {
                     console.error("ActivityFeed Comment Error:", cError);
                 }
 
-                // 2. Fetch project titles for these comments
-                const projectIds = Array.from(new Set((comments || []).map(c => c.project_id)));
+                // 2. Fetch recent audit logs (filtering out 'faculty_id' as we log it alongside 'faculty')
+                const { data: auditLogs, error: aError } = await supabase
+                    .from('audit_logs')
+                    .select('id, field_name, old_value, new_value, created_at, project_id, user_id')
+                    .neq('field_name', 'faculty_id')
+                    .order('created_at', { ascending: false })
+                    .limit(15);
+
+                if (aError) {
+                    console.warn("ActivityFeed Audit Table not found or inaccessible:", aError.message);
+                }
+
+                // 3. Consolidate project titles from BOTH comments and audit logs
+                const projectIds = Array.from(new Set([
+                    ...(comments || []).map(c => c.project_id),
+                    ...(auditLogs || []).map(a => a.project_id)
+                ].filter(Boolean)));
+
                 const { data: projects } = projectIds.length > 0 ? await supabase
                     .from('projects')
                     .select('id, title')
                     .in('id', projectIds) : { data: [] };
 
-                // 3. Fetch user names
-                const userIds = Array.from(new Set((comments || []).map(c => c.user_id)));
+                // 4. Consolidate user names from BOTH comments and audit logs
+                const userIds = Array.from(new Set([
+                    ...(comments || []).map(c => c.user_id),
+                    ...(auditLogs || []).map(a => a.user_id)
+                ].filter(Boolean)));
+
                 const { data: userProfiles } = userIds.length > 0 ? await supabase
                     .from('profiles')
                     .select('id, full_name')
                     .in('id', userIds) : { data: [] };
-
-                // 4. Fetch recent audit logs (handling potential missing table)
-                const { data: auditLogs, error: aError } = await supabase
-                    .from('audit_logs')
-                    .select('id, field_name, new_value, created_at, project_id, user_id')
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-
-                if (aError) {
-                    console.warn("ActivityFeed Audit Table not found or inaccessible:", aError.message);
-                }
 
                 // 5. Transform Comments
                 const formattedComments: ActivityItem[] = (comments || []).map(c => {
@@ -85,7 +101,7 @@ export default function ActivityFeed() {
                     };
                 });
 
-                // 6. Transform Audit Logs (if available)
+                // 6. Transform Audit Logs
                 const formattedAudit: ActivityItem[] = (auditLogs || []).map(a => {
                     const project = projects?.find(p => p.id === a.project_id);
                     const profile = userProfiles?.find(p => p.id === a.user_id);
@@ -95,10 +111,11 @@ export default function ActivityFeed() {
                         project_id: a.project_id,
                         project_title: project?.title || 'Unknown Project',
                         user_name: profile?.full_name || 'Someone',
-                        content: getAuditDescription(a.field_name, a.new_value),
+                        content: getAuditDescription(a.field_name, a.new_value, a.old_value),
                         created_at: a.created_at,
                         field_name: a.field_name,
-                        new_value: a.new_value
+                        new_value: a.new_value,
+                        old_value: a.old_value
                     };
                 });
 
@@ -121,13 +138,100 @@ export default function ActivityFeed() {
         return () => clearInterval(interval);
     }, [supabase]);
 
-    function getAuditDescription(field: string, value: string) {
+    function getAuditDescription(field: string, value: string | null, oldValue: string | null = null) {
+        const statusLabels: Record<string, string> = {
+            todo: 'To Do',
+            in_progress: 'In Progress',
+            done: 'Done'
+        };
+
+        const formatCurrency = (val: string | null) => {
+            const num = Number(val);
+            if (isNaN(num)) return val || '$0';
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+        };
+
+        const formatNumber = (val: string | null) => {
+            const num = Number(val);
+            if (isNaN(num)) return val || '0';
+            return new Intl.NumberFormat('en-US').format(num);
+        };
+
+        const truncateText = (text: string | null, length: number = 60) => {
+            if (!text) return '';
+            return text.length > length ? text.substring(0, length) + '...' : text;
+        };
+
         switch (field) {
-            case 'status': return `Updated status to ${value}`;
-            case 'pdsa_cycle': return `Moved to PDSA Cycle ${value}`;
-            case 'protocol_url': return `Uploaded QI Protocol`;
-            case 'presentation_url': return `Shared Presentation Link`;
-            default: return `Updated ${field}`;
+            case 'title':
+                return oldValue 
+                    ? `Renamed project from "${truncateText(oldValue, 40)}" to "${truncateText(value, 40)}"`
+                    : `Set project title to "${truncateText(value, 40)}"`;
+            case 'status':
+                return oldValue
+                    ? `Changed project status from "${oldValue}" to "${value}"`
+                    : `Set project status to "${value}"`;
+            case 'category':
+                return oldValue
+                    ? `Changed category from "${oldValue}" to "${value}"`
+                    : `Set category to "${value}"`;
+            case 'subcategory':
+                return oldValue
+                    ? `Changed subcategory from "${oldValue}" to "${value}"`
+                    : `Set subcategory to "${value}"`;
+            case 'pdsa_cycle':
+                return `Moved project to PDSA Cycle ${value}`;
+            case 'faculty':
+                return value
+                    ? `Assigned Faculty Advisor "${value}"`
+                    : `Removed Faculty Advisor (was "${oldValue}")`;
+            case 'primary_outcome':
+                return `Updated primary outcome measure to "${truncateText(value, 50)}"`;
+            case 'updates_and_barriers':
+                return `Updated progress updates & barriers`;
+            case 'target_conference':
+                return value
+                    ? `Set target conference to "${value}"`
+                    : `Removed target conference`;
+            case 'total_patients_impacted': {
+                const oldNum = Number(oldValue) || 0;
+                const newNum = Number(value) || 0;
+                if (newNum > oldNum) {
+                    return `Increased patient impact to ${formatNumber(value)} patients (+${formatNumber(String(newNum - oldNum))})`;
+                }
+                return `Updated total patients impacted to ${formatNumber(value)}`;
+            }
+            case 'estimated_cost_savings': {
+                const oldNum = Number(oldValue) || 0;
+                const newNum = Number(value) || 0;
+                if (newNum > oldNum) {
+                    return `Increased estimated cost savings to ${formatCurrency(value)} (+${formatCurrency(String(newNum - oldNum))})`;
+                }
+                return `Updated estimated cost savings to ${formatCurrency(value)}`;
+            }
+            case 'abstract_summary':
+                return `Updated abstract summary`;
+            case 'protocol_url':
+                return `Uploaded QI Protocol document`;
+            case 'presentation_url':
+                return `Updated presentation URL`;
+            case 'project_file':
+                return `Uploaded project resource file "${truncateText(value, 40)}"`;
+            case 'project_file_link':
+                return `Shared resource link "${truncateText(value, 50)}"`;
+            case 'project_file_delete':
+                return `Deleted resource attachment "${truncateText(oldValue, 40)}"`;
+            case 'task_create':
+                return `Created action item "${truncateText(value, 50)}"`;
+            case 'task_status': {
+                const [title, status] = (value || '').split('|');
+                const label = statusLabels[status] || status;
+                return `Marked action item "${truncateText(title, 40)}" as ${label}`;
+            }
+            case 'task_delete':
+                return `Deleted action item "${truncateText(oldValue, 40)}"`;
+            default:
+                return `Updated ${field.replace(/_/g, ' ')}`;
         }
     }
 
@@ -139,6 +243,17 @@ export default function ActivityFeed() {
             case 'pdsa_cycle': return <TrendingUp className="w-4 h-4 text-amber-500" />;
             case 'protocol_url': return <FileText className="w-4 h-4 text-blue-500" />;
             case 'presentation_url': return <Presentation className="w-4 h-4 text-purple-500" />;
+            case 'project_file': return <Paperclip className="w-4 h-4 text-indigo-500" />;
+            case 'project_file_link': return <Link2 className="w-4 h-4 text-sky-500" />;
+            case 'project_file_delete': return <Trash2 className="w-4 h-4 text-rose-500" />;
+            case 'task_create': return <PlusCircle className="w-4 h-4 text-teal-500" />;
+            case 'task_status': {
+                const isDone = item.new_value?.endsWith('|done');
+                return isDone 
+                    ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    : <ListTodo className="w-4 h-4 text-amber-500" />;
+            }
+            case 'task_delete': return <Trash2 className="w-4 h-4 text-rose-500" />;
             default: return <Zap className="w-4 h-4 text-slate-400" />;
         }
     }

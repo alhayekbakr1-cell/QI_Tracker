@@ -9,7 +9,7 @@ export const msalConfig: Configuration = {
     cache: {
         cacheLocation: "sessionStorage",
         storeAuthStateInCookie: false,
-    },
+    } as any,
 };
 
 // Scopes for OneDrive access
