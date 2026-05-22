@@ -17,8 +17,8 @@ export default function ProtocolReader({ protocolData, isOpen, onClose, showStam
     const data = protocolData;
 
     return (
-        <div className="fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-md flex justify-end animate-in fade-in duration-300">
-            <div className="bg-slate-50 w-full max-w-4xl h-full shadow-2xl flex flex-col border-l border-slate-250/50 overflow-hidden animate-in slide-in-from-right duration-500">
+        <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-lg flex items-center justify-center p-0 sm:p-6 md:p-10 animate-in fade-in duration-300">
+            <div className="bg-slate-50 w-full max-w-5xl h-full sm:h-[92vh] shadow-2xl flex flex-col sm:border border-slate-200 sm:rounded-[2.5rem] overflow-hidden animate-in zoom-in-95 duration-400">
                 {/* Header */}
                 <div className="px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-950 to-advent-cobalt text-white flex justify-between items-center shrink-0 border-b border-slate-800">
                     <div className="flex items-center gap-3">
