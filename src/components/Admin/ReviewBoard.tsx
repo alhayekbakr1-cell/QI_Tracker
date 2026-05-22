@@ -132,6 +132,7 @@ export default function ReviewBoard() {
                 : "Registry audit approved! Awaiting Faculty Mentor clinical sponsorship to complete activation."
             );
             fetchRequests();
+            setSelectedRequest(null); // Close SQUIRE reader canvas on success
         }
         setActioningId(null);
     };
@@ -161,6 +162,7 @@ export default function ReviewBoard() {
             setFeedbackText("");
             setFeedbackRequestId(null);
             fetchRequests();
+            setSelectedRequest(null); // Close SQUIRE reader canvas on success
         }
         setIsSubmittingFeedback(false);
     };
@@ -443,59 +445,99 @@ export default function ReviewBoard() {
                     isOpen={!!selectedRequest}
                     onClose={() => setSelectedRequest(null)}
                     showStamp={selectedRequest.status === 'approved'}
+                    actions={
+                        selectedRequest.gme_approval_status === 'pending' && (
+                            <>
+                                <button
+                                    onClick={() => openFeedbackModal(selectedRequest.id)}
+                                    disabled={actioningId === selectedRequest.id}
+                                    className="flex items-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-white px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-3xs border border-rose-850 disabled:opacity-50"
+                                >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    Feedback
+                                </button>
+
+                                <button
+                                    onClick={() => handleApproveRequest(selectedRequest)}
+                                    disabled={actioningId === selectedRequest.id}
+                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-2xs border border-emerald-750 disabled:opacity-50"
+                                >
+                                    {actioningId === selectedRequest.id ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        <Check className="w-3.5 h-3.5" />
+                                    )}
+                                    Approve Protocol
+                                </button>
+                            </>
+                        )
+                    }
                 />
             )}
 
             {/* Revision Feedback Drawer / Modal */}
             {showFeedbackModal && (
-                <div className="fixed inset-0 z-[80] bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[120] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white/95 backdrop-blur-lg border border-slate-200/80 shadow-2xl max-w-xl w-full rounded-[2.5rem] overflow-hidden animate-in zoom-in-95 duration-300">
                         {/* Header */}
-                        <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
-                            <h3 className="font-serif italic font-bold text-base flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4 text-emerald-400" />
-                                Request Audit Revisions
-                            </h3>
+                        <div className="px-8 py-5 bg-gradient-to-r from-slate-950 via-slate-900 to-advent-navy text-white flex justify-between items-center border-b border-slate-800">
+                            <div>
+                                <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400 mb-0.5">GME Audit Panel</span>
+                                <h3 className="font-serif italic font-bold text-base flex items-center gap-2 text-white">
+                                    <MessageSquare className="w-4.5 h-4.5 text-emerald-400" />
+                                    Request SQUIRE Revisions
+                                </h3>
+                            </div>
                             <button 
                                 onClick={() => setShowFeedbackModal(false)}
-                                className="p-1 text-slate-400 hover:text-white rounded-lg transition-all"
+                                className="p-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
                             >
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
 
                         {/* Content */}
-                        <div className="p-6 space-y-4">
-                            <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
-                                Enter structured SQUIRE formatting feedback or corrective actions. The resident will be instantly notified with this guidance to revise their protocol.
-                            </p>
+                        <div className="p-8 space-y-6">
+                            {/* Clinical Audit Standard Notice */}
+                            <div className="bg-amber-500/10 border border-amber-500/20 text-slate-900 p-4.5 rounded-2xl flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+                                <div className="space-y-0.5">
+                                    <span className="block text-[8px] font-black uppercase tracking-wider text-amber-700">Audit Guidelines</span>
+                                    <p className="text-[10.5px] font-semibold text-slate-700 leading-normal">
+                                        Identify specific SQUIRE gaps (e.g. measures, cycle details) and ensure all Patient Identifiers (PHI) are removed before resubmission.
+                                    </p>
+                                </div>
+                            </div>
 
-                            <textarea
-                                value={feedbackText}
-                                onChange={(e) => setFeedbackText(e.target.value)}
-                                rows={4}
-                                placeholder="E.g., Please specify your sampling frequency in Section 5 (Measures) and remove the direct patient MRN reference in baseline findings to remain PHI-compliant..."
-                                className="w-full p-4 border border-slate-200 rounded-2xl text-xs font-semibold focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none resize-none transition-all placeholder:text-slate-400"
-                            />
+                            <div className="space-y-2">
+                                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Constructive Revision Notes</label>
+                                <textarea
+                                    value={feedbackText}
+                                    onChange={(e) => setFeedbackText(e.target.value)}
+                                    rows={5}
+                                    placeholder="E.g., Please specify your sampling frequency in Section 5 (Measures) and remove the direct patient MRN reference in baseline findings to remain PHI-compliant..."
+                                    className="w-full p-4.5 border border-slate-250 rounded-2xl text-xs font-semibold focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none transition-all placeholder:text-slate-400 bg-white"
+                                />
+                            </div>
                         </div>
 
                         {/* Footer */}
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2.5">
+                        <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                             <button
                                 onClick={() => setShowFeedbackModal(false)}
-                                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-wider hover:bg-slate-100 transition-all cursor-pointer"
+                                className="px-5 py-3 border border-slate-250 text-slate-600 bg-white rounded-xl text-[9px] font-black uppercase tracking-wider hover:bg-slate-5 transition-all cursor-pointer shadow-3xs hover:border-slate-350"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleRequestRevisions}
                                 disabled={isSubmittingFeedback || !feedbackText.trim()}
-                                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-3xs disabled:opacity-50"
+                                className="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-rose-600/10 active:scale-95 disabled:opacity-40 disabled:scale-100"
                             >
                                 {isSubmittingFeedback ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 ) : (
-                                    <ArrowRight className="w-3 h-3" />
+                                    <ArrowRight className="w-3.5 h-3.5" />
                                 )}
                                 Send Revision Notes
                             </button>

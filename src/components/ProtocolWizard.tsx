@@ -465,7 +465,7 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose, isReg
                                 className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all shadow-lg shadow-emerald-600/10 disabled:opacity-50"
                             >
                                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                Generate Word Protocol (.docx)
+                                {isRegistrationRequest ? "Save & Submit Protocol" : "Generate Word Protocol (.docx)"}
                             </button>
                         )}
                     </div>

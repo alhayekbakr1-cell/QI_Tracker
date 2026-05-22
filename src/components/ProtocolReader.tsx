@@ -8,9 +8,10 @@ interface ProtocolReaderProps {
     isOpen: boolean;
     onClose: () => void;
     showStamp?: boolean;
+    actions?: React.ReactNode;
 }
 
-export default function ProtocolReader({ protocolData, isOpen, onClose, showStamp = true }: ProtocolReaderProps) {
+export default function ProtocolReader({ protocolData, isOpen, onClose, showStamp = true, actions }: ProtocolReaderProps) {
     if (!isOpen) return null;
 
     const data = protocolData;
@@ -347,6 +348,16 @@ export default function ProtocolReader({ protocolData, isOpen, onClose, showStam
 
                     </div>
                 </div>
+
+                {/* Sticky Action Footer inside Reader Drawer */}
+                {actions && (
+                    <div className="px-8 py-4 bg-slate-950 border-t border-slate-800/85 flex justify-between items-center gap-3 shrink-0 shadow-lg">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mr-auto">Registry Audit Actions</span>
+                        <div className="flex items-center gap-3">
+                            {actions}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

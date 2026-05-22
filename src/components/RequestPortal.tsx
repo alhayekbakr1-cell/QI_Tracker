@@ -164,12 +164,24 @@ export default function RequestPortal({ userId }: RequestPortalProps) {
 
                                 {/* Revision Feedback Banner */}
                                 {isRevisionRequested && request.reviewer_feedback && (
-                                    <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 text-amber-900 px-5 py-4 rounded-2xl text-xs font-semibold leading-relaxed">
-                                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                                        <div className="space-y-1">
-                                            <strong className="text-amber-800 uppercase tracking-widest text-[9px] font-black block">Reviewer Feedback Comments</strong>
-                                            <p className="text-slate-700 font-bold">{request.reviewer_feedback}</p>
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-amber-500/10 border border-amber-500/20 text-amber-900 px-6 py-5 rounded-[2rem] text-xs font-semibold leading-relaxed shadow-3xs">
+                                        <div className="flex items-start gap-3">
+                                            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+                                            <div className="space-y-1">
+                                                <strong className="text-amber-800 uppercase tracking-widest text-[9px] font-black block">Revisions Requested by GME Chief Registry</strong>
+                                                <p className="text-slate-700 font-bold">{request.reviewer_feedback}</p>
+                                            </div>
                                         </div>
+                                        <button
+                                            onClick={() => {
+                                                setActiveWizardRequestId(request.id);
+                                                setActiveWizardTitle(request.title);
+                                            }}
+                                            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-md shadow-amber-500/15 active:scale-95 shrink-0"
+                                        >
+                                            <Edit3 className="w-4 h-4 text-amber-200" />
+                                            Edit & Resubmit
+                                        </button>
                                     </div>
                                 )}
 
@@ -242,7 +254,18 @@ export default function RequestPortal({ userId }: RequestPortalProps) {
                                         View SQUIRE Draft
                                     </button>
 
-                                    {!isApproved && (
+                                    {isRevisionRequested ? (
+                                        <button
+                                            onClick={() => {
+                                                setActiveWizardRequestId(request.id);
+                                                setActiveWizardTitle(request.title);
+                                            }}
+                                            className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 px-4 py-2.5 rounded-xl transition-all cursor-pointer shadow-md active:scale-95"
+                                        >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                            Edit & Resubmit Protocol
+                                        </button>
+                                    ) : !isApproved && (
                                         <button
                                             onClick={() => {
                                                 setActiveWizardRequestId(request.id);
