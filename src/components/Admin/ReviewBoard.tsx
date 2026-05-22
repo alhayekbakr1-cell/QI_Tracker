@@ -64,15 +64,34 @@ export default function ReviewBoard() {
 
     const fetchRequests = async () => {
         setIsLoading(true);
+        
+        // 1. Fetch all profiles to map creator names client-side
+        const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, full_name');
+
+        if (profilesError) {
+            console.error("Error fetching profiles:", profilesError);
+        }
+
+        // 2. Fetch the registration requests selecting '*'
         const { data, error } = await supabase
             .from('project_registration_requests')
-            .select('*, profiles:created_by(full_name)')
+            .select('*')
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error("Error fetching registration requests:", error);
         } else if (data) {
-            setRequests(data as unknown as RegistrationRequest[]);
+            // 3. Map profiles in-memory client-side
+            const mapped = data.map((req: any) => {
+                const creator = profilesData?.find(p => p.id === req.created_by);
+                return {
+                    ...req,
+                    profiles: creator ? { full_name: creator.full_name } : null
+                };
+            });
+            setRequests(mapped as unknown as RegistrationRequest[]);
         }
         setIsLoading(false);
     };

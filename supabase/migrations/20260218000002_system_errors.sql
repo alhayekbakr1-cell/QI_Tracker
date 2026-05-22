@@ -1,6 +1,6 @@
 -- Create system_errors table for production error monitoring
 CREATE TABLE IF NOT EXISTS public.system_errors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     error_message TEXT NOT NULL,
     error_stack TEXT,
     component_name TEXT,

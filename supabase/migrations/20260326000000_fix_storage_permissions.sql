@@ -7,7 +7,7 @@ VALUES ('project-documents', 'project-documents', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
 -- 2. Enable RLS on storage.objects if not already
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- 3. Clear existing restrictive policies if any (to avoid conflicts)
 DROP POLICY IF EXISTS "Anyone can view project documents" ON storage.objects;

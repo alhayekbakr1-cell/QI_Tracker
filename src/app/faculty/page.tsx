@@ -83,17 +83,34 @@ export default function FacultyDashboard() {
             setAssignedProjects(projects as Project[]);
         }
 
+        // Fetch all profiles to map creator names client-side
+        const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, full_name');
+
+        if (profilesError) {
+            console.error("Error fetching profiles:", profilesError);
+        }
+
         // Fetch project registration requests needing sponsorship
         const { data: requests, error: rError } = await supabase
             .from('project_registration_requests')
-            .select('*, profiles:created_by(full_name)')
+            .select('*')
             .eq('faculty_id', user.id)
             .eq('mentor_approval_status', 'pending');
 
         if (rError) {
             console.error("Error fetching pending sponsorships:", rError);
         } else if (requests) {
-            setPendingSponsorships(requests as unknown as RegistrationRequest[]);
+            // Map profiles in-memory client-side
+            const mapped = requests.map((req: any) => {
+                const creator = profilesData?.find(p => p.id === req.created_by);
+                return {
+                    ...req,
+                    profiles: creator ? { full_name: creator.full_name } : null
+                };
+            });
+            setPendingSponsorships(mapped as unknown as RegistrationRequest[]);
         }
 
         setIsLoading(false);
