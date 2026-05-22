@@ -2,6 +2,8 @@
 
 import { ProtocolData } from "@/utils/protocolExport";
 import { X, FileText, Check, Award, AlertCircle, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ProtocolReaderProps {
     protocolData: ProtocolData;
@@ -12,11 +14,19 @@ interface ProtocolReaderProps {
 }
 
 export default function ProtocolReader({ protocolData, isOpen, onClose, showStamp = true, actions }: ProtocolReaderProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
     if (!isOpen) return null;
+    if (!mounted) return null;
 
     const data = protocolData;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-lg flex items-center justify-center p-0 sm:p-6 md:p-10 animate-in fade-in duration-300">
             <div className="bg-slate-50 w-full max-w-5xl h-full sm:h-[92vh] shadow-2xl flex flex-col sm:border border-slate-200 sm:rounded-[2.5rem] overflow-hidden animate-in zoom-in-95 duration-400">
                 {/* Header */}
@@ -359,6 +369,7 @@ export default function ProtocolReader({ protocolData, isOpen, onClose, showStam
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
