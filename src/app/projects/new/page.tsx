@@ -80,6 +80,7 @@ export default function NewProjectPage() {
     const [isPolishingAim, setIsPolishingAim] = useState(false);
     const [primaryOutcome, setPrimaryOutcome] = useState("");
     const [title, setTitle] = useState("");
+    const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
     // Custom Modal Dialog state
     const [dialogState, setDialogState] = useState<{
@@ -114,6 +115,11 @@ export default function NewProjectPage() {
                 .select('id, full_name, email, role')
                 .order('full_name');
             setAllProfiles(profiles || []);
+
+            const current = profiles?.find(p => p.id === user.id);
+            if (current) {
+                setCurrentUserProfile(current);
+            }
         }
         checkAuth();
     }, [supabase, router]);
@@ -191,6 +197,140 @@ export default function NewProjectPage() {
         const linkedProponentNames = allProfiles.filter(p => selectedProponentIds.includes(p.id)).map(p => p.full_name);
         const linkedLeadNames = allProfiles.filter(p => selectedLeadIds.includes(p.id)).map(p => p.full_name);
 
+        const proponentsArray = Array.from(new Set([...manualProponents, ...linkedProponentNames]));
+        const leadProponentsArray = Array.from(new Set([...manualLeads, ...linkedLeadNames]));
+
+        if (currentUserProfile?.role === 'Viewer') {
+            const defaultProtocolData = {
+                title: title,
+                setting: "AdventHealth Tampa",
+                pi: currentUserProfile.full_name || "",
+                coInvestigators: proponentsText || "",
+                mentor: formData.get('faculty_name') as string || "",
+                sponsor: "AdventHealth IM GME — Tampa, FL",
+                committee: "",
+                irbStatus: "QI Exempt",
+                irbNumber: "",
+                problem: "",
+                aim: primaryOutcome || "",
+                intervention: "",
+                outcomeMeasure: "",
+                processMeasure: "",
+                balancingMeasure: "",
+                targetPop: "",
+                duration: "6 months",
+                background: "",
+                baselineData: "",
+                evidence: "",
+                evidenceGaps: "",
+                citations: "",
+                outcomesTable: [
+                    { type: "Primary Outcome", def: primaryOutcome || "", source: "Epic chart review", target: "" }
+                ],
+                design: "PDSA",
+                designOtherText: "",
+                designDesc: "Plan-Do-Study-Act cycles allow rapid testing of workflow changes on medicine wards.",
+                settingDetails: "General Internal Medicine wards at AdventHealth Tampa.",
+                popDetails: "Adult patients admitted to General Medicine services.",
+                inclusionCriteria: "Age >= 18; admitted to general medicine units.",
+                exclusionCriteria: "ICU admissions; comfort care / hospice status.",
+                baselineTimeframe: "Pre-intervention window (e.g. Month 1)",
+                postTimeframe: "Post-intervention tracking (e.g. Months 4-6)",
+                chartReviewDesc: "",
+                educationDesc: "",
+                emrToolsDesc: "",
+                responsibilitiesDesc: "",
+                pdsaCycles: [
+                    { cycle: "PDSA 1", plan: "Huddle education with Team A residents.", do: "Implemented during morning sign-out.", study: "Track order completion rates.", act: "Refine checklist and roll out to Team B." }
+                ],
+                measuresTable: [
+                    { measure: "Primary Measure", type: "Outcome", def: "", denNum: "", freq: "Weekly", source: "Epic chart review" }
+                ],
+                epicReviewSource: true,
+                registrySource: false,
+                surveySource: false,
+                otherSource: false,
+                otherSourceText: "",
+                dataAbstractionPlan: "PI and co-investigators will perform retrospective and prospective electronic chart audits using a standardized template in OneDrive.",
+                spreadsheetFile: true,
+                pdfFile: false,
+                redcapFile: false,
+                otherFile: false,
+                otherFileText: "",
+                dataManagementDetails: "All data stored on HIPAA-compliant AdventHealth OneDrive. Only investigators have access. Patient MRN is used; no names or direct identifiers.",
+                timelineChart: [
+                    { phase: "Retrospective chart/source review (Month 1)", dates: "", owner: "", deliverable: "Baseline data" },
+                    { phase: "Patient outreach & education (Month 2-3)", dates: "", owner: "", deliverable: "Education rollout" },
+                    { phase: "Intervention implementation (Month 3-5)", dates: "", owner: "", deliverable: "Active intervention" },
+                    { phase: "Post-intervention data collection/analysis (Month 6)", dates: "", owner: "", deliverable: "Final metrics" },
+                    { phase: "Presentation/poster preparation", dates: "", owner: "", deliverable: "QI Conference Poster" }
+                ],
+                meetingMonthly: true,
+                meetingBiweekly: false,
+                meetingOther: false,
+                meetingOtherText: "",
+                tasksTable: [
+                    { investigator: currentUserProfile.full_name || "", role: "Principal Investigator", tasks: "Data abstraction, coordination, draft protocol", dates: "" }
+                ],
+                excelAnalysis: true,
+                epicAnalysis: false,
+                pythonAnalysis: false,
+                otherAnalysis: false,
+                otherAnalysisText: "",
+                analysisPlan: "Descriptive statistics (percentages, means) will summarize inclusion/exclusion cohorts. Run charts will display weekly compliance percentages to evaluate trend shifts using standard run chart rules.",
+                resultsPlan: "Metrics will be summarized in tabular and graphical formats (run charts). No PHI will be shared outside the direct clinical registry.",
+                discussionText: "",
+                sustainability: "Handoff to incoming resident quality leaders; EMR tools will remain active; unit charge nurses will own daily audits.",
+                ethical: "Minimal expected risk. This study constitutes quality improvement surveillance of standard healthcare delivery and does not expose patients to experimental therapies.",
+                fundingNone: true,
+                fundingDept: false,
+                fundingGrant: false,
+                fundingOther: false,
+                fundingOtherText: "",
+                stipendsNone: true,
+                stipendsYes: false,
+                stipendsText: "",
+                materialsNeeded: "",
+                dissemination: "QI presentation (5 minutes) at the local Quality Initiative Conference and abstract submission to GME Research Day.",
+                references: "1. Standards for Quality Improvement Reporting Excellence (SQUIRE 2.0) guidelines.\n2. Institute for Healthcare Improvement (IHI) Quality Improvement Toolkit."
+            };
+
+            const registrationRequest = {
+                title: title,
+                category: formData.get('category') as string,
+                subcategory: formData.get('subcategory') as string,
+                proponents: Array.from(new Set([...proponentsArray, currentUserProfile.full_name])),
+                lead_proponents: Array.from(new Set([...leadProponentsArray, currentUserProfile.full_name])),
+                proponent_ids: selectedProponentIds.includes(currentUserProfile.id) ? selectedProponentIds : [...selectedProponentIds, currentUserProfile.id],
+                lead_proponent_ids: selectedLeadIds.includes(currentUserProfile.id) ? selectedLeadIds : [...selectedLeadIds, currentUserProfile.id],
+                faculty: formData.get('faculty_name') as string || null,
+                faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
+                smart_aim: primaryOutcome || null,
+                squire_rationale: null,
+                protocol_data: defaultProtocolData,
+                mentor_approval_status: 'pending',
+                gme_approval_status: 'pending',
+                status: 'pending',
+                created_by: currentUserProfile.id
+            };
+
+            const { data, error } = await supabase
+                .from('project_registration_requests')
+                .insert(registrationRequest)
+                .select()
+                .single();
+
+            setIsSaving(false);
+            if (error) {
+                toast.error(error.message);
+            } else {
+                toast.success("Project proposal submitted for sponsorship and GME approval! 🚀");
+                router.push("/");
+                router.refresh();
+            }
+            return;
+        }
+
         const newProject = {
             title: title,
             status: formData.get('status') as any,
@@ -198,8 +338,8 @@ export default function NewProjectPage() {
             subcategory: formData.get('subcategory') as string,
             faculty: formData.get('faculty_name') as string,
             faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
-            proponents: Array.from(new Set([...manualProponents, ...linkedProponentNames])),
-            lead_proponents: Array.from(new Set([...manualLeads, ...linkedLeadNames])),
+            proponents: proponentsArray,
+            lead_proponents: leadProponentsArray,
             proponent_ids: selectedProponentIds,
             lead_proponent_ids: selectedLeadIds,
             primary_outcome: primaryOutcome,

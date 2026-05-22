@@ -16,9 +16,11 @@ interface ProtocolWizardProps {
     projectId: string;
     projectTitle: string;
     onClose: () => void;
+    isRegistrationRequest?: boolean;
+    onSaveSuccess?: () => void;
 }
 
-export default function ProtocolWizard({ projectId, projectTitle, onClose }: ProtocolWizardProps) {
+export default function ProtocolWizard({ projectId, projectTitle, onClose, isRegistrationRequest = false, onSaveSuccess }: ProtocolWizardProps) {
     const [step, setStep] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
@@ -166,18 +168,34 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
         fetchDirectory();
     }, [supabase]);
 
-    // 2. Draft recovery using localStorage
+    // 2. Draft recovery using Database or localStorage
     useEffect(() => {
-        const cached = localStorage.getItem(`qi_protocol_draft_${projectId}`);
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                setFormData(prev => ({ ...prev, ...parsed }));
-            } catch (e) {
-                console.error("Error loading protocol cache:", e);
+        const fetchRegistrationDraft = async () => {
+            if (isRegistrationRequest && projectId) {
+                const { data, error } = await supabase
+                    .from('project_registration_requests')
+                    .select('*')
+                    .eq('id', projectId)
+                    .single();
+                if (data && data.protocol_data) {
+                    setFormData(prev => ({ ...prev, ...data.protocol_data }));
+                } else if (error) {
+                    console.error("Error loading registration request draft:", error);
+                }
+            } else {
+                const cached = localStorage.getItem(`qi_protocol_draft_${projectId}`);
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        setFormData(prev => ({ ...prev, ...parsed }));
+                    } catch (e) {
+                        console.error("Error loading protocol cache:", e);
+                    }
+                }
             }
-        }
-    }, [projectId]);
+        };
+        fetchRegistrationDraft();
+    }, [projectId, isRegistrationRequest, supabase]);
 
     const handleFieldChange = (updated: Partial<ProtocolData>) => {
         const next = { ...formData, ...updated };
@@ -211,46 +229,92 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose }: Pro
             // 1. Download document locally for immediate access
             saveAs(blob, fileName);
 
-            // 2. Attempt direct upload to shared OneDrive folders
-            let oneDriveUrl = "";
-            try {
-                const { url } = await uploadToSharedFolder(
-                    instance,
-                    accounts[0],
-                    projectTitle,
-                    fileName,
-                    blob,
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                );
-                oneDriveUrl = url;
-            } catch (err) {
-                console.warn("Direct OneDrive upload bypassed or blocked:", err);
+            if (isRegistrationRequest) {
+                // Save to project_registration_requests
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error("User not authenticated");
+
+                // Find the mentor's profiles.id by matching name
+                let mentorId: string | null = null;
+                if (formData.mentor) {
+                    const { data: mentorProfile } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .ilike('full_name', `%${formData.mentor}%`)
+                        .limit(1)
+                        .maybeSingle();
+                    if (mentorProfile) {
+                        mentorId = mentorProfile.id;
+                    }
+                }
+
+                // Update the project_registration_requests table
+                const { error: updateError } = await supabase
+                    .from('project_registration_requests')
+                    .update({
+                        title: formData.title || projectTitle,
+                        smart_aim: formData.aim || null,
+                        squire_rationale: formData.problem || null,
+                        protocol_data: formData as any,
+                        faculty: formData.mentor || null,
+                        faculty_id: mentorId,
+                        mentor_approval_status: 'pending',
+                        gme_approval_status: 'pending',
+                        status: 'pending',
+                        reviewer_feedback: null, // Reset feedback on re-submission
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', projectId);
+
+                if (updateError) throw updateError;
+
+                alert("Success! Your official 14-section QI Protocol has been updated and submitted for dual-sponsorship review.");
+                localStorage.removeItem(`qi_protocol_draft_${projectId}`);
+                if (onSaveSuccess) onSaveSuccess();
+                onClose();
+            } else {
+                // 2. Attempt direct upload to shared OneDrive folders
+                let oneDriveUrl = "";
+                try {
+                    const { url } = await uploadToSharedFolder(
+                        instance,
+                        accounts[0],
+                        projectTitle,
+                        fileName,
+                        blob,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    );
+                    oneDriveUrl = url;
+                } catch (err) {
+                    console.warn("Direct OneDrive upload bypassed or blocked:", err);
+                }
+
+                // 3. Save to database profiles & project_files
+                const { data: { user } } = await supabase.auth.getUser();
+                const { data: profile } = user
+                    ? await supabase.from('profiles').select('id, full_name').eq('id', user.id).single()
+                    : { data: null };
+
+                await Promise.all([
+                    supabase.from('project_files').insert({
+                        project_id: projectId,
+                        file_name: fileName,
+                        file_type: 'docx',
+                        file_url: oneDriveUrl || null,
+                        uploaded_by: profile?.id ?? null,
+                        uploaded_by_name: profile?.full_name ?? null,
+                    }),
+                    supabase.from('projects').update({ 
+                        protocol_url: oneDriveUrl || null,
+                        status: 'Active'
+                    }).eq('id', projectId),
+                ]);
+
+                alert("Success! Your official 14-section QI Protocol docx has been generated, downloaded, and registered in the system.");
+                localStorage.removeItem(`qi_protocol_draft_${projectId}`);
+                if (onSaveSuccess) onSaveSuccess();
+                onClose();
             }
-
-            // 3. Save to database profiles & project_files
-            const { data: { user } } = await supabase.auth.getUser();
-            const { data: profile } = user
-                ? await supabase.from('profiles').select('id, full_name').eq('id', user.id).single()
-                : { data: null };
-
-            await Promise.all([
-                supabase.from('project_files').insert({
-                    project_id: projectId,
-                    file_name: fileName,
-                    file_type: 'docx',
-                    file_url: oneDriveUrl || null,
-                    uploaded_by: profile?.id ?? null,
-                    uploaded_by_name: profile?.full_name ?? null,
-                }),
-                supabase.from('projects').update({ 
-                    protocol_url: oneDriveUrl || null,
-                    status: 'Active'
-                }).eq('id', projectId),
-            ]);
-
-            alert("Success! Your official 14-section QI Protocol docx has been generated, downloaded, and registered in the system.");
-            localStorage.removeItem(`qi_protocol_draft_${projectId}`);
-            onClose();
         } catch (error: any) {
             alert("Export error: " + error.message);
         } finally {

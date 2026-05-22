@@ -11,6 +11,7 @@ import BulkPersonnelImport from "@/components/BulkPersonnelImport";
 import BulkProjectImport from "@/components/BulkProjectImport";
 import ErrorMonitor from "@/components/Admin/ErrorMonitor";
 import Link from "next/link";
+import ReviewBoard from "@/components/Admin/ReviewBoard";
 import { DEFAULT_CONFERENCES, fetchRegistry, Conference } from "@/constants/conferences";
 import LiveConferenceVerify from "@/components/LiveConferenceVerify";
 import { runRegistryScout } from "@/utils/scout";
@@ -157,6 +158,9 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Chief Registry Review Board */}
+            <ReviewBoard />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
