@@ -146,14 +146,14 @@ export default function Dashboard() {
   const roleBadgeStyles = {
     Admin: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
     Faculty: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    Operator: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    Operator: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     Viewer: 'bg-slate-800 text-slate-400 border-slate-700'
   }[role as 'Admin' | 'Faculty' | 'Operator' | 'Viewer'] || 'bg-slate-800 text-slate-400 border-slate-700';
 
   const roleLabel = {
     Admin: 'Overseer',
     Faculty: 'Faculty Mentor',
-    Operator: 'Operator',
+    Operator: 'Faculty Mentor',
     Viewer: 'Viewer'
   }[role as 'Admin' | 'Faculty' | 'Operator' | 'Viewer'] || 'Viewer';
 

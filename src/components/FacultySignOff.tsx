@@ -15,7 +15,7 @@ interface FacultySignOffProps {
 export default function FacultySignOff({ project, userRole, onUpdate }: FacultySignOffProps) {
     const [isUpdating, setIsUpdating] = useState(false);
     const supabase = createClient();
-    const canApprove = userRole === 'Faculty' || userRole === 'Admin';
+    const canApprove = userRole === 'Faculty' || userRole === 'Admin' || userRole === 'Operator';
 
     const toggleApproval = async (field: 'faculty_approved_protocol' | 'faculty_approved_pdsa') => {
         if (!canApprove || isUpdating) return;

@@ -23,6 +23,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// Robust fuzzy matching to resolve manual text entries of mentor names (e.g. Vernace matching James Vernace)
+function isFacultyMatch(facultyStr: string | null, fullName: string | null): boolean {
+    if (!facultyStr || !fullName) return false;
+    const cleanFaculty = facultyStr.toLowerCase().replace(/dr\.?\s+/gi, '');
+    const cleanFull = fullName.toLowerCase().replace(/dr\.?\s+/gi, '').replace(/\b(md|do)\b/gi, '');
+    
+    // Split into individual alphanumeric words, filtering out common words and short letters
+    const facultyWords = cleanFaculty.split(/[^a-z0-9]+/i).filter(w => w.length > 2 && w !== 'and' && w !== 'md' && w !== 'do');
+    const fullWords = cleanFull.split(/[^a-z0-9]+/i).filter(w => w.length > 2 && w !== 'and' && w !== 'md' && w !== 'do');
+    
+    return facultyWords.some(fw => fullWords.some(nw => nw === fw || nw.includes(fw) || fw.includes(nw)));
+}
+
 interface RegistrationRequest {
     id: string;
     title: string;
@@ -73,14 +86,17 @@ export default function FacultyDashboard() {
 
         setUserProfile(profile);
 
-        // Fetch projects where faculty_id matches
+        // Fetch all projects for fuzzy client-side mentor filtering
         const { data: projects } = await supabase
             .from('projects')
-            .select('*')
-            .eq('faculty_id', user.id);
+            .select('*');
 
         if (projects) {
-            setAssignedProjects(projects as Project[]);
+            const matchedProjects = projects.filter((p: any) => 
+                p.faculty_id === user.id || 
+                (profile?.full_name && isFacultyMatch(p.faculty, profile.full_name))
+            );
+            setAssignedProjects(matchedProjects as Project[]);
         }
 
         // Fetch all profiles to map creator names client-side
@@ -92,18 +108,22 @@ export default function FacultyDashboard() {
             console.error("Error fetching profiles:", profilesError);
         }
 
-        // Fetch project registration requests needing sponsorship
+        // Fetch pending project registration requests
         const { data: requests, error: rError } = await supabase
             .from('project_registration_requests')
             .select('*')
-            .eq('faculty_id', user.id)
             .eq('mentor_approval_status', 'pending');
 
         if (rError) {
             console.error("Error fetching pending sponsorships:", rError);
         } else if (requests) {
+            const matchedRequests = requests.filter((req: any) => 
+                req.faculty_id === user.id || 
+                (profile?.full_name && isFacultyMatch(req.faculty, profile.full_name))
+            );
+
             // Map profiles in-memory client-side
-            const mapped = requests.map((req: any) => {
+            const mapped = matchedRequests.map((req: any) => {
                 const creator = profilesData?.find(p => p.id === req.created_by);
                 return {
                     ...req,

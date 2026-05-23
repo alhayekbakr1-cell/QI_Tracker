@@ -57,7 +57,7 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
         { href: '/impact', label: 'Impact', icon: Activity },
         { href: '/portfolio', label: 'My Portfolio', icon: BookOpen },
         { href: '/resources', label: 'Resources', icon: BookOpen },
-        ...(role === 'Faculty' ? [{ href: '/faculty', label: 'Faculty Portal', icon: Users }] : []),
+        ...(role === 'Faculty' || role === 'Operator' ? [{ href: '/faculty', label: 'Faculty Portal', icon: Users }] : []),
         ...(role === 'Admin' ? [
             { href: '/admin', label: 'Admin', icon: Users },
             { href: '/admin/dashboard', label: 'Intelligence', icon: TrendingUp }
@@ -84,11 +84,11 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                             <span className={`text-[8px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded border shadow-3xs ${
                                 role === 'Admin'
                                     ? 'bg-rose-500/5 text-rose-600 border-rose-200/40'
-                                    : role === 'Faculty'
+                                    : role === 'Faculty' || role === 'Operator'
                                         ? 'bg-emerald-500/5 text-emerald-600 border-emerald-200/40'
                                         : 'bg-advent-cobalt/5 text-advent-cobalt border-advent-cobalt/10'
                             }`}>
-                                {role === 'Admin' ? 'Overseer' : role || 'Viewer'}
+                                {role === 'Admin' ? 'Overseer' : role === 'Operator' ? 'Faculty' : role || 'Viewer'}
                             </span>
                         </div>
                         <button

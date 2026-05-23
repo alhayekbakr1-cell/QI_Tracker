@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { 
     FileText, CheckCircle2, AlertTriangle, Edit3, 
-    User, Award, Loader2, ArrowRight, ClipboardList, Plus
+    User, Award, Loader2, ArrowRight, ClipboardList, Plus, Trash2
 } from "lucide-react";
 import ProtocolReader from "./ProtocolReader";
 import ProtocolWizard from "./ProtocolWizard";
@@ -60,6 +60,28 @@ export default function RequestPortal({ userId }: RequestPortalProps) {
             fetchRequests();
         }
     }, [userId]);
+
+    const handleDeleteRequest = async (requestId: string) => {
+        if (!window.confirm("Are you sure you want to permanently delete this project registration proposal? This will remove it from your dashboard, the faculty mentor, and the GME Chief boards. This action is permanent and cannot be undone.")) {
+            return;
+        }
+        
+        try {
+            const { error } = await supabase
+                .from('project_registration_requests')
+                .delete()
+                .eq('id', requestId);
+                
+            if (error) {
+                alert("Error deleting proposal: " + error.message);
+            } else {
+                await fetchRequests();
+            }
+        } catch (err: any) {
+            console.error("Error in delete request:", err);
+            alert("An unexpected error occurred while deleting the request.");
+        }
+    };
 
     if (isLoading) {
         return (
@@ -277,6 +299,14 @@ export default function RequestPortal({ userId }: RequestPortalProps) {
                                             Edit Protocol Wizard
                                         </button>
                                     )}
+
+                                    <button
+                                        onClick={() => handleDeleteRequest(request.id)}
+                                        className="ml-auto flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 px-4 py-2.5 rounded-xl transition-all cursor-pointer shadow-3xs"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Delete Request
+                                    </button>
                                 </div>
                             </div>
                         );

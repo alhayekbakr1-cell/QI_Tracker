@@ -187,6 +187,34 @@ export default function NewProjectPage() {
 
         const formData = new FormData(e.currentTarget);
 
+        const facultyId = formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string;
+        let facultyName = formData.get('faculty_name') as string || "";
+
+        // Robust matching & synchronization of faculty names/IDs:
+        let finalFacultyId = facultyId;
+        let finalFacultyName = facultyName;
+
+        if (finalFacultyId) {
+            // Dropdown selected: set facultyName to the linked profile's full name
+            const matchingProfile = facultyProfiles.find(p => p.id === finalFacultyId);
+            if (matchingProfile) {
+                finalFacultyName = matchingProfile.full_name;
+            }
+        } else if (finalFacultyName.trim()) {
+            // Dropdown not selected, but a name was typed: try to match a registered faculty/operator by name (case-insensitive)
+            const cleanName = finalFacultyName.trim().toLowerCase().replace(/^dr\.\s+/i, '');
+            const matchingProfile = facultyProfiles.find(p => {
+                const cleanProfileName = p.full_name.toLowerCase().replace(/^dr\.\s+/i, '');
+                return cleanProfileName === cleanName || 
+                       cleanProfileName.includes(cleanName) || 
+                       cleanName.includes(cleanProfileName);
+            });
+            if (matchingProfile) {
+                finalFacultyId = matchingProfile.id;
+                finalFacultyName = matchingProfile.full_name; // Standardize to database profile spelling
+            }
+        }
+
         // Combine manual names and linked profiles for labels
         const proponentsText = formData.get('proponents_text') as string;
         const leadProponentsText = formData.get('lead_proponents_text') as string;
@@ -206,7 +234,7 @@ export default function NewProjectPage() {
                 setting: "AdventHealth Tampa",
                 pi: currentUserProfile.full_name || "",
                 coInvestigators: proponentsText || "",
-                mentor: formData.get('faculty_name') as string || "",
+                mentor: finalFacultyName || "",
                 sponsor: "AdventHealth IM GME — Tampa, FL",
                 committee: "",
                 irbStatus: "QI Exempt",
@@ -303,8 +331,8 @@ export default function NewProjectPage() {
                 lead_proponents: Array.from(new Set([...leadProponentsArray, currentUserProfile.full_name])),
                 proponent_ids: selectedProponentIds.includes(currentUserProfile.id) ? selectedProponentIds : [...selectedProponentIds, currentUserProfile.id],
                 lead_proponent_ids: selectedLeadIds.includes(currentUserProfile.id) ? selectedLeadIds : [...selectedLeadIds, currentUserProfile.id],
-                faculty: formData.get('faculty_name') as string || null,
-                faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
+                faculty: finalFacultyName || null,
+                faculty_id: finalFacultyId,
                 smart_aim: primaryOutcome || null,
                 squire_rationale: null,
                 protocol_data: defaultProtocolData,
@@ -336,8 +364,8 @@ export default function NewProjectPage() {
             status: formData.get('status') as any,
             category: formData.get('category') as string,
             subcategory: formData.get('subcategory') as string,
-            faculty: formData.get('faculty_name') as string,
-            faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
+            faculty: finalFacultyName,
+            faculty_id: finalFacultyId,
             proponents: proponentsArray,
             lead_proponents: leadProponentsArray,
             proponent_ids: selectedProponentIds,
@@ -366,8 +394,8 @@ export default function NewProjectPage() {
             const triggerEmail = async () => {
                 try {
                     let mentorEmail = "";
-                    const mentorId = formData.get('faculty_id') as string;
-                    const mentorName = formData.get('faculty_name') as string;
+                    const mentorId = finalFacultyId;
+                    const mentorName = finalFacultyName;
 
                     if (mentorId) {
                         const { data: profile } = await supabase
