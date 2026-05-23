@@ -604,7 +604,7 @@ export default function EditProjectPage() {
                                     <input 
                                         name="lead_proponents_text" 
                                         placeholder="Comma-separated manual names..." 
-                                        defaultValue={project.lead_proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedLeadIds.includes(p.id))).join(', ')}
+                                        defaultValue={(project.lead_proponents || []).filter(name => !allProfiles.some(p => p.full_name === name && selectedLeadIds.includes(p.id))).join(', ')}
                                         className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
                                     />
                                     <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200 max-h-48 overflow-y-auto">
@@ -637,7 +637,7 @@ export default function EditProjectPage() {
                                     <input 
                                         name="proponents_text" 
                                         placeholder="Comma-separated manual names..." 
-                                        defaultValue={project.proponents.filter(name => !allProfiles.some(p => p.full_name === name && selectedProponentIds.includes(p.id))).join(', ')}
+                                        defaultValue={(project.proponents || []).filter(name => !allProfiles.some(p => p.full_name === name && selectedProponentIds.includes(p.id))).join(', ')}
                                         className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
                                     />
                                     <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200 max-h-48 overflow-y-auto">

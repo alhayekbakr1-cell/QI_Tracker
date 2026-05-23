@@ -213,8 +213,8 @@ export default function ProjectsPage() {
                                         </td>
                                         <td className="px-6 py-5 text-sm text-slate-600">
                                             <div className="flex flex-wrap gap-1">
-                                                {project.lead_proponents.length > 0 ? (
-                                                    project.lead_proponents.map(lead => (
+                                                {(project.lead_proponents || []).length > 0 ? (
+                                                    (project.lead_proponents || []).map(lead => (
                                                         <span key={lead} className="bg-advent-blue/10 text-advent-blue px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
                                                             {lead}
                                                         </span>

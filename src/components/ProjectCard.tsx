@@ -87,7 +87,7 @@ export default function ProjectCard({ project }: { project: Project }) {
                 <div className="flex items-center gap-2 text-slate-500">
                     <User className="w-3.5 h-3.5 text-advent-navy/60" />
                     <span className="text-[11px] font-semibold truncate text-slate-650">
-                        {project.lead_proponents[0] || 'Unassigned Investigator'}
+                        {(project.lead_proponents || [])[0] || 'Unassigned Investigator'}
                     </span>
                 </div>
 

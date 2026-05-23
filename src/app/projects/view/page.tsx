@@ -356,13 +356,13 @@ export default function ProjectDetailPage() {
                                     <DetailItem label="PDSA Cycle" value={`Cycle ${project.pdsa_cycle}`} icon={<TrendingUp className="w-4 h-4 text-advent-green" />} />
                                     <DetailItem
                                         label="Lead(s)"
-                                        value={project.lead_proponents.join(', ')}
+                                        value={(project.lead_proponents || []).join(', ')}
                                         icon={<Users className="w-4 h-4 text-advent-navy" />}
                                         isLinked={(project.lead_proponent_ids?.length || 0) > 0}
                                     />
                                     <DetailItem
                                         label="Proponents"
-                                        value={project.proponents.join(', ')}
+                                        value={(project.proponents || []).join(', ')}
                                         icon={<Users className="w-4 h-4 text-slate-400" />}
                                         isLinked={(project.proponent_ids?.length || 0) > 0}
                                     />
