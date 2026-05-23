@@ -80,3 +80,50 @@ body {
 .academic-divider {
   @apply border-t border-slate-200/60 my-6;
 }
+
+/* Luxury Aesthetics (Stunning Dashboard Upgrades) */
+.premium-gradient-card {
+  background: radial-gradient(circle at top right, rgba(0, 79, 159, 0.15), transparent 45%),
+              radial-gradient(circle at bottom left, rgba(122, 184, 0, 0.08), transparent 50%),
+              linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E293B 100%);
+  @apply border border-slate-800/80 shadow-[0_25px_60px_-15px_rgba(2,6,23,0.5)] rounded-[2.5rem];
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FFE082 0%, #FFB300 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-emerald {
+  background: linear-gradient(135deg, #A7F3D0 0%, #10B981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-sky {
+  background: linear-gradient(135deg, #BAE6FD 0%, #0284C7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.luxury-shadow {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02),
+              0 20px 40px -10px rgba(15, 23, 42, 0.04),
+              inset 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.neon-glow-emerald {
+  box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25),
+              inset 0 0 10px -2px rgba(16, 185, 129, 0.1);
+}
+
+.neon-glow-sky {
+  box-shadow: 0 0 20px -3px rgba(14, 165, 233, 0.25),
+              inset 0 0 10px -2px rgba(14, 165, 233, 0.1);
+}
+
+.neon-glow-violet {
+  box-shadow: 0 0 20px -3px rgba(139, 92, 246, 0.25),
+              inset 0 0 10px -2px rgba(139, 92, 246, 0.1);
+}

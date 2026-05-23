@@ -158,81 +158,99 @@ export default function Dashboard() {
   }[role as 'Admin' | 'Faculty' | 'Operator' | 'Viewer'] || 'Viewer';
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-      {/* Unified Registry Dashboard Header, Welcome Card, and Compact Stats */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-advent-cobalt p-6 sm:p-8 rounded-[2rem] shadow-xl border border-slate-800 text-white animate-in fade-in duration-500">
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-stretch gap-8">
-          {/* Welcome Info and PHI Warning Strip */}
-          <div className="space-y-4 flex-1 flex flex-col justify-between">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">
+    <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 animate-in fade-in duration-750">
+      {/* 🏥 Premium Clinical Command Center Welcome Banner */}
+      <div className="relative overflow-hidden premium-gradient-card p-8 sm:p-10 border border-slate-800/85 text-white animate-in fade-in duration-500">
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-stretch gap-10">
+          {/* Welcome Info and Institutional Security Seals */}
+          <div className="space-y-6 flex-1 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 bg-emerald-950/45 text-emerald-400 px-3.5 py-1.5 rounded-full border border-emerald-500/20 text-[9px] font-black uppercase tracking-[0.25em] neon-glow-emerald">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                   </span>
-                  Institutional Registry
+                  Live Surveillance Registry
                 </div>
-                <span className="text-slate-650">•</span>
-                <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded border shadow-3xs ${roleBadgeStyles}`}>
+                <span className="text-slate-700">•</span>
+                <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-3.5 py-1.5 rounded-full border shadow-lg ${roleBadgeStyles} backdrop-blur-md`}>
                   {roleLabel}
                 </span>
-                <span className="text-slate-650">•</span>
-                <span className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Active Portfolio</span>
+                <span className="text-slate-700">•</span>
+                <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest bg-slate-900/50 px-3 py-1 rounded-full border border-slate-800">
+                  IM GME Portfolio
+                </span>
               </div>
-              <h1 className="text-2xl sm:text-3.5xl font-serif font-bold tracking-tight italic text-white leading-tight">
-                Welcome back, <span className="text-emerald-400 font-sans not-italic font-black">{displayName}</span>
-              </h1>
-              <p className="text-slate-300 font-medium text-xs max-w-xl leading-relaxed">
-                Monitoring clinical outcomes, PDSA cycles, and active resident initiatives under AdventHealth IM GME.
-              </p>
+              
+              <div className="space-y-3">
+                <h1 className="text-3xl sm:text-5xl font-serif font-bold tracking-tight italic text-white leading-none">
+                  Welcome back, <span className="text-gradient-emerald font-sans not-italic font-black">{displayName}</span>
+                </h1>
+                <p className="text-slate-300 font-medium text-xs sm:text-sm max-w-xl leading-relaxed">
+                  Monitoring clinical quality, active resident protocols, and institutional metrics under AdventHealth Tampa.
+                </p>
+              </div>
             </div>
 
-            {/* Embedded PHI Warning Banner */}
-            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 text-amber-200/90 px-4 py-3 rounded-2xl text-[10px] font-semibold leading-normal max-w-xl shadow-inner">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            {/* Embedded PHI Warning Banner with Luxury Gold Glow */}
+            <div className="flex items-start gap-4 bg-amber-500/5 border border-amber-500/15 text-amber-250/90 p-5 rounded-[2rem] text-xs font-semibold leading-relaxed max-w-2xl shadow-inner backdrop-blur-xs relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500/40" />
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
               <div>
-                <strong className="text-amber-300 uppercase tracking-wider block mb-0.5">Protected Health Information (PHI) Notice</strong>
-                Never enter patient identifiers (names, MRNs, DOBs). Ensure all data is fully de-identified per HIPAA Safe Harbor guidelines.
+                <strong className="text-amber-300 uppercase tracking-widest font-black block mb-1 text-[10px]">
+                  Protected Health Information (PHI) Notice
+                </strong>
+                Never enter patient identifiers (names, MRNs, DOBs). Ensure all registry inputs are de-identified under HIPAA Safe Harbor guidelines.
               </div>
             </div>
           </div>
 
-          {/* Compact Stats 3x2 Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full lg:w-96 shrink-0 lg:border-l lg:border-slate-800 lg:pl-8">
+          {/* Compact Stats 3x2 Grid - styled as Luxury Registry Gauges */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 w-full lg:w-[26rem] shrink-0 lg:border-l lg:border-slate-800/80 lg:pl-10 relative">
             {[
-              { label: "Total Portfolio", value: stats.Total, style: "border-slate-800 bg-slate-950/45 text-white" },
-              { label: "Phase: Idea", value: stats.Idea, style: "border-violet-500/20 bg-violet-950/20 text-violet-300" },
-              { label: "Pre-Intervention", value: stats['Pre-Intervention'], style: "border-blue-500/20 bg-blue-950/20 text-blue-300" },
-              { label: "Ongoing PDSA", value: stats['Intervention Ongoing'], style: "border-amber-500/20 bg-amber-950/20 text-amber-300" },
-              { label: "Sustained Gains", value: stats['Sustain the Gains'], style: "border-cyan-500/20 bg-cyan-950/20 text-cyan-300" },
-              { label: "Impacted", value: stats['Impacted (Completed)'], style: "border-emerald-500/20 bg-emerald-950/20 text-emerald-300" },
+              { label: "Total Initiatives", value: stats.Total, style: "border-slate-800 bg-slate-950/60 text-white shadow-inner" },
+              { label: "Phase: Idea", value: stats.Idea, style: "border-violet-500/15 bg-violet-950/15 text-violet-300 neon-glow-violet" },
+              { label: "Pre-Intervention", value: stats['Pre-Intervention'], style: "border-blue-500/15 bg-blue-950/15 text-blue-300 neon-glow-sky" },
+              { label: "Ongoing PDSA", value: stats['Intervention Ongoing'], style: "border-amber-500/15 bg-amber-950/15 text-amber-300" },
+              { label: "Sustained Gains", value: stats['Sustain the Gains'], style: "border-cyan-500/15 bg-cyan-950/15 text-cyan-300" },
+              { label: "Completed Impact", value: stats['Impacted (Completed)'], style: "border-emerald-500/15 bg-emerald-950/15 text-emerald-300 neon-glow-emerald" },
             ].map((chip) => (
               <div
                 key={chip.label}
-                className={`flex flex-col justify-between p-3 rounded-xl border shadow-3xs transition-all hover:scale-[1.02] ${chip.style}`}
+                className={`flex flex-col justify-between p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] ${chip.style}`}
               >
-                <span className="text-[8px] font-extrabold uppercase tracking-widest opacity-70 leading-tight">{chip.label}</span>
-                <span className="text-xl sm:text-2.5xl font-black mt-1 leading-none">{chip.value}</span>
+                <span className="text-[8px] font-extrabold uppercase tracking-widest opacity-60 leading-tight block truncate">
+                  {chip.label}
+                </span>
+                <span className="text-2xl sm:text-3.5xl font-black mt-2 leading-none font-sans">
+                  {chip.value}
+                </span>
               </div>
             ))}
           </div>
         </div>
-        {/* Decorative ambient blobs */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-        <div className="absolute bottom-0 left-12 w-48 h-48 bg-emerald-500/5 rounded-full blur-2xl -mb-16 pointer-events-none" />
+        
+        {/* Beautiful ambient visual glow blobs */}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-advent-navy/15 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+        <div className="absolute bottom-0 left-12 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -mb-20 pointer-events-none" />
       </div>
 
-      {/* Main Content Grid with Side Panels */}
+      {/* 🏛️ Main Interactive Content Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column: Premium 3-Tab Dashboard Canvas */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* High-density tab control */}
-          <div className="flex p-1.5 bg-slate-100 rounded-2xl border border-slate-200 shadow-inner">
+        
+        {/* Left Columns: Dynamic Tabbed Canvas */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Custom Luxury Tab Switcher Container */}
+          <div className="flex p-2 bg-slate-100/80 rounded-[2rem] border border-slate-200/80 shadow-[inset_0_2px_4px_rgba(15,23,42,0.03)] backdrop-blur-md">
             {[
               { id: 'initiatives', label: 'Active Initiatives', icon: List },
               { id: 'toolkit', label: 'Scholarly Toolkit', icon: Sparkles },
-              { id: 'analytics', label: 'Surveillance & Analytics', icon: Activity }
+              { id: 'analytics', label: 'Surveillance Hub', icon: Activity }
             ].map((tab) => {
               const TabIcon = tab.icon;
               const isActive = activeMainTab === tab.id;
@@ -240,69 +258,75 @@ export default function Dashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveMainTab(tab.id as 'initiatives' | 'toolkit' | 'analytics')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all cursor-pointer ${
+                  className={`flex-1 flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 cursor-pointer ${
                     isActive
-                      ? "bg-white text-slate-900 border border-slate-200/50 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-advent-navy border border-slate-200/60 shadow-[0_10px_25px_-5px_rgba(15,23,42,0.05)] scale-102"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
                   }`}
                 >
-                  <TabIcon className={`w-3.5 h-3.5 ${isActive ? "text-advent-navy animate-pulse" : "text-slate-400"}`} />
+                  <TabIcon className={`w-4 h-4 transition-transform ${isActive ? "text-advent-navy animate-pulse" : "text-slate-400"}`} />
                   <span>{tab.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Conditional Views depending on activeMainTab */}
-          <div className="animate-in fade-in duration-300">
+          {/* Conditional Views with Smooth Animations */}
+          <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
             {activeMainTab === 'initiatives' && (
               <div className="space-y-6">
                 {role === 'Viewer' ? (
                   <RequestPortal userId={userId} />
                 ) : (
                   <>
-                    <div className="flex justify-between items-center bg-slate-50 px-6 py-4 rounded-2xl border border-slate-200/70 shadow-3xs">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-slate-900 text-white p-2 rounded-lg border border-slate-800 shadow-3xs">
-                          <List className="w-3.5 h-3.5 text-emerald-400" />
+                    {/* Header Panel for Initiatives */}
+                    <div className="flex justify-between items-center bg-white px-8 py-5 rounded-[2rem] border border-slate-200/60 shadow-xs relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy to-advent-green" />
+                      <div className="flex items-center gap-4">
+                        <div className="bg-slate-950 text-white p-3 rounded-2xl border border-slate-800 shadow-md">
+                          <List className="w-4 h-4 text-emerald-400" />
                         </div>
                         <div>
-                          <span className="block text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">Institutional Projects</span>
-                          <h2 className="text-sm font-serif italic font-bold text-slate-900">
-                            Active Quality Initiatives
+                          <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Institutional Initiatives</span>
+                          <h2 className="text-base font-serif italic font-bold text-slate-900">
+                            Active Quality Registry
                           </h2>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-4">
                         <Link
                           href="/projects/kanban"
                           prefetch={false}
-                          className="text-[8px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-advent-navy flex items-center gap-1 transition-all"
+                          className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-advent-navy flex items-center gap-1.5 transition-all"
                         >
-                          Pipeline <LayoutPanelLeft className="w-3 h-3 text-slate-450" />
+                          Pipeline <LayoutPanelLeft className="w-3.5 h-3.5 text-slate-400" />
                         </Link>
-                        <span className="text-slate-300">|</span>
+                        <span className="text-slate-200">/</span>
                         <Link
                           href="/projects"
                           prefetch={false}
-                          className="text-[8px] font-black uppercase tracking-[0.15em] text-advent-navy hover:text-advent-green flex items-center gap-1 transition-all"
+                          className="text-[9px] font-black uppercase tracking-[0.2em] text-advent-navy hover:text-advent-green flex items-center gap-1.5 transition-all"
                         >
-                          View All <List className="w-3 h-3" />
+                          View All <List className="w-3.5 h-3.5" />
                         </Link>
                       </div>
                     </div>
 
+                    {/* Quality Cards Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {recentProjects.length > 0 ? (
                         recentProjects.map(project => (
                           <ProjectCard key={project.id} project={project} />
                         ))
                       ) : (
-                        <div className="col-span-2 py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center">
-                          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-slate-350">
-                            <Filter className="w-6 h-6" />
+                        <div className="col-span-2 py-24 text-center bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center justify-center p-8">
+                          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300 border border-slate-100 shadow-inner">
+                            <Filter className="w-8 h-8 text-slate-400" />
                           </div>
-                          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No active projects found.</p>
+                          <h3 className="text-lg font-serif italic font-bold text-slate-700 mb-2">No Active Initiatives</h3>
+                          <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px] max-w-sm leading-relaxed">
+                            No project registrations have been finalized in this registry. Click the menu options above to register a new initiative.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -312,20 +336,22 @@ export default function Dashboard() {
             )}
 
             {activeMainTab === 'toolkit' && (
-              <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+              <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-xs relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy via-advent-sky to-advent-green" />
                 <AcademicToolkit />
               </div>
             )}
 
             {activeMainTab === 'analytics' && (
-              <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm space-y-6">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                  <div className="bg-slate-900 text-white p-2 rounded-lg border border-slate-800 shadow-3xs">
-                    <Activity className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-xs space-y-8 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-slate-900 via-slate-950 to-advent-cobalt" />
+                <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
+                  <div className="bg-slate-950 text-white p-3 rounded-2xl border border-slate-800 shadow-md">
+                    <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
                   </div>
                   <div>
-                    <span className="block text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">Registry Surveillance</span>
-                    <h2 className="text-sm font-serif italic font-bold text-slate-900">
+                    <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Registry Analytics</span>
+                    <h2 className="text-base font-serif italic font-bold text-slate-900">
                       Surveillance & Quality Metrics
                     </h2>
                   </div>
@@ -336,81 +362,91 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Sticky Sidebar above the fold */}
-        <div className="space-y-6 sticky top-6">
-          {/* 1. Academic Deadlines & Conference Matcher (Strictly Above the Fold) */}
+        {/* Right Columns: Elegant Sticky Sidebar */}
+        <div className="space-y-6 lg:sticky lg:top-24">
+          
+          {/* 1. Academic Deadlines & Conference Matcher Panel */}
           <ConferenceMatcher />
 
-          {/* 2. Quick Discovery & Filter Tools */}
-          <div className="academic-card p-6 sm:p-8 space-y-6 bg-white border border-slate-200 rounded-3xl shadow-xs">
-            <section className="space-y-3">
-              <h3 className="academic-subheading flex items-center gap-2 text-[9px] font-extrabold text-slate-450 uppercase tracking-widest">
-                <Search className="w-3.5 h-3.5 text-slate-400" />
-                Quick Discovery
+          {/* 2. Sleek Discovery & Search Panel */}
+          <div className="academic-card p-8 space-y-8 bg-white border border-slate-200/60 rounded-[2.5rem] shadow-xs">
+            <section className="space-y-4">
+              <h3 className="flex items-center gap-2.5 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
+                <Search className="w-4 h-4 text-advent-navy/60" />
+                Registry Search
               </h3>
-              <div className="relative">
+              <div className="relative group">
                 <input
                   type="text"
                   placeholder="Search GME initiatives..."
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs font-semibold focus:ring-3 focus:ring-advent-navy/5 focus:border-advent-navy outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full pl-11 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold focus:ring-4 focus:ring-advent-navy/5 focus:border-advent-navy outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
                 />
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-350" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-advent-navy transition-colors" />
               </div>
             </section>
 
-            <section className="space-y-3">
-              <h3 className="academic-subheading flex items-center gap-2 text-[9px] font-extrabold text-slate-450 uppercase tracking-widest">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                Status Filter
+            <section className="space-y-4">
+              <h3 className="flex items-center gap-2.5 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
+                <Filter className="w-4 h-4 text-advent-navy/60" />
+                Status Quick Filters
               </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {['Idea', 'Pre-Intervention', 'Intervention Ongoing', 'Sustain the Gains', 'Impacted (Completed)'].map(s => (
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { name: 'Idea', dot: 'bg-violet-400' },
+                  { name: 'Pre-Intervention', dot: 'bg-blue-400' },
+                  { name: 'Intervention Ongoing', dot: 'bg-amber-400' },
+                  { name: 'Sustain the Gains', dot: 'bg-cyan-400' },
+                  { name: 'Impacted (Completed)', dot: 'bg-emerald-400' }
+                ].map(s => (
                   <Link
-                    key={s}
-                    href={`/projects?status=${s}`}
+                    key={s.name}
+                    href={`/projects?status=${s.name}`}
                     prefetch={false}
-                    className="px-2.5 py-1 bg-slate-50 hover:bg-white border border-slate-200/60 hover:border-advent-navy hover:text-advent-navy rounded-lg text-[8px] font-black uppercase tracking-[0.12em] text-slate-500 transition-all duration-300 shadow-3xs"
+                    className="px-3.5 py-2 bg-slate-50 hover:bg-white border border-slate-250/60 hover:border-advent-navy rounded-xl text-[8px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-advent-navy transition-all duration-300 shadow-3xs flex items-center gap-1.5"
                   >
-                    {s}
+                    <span className={`w-1.5 h-1.5 rounded-full ${s.dot} inline-block`} />
+                    {s.name}
                   </Link>
                 ))}
               </div>
             </section>
 
-            <section className="space-y-3">
-              <h3 className="academic-subheading flex items-center gap-2 text-[9px] font-extrabold text-slate-450 uppercase tracking-widest">
-                <Activity className="w-3.5 h-3.5 text-slate-400" />
-                Live Pulse
+            <section className="space-y-4">
+              <h3 className="flex items-center gap-2.5 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
+                <Activity className="w-4 h-4 text-advent-navy/60 animate-pulse" />
+                Real-Time Updates
               </h3>
               <ActivityFeed />
             </section>
           </div>
 
-          {/* 3. Quick Analytics Card - Scholarly Data Ledgers */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-950 to-advent-cobalt p-6 rounded-3xl shadow-xl border border-slate-800 text-white group cursor-pointer hover:shadow-slate-900/40 transition-all duration-500">
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">
-                Quantitative Ledger
+          {/* 3. Luxury Call-to-Action Analytics Suite Drawer */}
+          <div className="relative overflow-hidden premium-gradient-card p-8 rounded-[2.5rem] border border-slate-800/80 text-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
+            <div className="relative z-10 flex flex-col justify-between h-full space-y-6">
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">
+                  Institutional Ledgers
+                </div>
+                <h3 className="font-serif italic font-bold text-2xl mb-2 text-white">
+                  Advanced Analytics
+                </h3>
+                <p className="text-[11px] text-slate-350 leading-relaxed font-medium">
+                  Export aggregate clinical studies, monitor PDSA compliance, and download professional quality boards.
+                </p>
               </div>
-              <h3 className="font-serif italic font-bold text-xl mb-2 text-white">
-                Analytics Suite
-              </h3>
-              <p className="text-[11px] text-slate-300 mb-5 font-medium leading-relaxed">
-                Export comprehensive clinical data sets, measure PDSA cycle progression, and track residency QI compliance.
-              </p>
-              <div className="mt-auto">
+              <div className="pt-2">
                 <Link
                   href="/metrics"
                   prefetch={false}
-                  className="bg-white text-slate-900 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all hover:bg-emerald-400 hover:text-slate-950 flex items-center justify-center gap-2 group-hover:scale-102 duration-300 shadow-sm"
+                  className="bg-white text-slate-900 px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:bg-emerald-400 hover:text-slate-950 flex items-center justify-center gap-2.5 group-hover:scale-102 duration-300 shadow-sm"
                 >
-                  Enter Analytics <ArrowRight className="w-3.5 h-3.5" />
+                  Enter Registry Metrics <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
-            {/* Background elements */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none" />
+            {/* Visual background details */}
+            <div className="absolute top-0 right-0 w-56 h-56 bg-sky-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
           </div>
         </div>
       </div>
