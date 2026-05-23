@@ -3,11 +3,13 @@
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ShieldAlert, Mail, Lock, User, Info, Loader2, ArrowRight } from "lucide-react";
+import { ShieldAlert, Mail, User, Info, Loader2, ArrowRight, KeyRound } from "lucide-react";
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
     const [fullName, setFullName] = useState('')
+    const [otpCode, setOtpCode] = useState('')
+    const [showOtpInput, setShowOtpInput] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [isSignup, setIsSignup] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -19,43 +21,8 @@ export default function LoginPage() {
         return emailAddr.trim().toLowerCase().endsWith('@adventhealth.com')
     }
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setIsLoading(true)
-        setError(null)
-        setSuccess(null)
-
-        try {
-            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
-
-            if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-                throw new Error("Supabase configuration is missing. Please check your environment variables.")
-            }
-
-            const { error: loginError } = await supabase.auth.signInWithPassword({
-                email: email.trim().toLowerCase(),
-                password: institutionalPass,
-            })
-
-            if (loginError) {
-                setError(loginError.message === "Invalid login credentials"
-                    ? "User not found or not registered. Did you register first?"
-                    : loginError.message)
-                setIsLoading(false)
-            } else {
-                router.push('/')
-                setTimeout(() => {
-                    window.location.href = '/QI_Tracker/'
-                }, 500)
-            }
-        } catch (err: any) {
-            console.error("Login catch block:", err)
-            setError(err.message || "An unexpected error occurred during login.")
-            setIsLoading(false)
-        }
-    }
-
-    const handleSignup = async (e: React.FormEvent) => {
+    // STEP 1: Trigger the 6-Digit OTP Email
+    const handleSendCode = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
         setError(null)
@@ -63,53 +30,88 @@ export default function LoginPage() {
 
         try {
             if (!validateDomain(email)) {
-                setError("Registration is restricted to @adventhealth.com email addresses.")
+                setError("Access is restricted to @adventhealth.com email addresses.")
                 setIsLoading(false)
                 return
             }
 
-            if (!fullName.trim()) {
-                setError("Please enter your full name.")
+            if (isSignup && !fullName.trim()) {
+                setError("Please enter your full academic name.")
                 setIsLoading(false)
                 return
             }
-
-            const institutionalPass = process.env.NEXT_PUBLIC_INSTITUTIONAL_SECRET || "AdventHealth_Secure_Access_2026!"
 
             if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-                throw new Error("Supabase configuration is missing.")
+                throw new Error("Supabase configuration is missing. Please check your environment variables.")
             }
 
-            const { error: signUpError } = await supabase.auth.signUp({
+            // Call Supabase native OTP endpoint
+            const { error: otpError } = await supabase.auth.signInWithOtp({
                 email: email.trim().toLowerCase(),
-                password: institutionalPass,
                 options: {
-                    data: {
-                        full_name: fullName.trim(),
-                    }
+                    // Create account automatically on sign up, block creation on direct login
+                    shouldCreateUser: isSignup, 
+                    data: isSignup ? {
+                        full_name: fullName.trim()
+                    } : undefined
                 }
             })
 
-            if (signUpError) {
-                setError(signUpError.message)
+            if (otpError) {
+                // Friendly error if they try logging in but have not registered yet
+                if (otpError.message.includes("Signups are disabled") || otpError.message.includes("not authorized")) {
+                    setError("Account not registered. Please click 'Register' below to create your academic profile first.")
+                } else {
+                    setError(otpError.message)
+                }
                 setIsLoading(false)
             } else {
-                const { error: loginError } = await supabase.auth.signInWithPassword({
-                    email: email.trim().toLowerCase(),
-                    password: institutionalPass,
-                })
-
-                if (loginError) {
-                    setSuccess("Account created! Please try to Access Portal now.")
-                    setIsSignup(false)
-                    setIsLoading(false)
-                } else {
-                    window.location.href = '/QI_Tracker/'
-                }
+                setSuccess(`Secure One-Time Passcode sent! Check your adventhealth.com inbox.`)
+                setShowOtpInput(true)
+                setIsLoading(false)
             }
         } catch (err: any) {
-            console.error("Signup catch block:", err)
-            setError(err.message || "An unexpected error occurred during registration.")
+            console.error("OTP send catch block:", err)
+            setError(err.message || "An unexpected error occurred.")
+            setIsLoading(false)
+        }
+    }
+
+    // STEP 2: Verify the 6-Digit Code
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+        setError(null)
+        setSuccess(null)
+
+        try {
+            if (!otpCode.trim() || otpCode.trim().length !== 6) {
+                setError("Please enter the complete 6-digit verification code.")
+                setIsLoading(false)
+                return
+            }
+
+            const { data, error: verifyError } = await supabase.auth.verifyOtp({
+                email: email.trim().toLowerCase(),
+                token: otpCode.trim(),
+                type: 'email'
+            })
+
+            if (verifyError) {
+                setError(verifyError.message === "Token has expired or is invalid" 
+                    ? "Invalid or expired passcode. Please verify the code or request a new one." 
+                    : verifyError.message)
+                setIsLoading(false)
+            } else {
+                setSuccess("Access Granted! Loading your dashboard...")
+                router.push('/')
+                setTimeout(() => {
+                    window.location.href = '/QI_Tracker/'
+                }, 500)
+            }
+        } catch (err: any) {
+            console.error("OTP verify catch block:", err)
+            setError(err.message || "An unexpected error occurred during verification.")
             setIsLoading(false)
         }
     }
@@ -152,7 +154,7 @@ export default function LoginPage() {
                     <div className="mb-10 flex justify-between items-center">
                         <div>
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
-                                {isSignup ? "Create Institutional ID" : "Physician Portal"}
+                                {showOtpInput ? "Enter Passcode" : isSignup ? "Create Profile" : "Physician Portal"}
                             </h2>
                             <p className="text-slate-400 text-xs font-bold mt-2">Secure Academic Environment</p>
                         </div>
@@ -162,46 +164,74 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={isSignup ? handleSignup : handleLogin} className="flex flex-col gap-8">
-                        {isSignup && (
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
-                                    Full Academic Name
-                                </label>
-                                <div className="relative group">
-                                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors" />
-                                    <input
-                                        className="w-full rounded-2xl pl-12 pr-6 py-4.5 bg-slate-50 border border-slate-200 focus:border-advent-navy focus:ring-4 focus:ring-advent-navy/5 outline-none transition-all placeholder:text-slate-300 font-bold"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        placeholder="e.g. Bakr Alhayek, MD"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
-                                Institutional Email
-                            </label>
-                            <div className="relative group">
-                                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors" />
-                                <input
-                                    className="w-full rounded-2xl pl-12 pr-6 py-4.5 bg-slate-50 border border-slate-200 focus:border-advent-navy focus:ring-4 focus:ring-advent-navy/5 outline-none transition-all placeholder:text-slate-300 font-bold"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="name@adventhealth.com"
-                                    required
-                                />
-                                {email && !validateDomain(email) && isSignup && (
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-red-500 uppercase">
-                                        Invalid Domain
+                    <form onSubmit={showOtpInput ? handleVerifyOtp : handleSendCode} className="flex flex-col gap-8">
+                        {!showOtpInput ? (
+                            <>
+                                {isSignup && (
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
+                                            Full Academic Name
+                                        </label>
+                                        <div className="relative group">
+                                            <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors" />
+                                            <input
+                                                className="w-full rounded-2xl pl-12 pr-6 py-4.5 bg-slate-50 border border-slate-200 focus:border-advent-navy focus:ring-4 focus:ring-advent-navy/5 outline-none transition-all placeholder:text-slate-300 font-bold"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                placeholder="e.g. Bakr Alhayek, MD"
+                                                required
+                                            />
+                                        </div>
                                     </div>
                                 )}
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
+                                        Institutional Email
+                                    </label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors" />
+                                        <input
+                                            className="w-full rounded-2xl pl-12 pr-6 py-4.5 bg-slate-50 border border-slate-200 focus:border-advent-navy focus:ring-4 focus:ring-advent-navy/5 outline-none transition-all placeholder:text-slate-300 font-bold"
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="name@adventhealth.com"
+                                            required
+                                        />
+                                        {email && !validateDomain(email) && isSignup && (
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-red-500 uppercase">
+                                                Invalid Domain
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block ml-1">
+                                        6-Digit Verification Code
+                                    </label>
+                                    <div className="relative group">
+                                        <KeyRound className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-advent-navy transition-colors animate-pulse" />
+                                        <input
+                                            className="w-full rounded-2xl pl-12 pr-6 py-4.5 bg-slate-50 border border-slate-200 focus:border-advent-navy focus:ring-4 focus:ring-advent-navy/5 outline-none transition-all placeholder:text-slate-300 font-black text-lg text-center tracking-[0.4em]"
+                                            type="text"
+                                            maxLength={6}
+                                            value={otpCode}
+                                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                            placeholder="000000"
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-500 font-medium leading-relaxed px-1">
+                                    We emailed a secure passcode to <strong className="text-advent-navy">{email.toLowerCase()}</strong>. Code expires in 15 minutes. Be sure to check your spam or junk folder.
+                                </p>
                             </div>
-                        </div>
+                        )}
 
                         <div className="flex flex-col gap-5 mt-4">
                             <button
@@ -212,27 +242,42 @@ export default function LoginPage() {
                                 {isLoading ? (
                                     <>
                                         <div className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-                                        <span>Allocating...</span>
+                                        <span>Verifying...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>{isSignup ? "Create Profile" : "Access Portal"}</span>
+                                        <span>{showOtpInput ? "Verify & Access" : isSignup ? "Register & Send Code" : "Send Login Code"}</span>
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsSignup(!isSignup)
-                                    setError(null)
-                                    setSuccess(null)
-                                }}
-                                className="text-slate-400 py-2 text-xs font-black uppercase tracking-[0.2em] hover:text-advent-navy transition-colors"
-                            >
-                                {isSignup ? "Existing Member? Sign In" : "New Faculty or Resident? Register"}
-                            </button>
+                            {showOtpInput ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowOtpInput(false)
+                                        setOtpCode('')
+                                        setError(null)
+                                        setSuccess(null)
+                                    }}
+                                    className="text-slate-400 py-2 text-xs font-black uppercase tracking-[0.2em] hover:text-slate-600 transition-colors"
+                                >
+                                    Change Email Address
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSignup(!isSignup)
+                                        setError(null)
+                                        setSuccess(null)
+                                    }}
+                                    className="text-slate-400 py-2 text-xs font-black uppercase tracking-[0.2em] hover:text-advent-navy transition-colors"
+                                >
+                                    {isSignup ? "Existing Member? Sign In" : "New Faculty or Resident? Register"}
+                                </button>
+                            )}
                         </div>
 
                         {error && (
@@ -252,7 +297,7 @@ export default function LoginPage() {
                         <div className="flex items-start gap-4 text-slate-400 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                             <Info className="w-5 h-5 mt-0.5 flex-shrink-0 text-advent-sky" />
                             <p className="text-[10px] leading-relaxed font-bold">
-                                Access is restricted to institutional personnel. This system is monitored for security compliance. Faculty elevation is automated.
+                                Access is restricted to institutional personnel. One-Time Passcodes inherit corporate-grade inbox MFA policies with zero database passwords saved.
                             </p>
                         </div>
                     </div>
