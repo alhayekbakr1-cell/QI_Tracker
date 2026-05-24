@@ -39,6 +39,26 @@ export async function analyzePDSA(projectData: any, metrics: any[]) {
     ${JSON.stringify(metrics, null, 2)}
     
     Provide your analysis with an academic tone.
+    
+    CRITICAL: After your paragraph analysis, you MUST suggest 2 highly specific, actionable next-step tasks for their next PDSA cycle.
+    Format your entire response EXACTLY as follows (do not include markdown block quotes or extra text outside these tags):
+    
+    [ANALYSIS]
+    Your concise 3-4 sentence academic analysis paragraph here.
+    [/ANALYSIS]
+    
+    [RECOMMENDATION_CARDS]
+    [
+      {
+        "title": "Short, actionable title of suggested task 1",
+        "description": "Specific description of task 1 and why it is recommended."
+      },
+      {
+        "title": "Short, actionable title of suggested task 2",
+        "description": "Specific description of task 2 and why it is recommended."
+      }
+    ]
+    [/RECOMMENDATION_CARDS]
   `;
 
   return askAI(prompt);

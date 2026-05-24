@@ -5,6 +5,7 @@ import { CheckCircle2, Circle, ShieldCheck, Lock } from 'lucide-react';
 import { Project, UserRole } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import { getProfileDetails, sendEmailNotification } from '@/utils/notifications';
+import { createNotification } from '@/utils/createNotification';
 
 interface FacultySignOffProps {
     project: Project;
@@ -39,6 +40,7 @@ export default function FacultySignOff({ project, userRole, onUpdate }: FacultyS
 
                     if (recipientIds.length > 0) {
                         const recipients = await getProfileDetails(recipientIds);
+                        // Trigger email notifications
                         for (const recipient of recipients) {
                             await sendEmailNotification({
                                 to_email: recipient.email,
@@ -47,6 +49,17 @@ export default function FacultySignOff({ project, userRole, onUpdate }: FacultyS
                                 message: `Your project milestone "${milestoneName}" has been officially reviewed and approved by faculty.`,
                                 project_title: project.title,
                                 action_url: `${window.location.origin}/projects/view?id=${project.id}`
+                            });
+                        }
+
+                        // Trigger in-app notifications
+                        for (const rId of recipientIds) {
+                            await createNotification({
+                                user_id: rId,
+                                type: 'faculty_approval',
+                                title: `Milestone Approved: ${milestoneName}`,
+                                message: `Your project milestone "${milestoneName}" has been officially reviewed and approved.`,
+                                project_id: project.id
                             });
                         }
                     }

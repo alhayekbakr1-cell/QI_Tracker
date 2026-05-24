@@ -4,6 +4,8 @@ import { useState, useRef } from 'react';
 import { Copy, X, Mail, Check, AlertTriangle } from 'lucide-react';
 import { Project } from "@/types";
 
+import { createNotification } from '@/utils/createNotification';
+
 interface NudgeModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -38,7 +40,22 @@ export default function NudgeModal({ isOpen, onClose, project, recipientEmail, e
         }
     };
 
-    const handleLaunchOutlook = () => {
+    const handleLaunchOutlook = async () => {
+        // Trigger in-app notifications for project lead proponents
+        const recipientIds = project.lead_proponent_ids || [];
+        for (const rId of recipientIds) {
+            try {
+                await createNotification({
+                    user_id: rId,
+                    type: 'nudge',
+                    title: `Update Requested: ${project.title}`,
+                    message: `Chief is checking in on this project. Please take a moment to update the registry progress.`,
+                    project_id: project.id
+                });
+            } catch (err) {
+                console.error("Nudge notification error:", err);
+            }
+        }
         window.location.href = `mailto:${recipientEmail}?subject=${emailSubject}&body=${emailBody}`;
     };
 

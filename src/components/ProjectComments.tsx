@@ -6,6 +6,7 @@ import { Comment, Profile, Project } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { getProfileDetails, sendEmailNotification } from '@/utils/notifications';
+import { createNotification } from '@/utils/createNotification';
 
 interface ProjectCommentsProps {
     projectId: string;
@@ -81,6 +82,7 @@ export default function ProjectComments({ projectId, currentUserProfile }: Proje
                     if (recipientIds.length > 0) {
                         const recipients = await getProfileDetails(recipientIds);
 
+                        // Trigger Email Notification
                         for (const recipient of recipients) {
                             await sendEmailNotification({
                                 to_email: recipient.email,
@@ -89,6 +91,17 @@ export default function ProjectComments({ projectId, currentUserProfile }: Proje
                                 message: `"${newComment.trim()}" — ${currentUserProfile.full_name || 'A Mentor'}`,
                                 project_title: typedProject.title,
                                 action_url: `${window.location.origin}/projects/view?id=${projectId}`
+                            });
+                        }
+
+                        // Trigger In-App Notification
+                        for (const rId of recipientIds) {
+                            await createNotification({
+                                user_id: rId,
+                                type: 'comment',
+                                title: `New comment on ${typedProject.title}`,
+                                message: `"${newComment.trim()}" — ${currentUserProfile.full_name || 'A user'}`,
+                                project_id: projectId
                             });
                         }
                     }
