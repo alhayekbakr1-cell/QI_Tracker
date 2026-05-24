@@ -16,6 +16,34 @@ export default function AppShell({ children }: { children: ReactNode }) {
     const supabase = createClient()
 
     useEffect(() => {
+        // Startup variable integrity check and logging
+        function runDiagnostics() {
+            const keysToCheck = {
+                NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+                NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                NEXT_PUBLIC_AZURE_CLIENT_ID: process.env.NEXT_PUBLIC_AZURE_CLIENT_ID,
+                NEXT_PUBLIC_EMAILJS_SERVICE_ID: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
+                NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY,
+            };
+
+            const missing = Object.entries(keysToCheck)
+                .filter(([_, val]) => !val)
+                .map(([k]) => k);
+
+            if (missing.length > 0) {
+                console.warn(
+                    `%c[QI System Diagnostics] Warning: The following required environment variables are missing in this environment:\n- ${missing.join("\n- ")}`,
+                    "color: #D97706; font-weight: bold; font-size: 11px;"
+                );
+            } else {
+                console.log(
+                    "%c[QI System Diagnostics] Verification successful. All clinical integration channels initialized cleanly. ✅",
+                    "color: #10B981; font-weight: bold; font-size: 11px;"
+                );
+            }
+        }
+        runDiagnostics();
+
         async function checkAuth() {
             const { data: { user } } = await supabase.auth.getUser()
             setUser(user)

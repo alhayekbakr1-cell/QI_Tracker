@@ -3,6 +3,7 @@ import { Inter, Lora } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import MsalWrapper from "@/components/MsalWrapper";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -41,9 +42,11 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${lora.variable}`}>
       <body className="bg-slate-50 min-h-screen flex flex-col font-sans antialiased text-slate-900">
         <MsalWrapper>
-          <AppShell>
-            {children}
-          </AppShell>
+          <ErrorBoundary>
+            <AppShell>
+              {children}
+            </AppShell>
+          </ErrorBoundary>
         </MsalWrapper>
         <footer className="py-6 border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 text-center">
