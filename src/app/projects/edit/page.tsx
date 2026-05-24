@@ -9,7 +9,7 @@ import Link from "next/link";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
 import FileUploader from "@/components/FileUploader";
 import Section from "@/components/Section";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, Suspense } from "react";
 import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
 import { draftSummary, auditProjectQuality, suggestMetrics, generateSMARTAim } from "@/utils/ai";
 import { toast, CustomConfirmDialog, Skeleton } from "@/components/ui/custom-ui";
@@ -198,7 +198,7 @@ function MetricSuggester({ title }: { title: string }) {
     );
 }
 
-export default function EditProjectPage() {
+function EditProjectContent() {
     const searchParams = useSearchParams();
     const id = searchParams.get("id");
 
@@ -879,4 +879,23 @@ export default function EditProjectPage() {
             />
         </div>
     )
+}
+
+export default function EditProjectPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-pulse">
+                <div className="flex justify-between items-center">
+                    <div className="space-y-2">
+                        <div className="h-8 w-48 bg-slate-250 rounded-xl" />
+                        <div className="h-4 w-72 bg-slate-200 rounded-lg" />
+                    </div>
+                </div>
+                <div className="h-40 bg-slate-100 rounded-3xl" />
+                <div className="h-80 bg-slate-100 rounded-[2.5rem]" />
+            </div>
+        }>
+            <EditProjectContent />
+        </Suspense>
+    );
 }
