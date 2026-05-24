@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import PHIWarning from "@/components/PHIWarning";
 import ProjectCard from "@/components/ProjectCard";
 import { Project, ProjectStatus } from "@/types";
-import { Plus, Search, Filter, ArrowRight, List, LayoutPanelLeft, Activity, ChevronDown, ChevronRight, AlertTriangle, Sparkles } from "lucide-react";
+import { Plus, Search, Filter, ArrowRight, List, LayoutPanelLeft, Activity, ChevronDown, ChevronRight, AlertTriangle, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import DashboardCharts from "@/components/DashboardCharts";
@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCharts, setShowCharts] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState<'initiatives' | 'toolkit' | 'analytics'>('initiatives');
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'search' | 'matcher' | 'updates'>('search');
   const router = useRouter();
   const supabase = createClient();
 
@@ -365,59 +366,125 @@ export default function Dashboard() {
         {/* Right Columns: Elegant Sticky Sidebar */}
         <div className="space-y-6 lg:sticky lg:top-24">
           
-          {/* 1. Academic Deadlines & Conference Matcher Panel */}
-          <ConferenceMatcher />
-
-          {/* 2. Sleek Discovery & Search Panel */}
-          <div className="academic-card p-8 space-y-8 bg-white border border-slate-200/60 rounded-[2.5rem] shadow-xs">
-            <section className="space-y-4">
-              <h3 className="flex items-center gap-2.5 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
-                <Search className="w-4 h-4 text-advent-navy/60" />
-                Registry Search
-              </h3>
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Search GME initiatives..."
-                  className="w-full pl-11 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold focus:ring-4 focus:ring-advent-navy/5 focus:border-advent-navy outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
-                />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-advent-navy transition-colors" />
+          {/* GME Registry Control Console */}
+          <div className="academic-card bg-white border border-slate-200/60 rounded-[2.5rem] p-7 shadow-xs space-y-6 relative overflow-hidden">
+            {/* Top highlight bar */}
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy via-amber-500 to-advent-green" />
+            
+            {/* Command Console Title */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Command Center</span>
+                <h3 className="text-sm font-serif italic font-bold text-slate-900">Academic Console</h3>
               </div>
-            </section>
+              <span className="text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200/60 shadow-3xs">
+                Active Surveillance
+              </span>
+            </div>
 
-            <section className="space-y-4">
-              <h3 className="flex items-center gap-2.5 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
-                <Filter className="w-4 h-4 text-advent-navy/60" />
-                Status Quick Filters
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { name: 'Idea', dot: 'bg-violet-400' },
-                  { name: 'Pre-Intervention', dot: 'bg-blue-400' },
-                  { name: 'Intervention Ongoing', dot: 'bg-amber-400' },
-                  { name: 'Sustain the Gains', dot: 'bg-cyan-400' },
-                  { name: 'Impacted (Completed)', dot: 'bg-emerald-400' }
-                ].map(s => (
-                  <Link
-                    key={s.name}
-                    href={`/projects?status=${s.name}`}
-                    prefetch={false}
-                    className="px-3.5 py-2 bg-slate-50 hover:bg-white border border-slate-250/60 hover:border-advent-navy rounded-xl text-[8px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-advent-navy transition-all duration-300 shadow-3xs flex items-center gap-1.5"
+            {/* Premium Mini-Segmented Tab Controller */}
+            <div className="flex p-1 bg-slate-50 border border-slate-200/70 rounded-2xl relative shadow-[inset_0_1px_2px_rgba(15,23,42,0.02)]">
+              {[
+                { id: 'search', label: 'Search', icon: Search, color: 'text-advent-navy' },
+                { id: 'matcher', label: 'Matcher', icon: Trophy, color: 'text-amber-500' },
+                { id: 'updates', label: 'Updates', icon: Activity, color: 'text-emerald-500' }
+              ].map((tab) => {
+                const TabIcon = tab.icon;
+                const isActive = activeSidebarTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveSidebarTab(tab.id as 'search' | 'matcher' | 'updates')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                      isActive
+                        ? "bg-white text-slate-900 border border-slate-200/65 shadow-2xs scale-102"
+                        : "text-slate-500 hover:text-slate-950 hover:bg-white/40"
+                    }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${s.dot} inline-block`} />
-                    {s.name}
-                  </Link>
-                ))}
-              </div>
-            </section>
+                    <TabIcon className={`w-3.5 h-3.5 ${isActive ? tab.color : 'text-slate-400'}`} />
+                    <span className="hidden sm:inline lg:hidden xl:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-            <section className="space-y-4">
-              <h3 className="flex items-center gap-2.5 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
-                <Activity className="w-4 h-4 text-advent-navy/60 animate-pulse" />
-                Real-Time Updates
-              </h3>
-              <ActivityFeed />
-            </section>
+            {/* Dynamic Console Views */}
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 min-h-[250px] flex flex-col justify-between">
+              {activeSidebarTab === 'search' && (
+                <div className="space-y-6">
+                  {/* Registry Search */}
+                  <section className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
+                        <Search className="w-3.5 h-3.5 text-advent-navy/60" />
+                        Registry Search
+                      </h4>
+                    </div>
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        placeholder="Search GME initiatives..."
+                        className="w-full pl-10 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-4 focus:ring-advent-navy/5 focus:border-advent-navy outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
+                      />
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-advent-navy transition-colors" />
+                    </div>
+                  </section>
+
+                  {/* Status Quick Filters */}
+                  <section className="space-y-3">
+                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
+                      <Filter className="w-3.5 h-3.5 text-advent-navy/60" />
+                      Status Quick Filters
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { name: 'Idea', dot: 'bg-violet-400' },
+                        { name: 'Pre-Intervention', dot: 'bg-blue-400' },
+                        { name: 'Intervention Ongoing', dot: 'bg-amber-400' },
+                        { name: 'Sustain the Gains', dot: 'bg-cyan-400' },
+                        { name: 'Impacted (Completed)', dot: 'bg-emerald-400' }
+                      ].map(s => (
+                        <Link
+                          key={s.name}
+                          href={`/projects?status=${s.name}`}
+                          prefetch={false}
+                          className="px-3 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 hover:border-advent-navy rounded-lg text-[8px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-advent-navy transition-all duration-300 shadow-3xs flex items-center gap-1.5"
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${s.dot} inline-block`} />
+                          {s.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {activeSidebarTab === 'matcher' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
+                      <Trophy className="w-3.5 h-3.5 text-amber-500/80" />
+                      Academic Matching
+                    </h4>
+                  </div>
+                  <ConferenceMatcher isTabbed={true} />
+                </div>
+              )}
+
+              {activeSidebarTab === 'updates' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-50 pb-2">
+                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
+                      <Activity className="w-3.5 h-3.5 text-emerald-500/80 animate-pulse" />
+                      Real-Time Updates
+                    </h4>
+                  </div>
+                  <div className="max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
+                    <ActivityFeed />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 3. Luxury Call-to-Action Analytics Suite Drawer */}

@@ -5,7 +5,11 @@ import { Calendar, Clock, Trophy, ExternalLink, ChevronRight, Loader2 } from 'lu
 import { DEFAULT_CONFERENCES, fetchRegistry, Conference, getNextDeadline } from '@/constants/conferences';
 import { format, differenceInDays } from 'date-fns';
 
-export default function ConferenceMatcher() {
+interface ConferenceMatcherProps {
+    isTabbed?: boolean;
+}
+
+export default function ConferenceMatcher({ isTabbed = false }: ConferenceMatcherProps) {
     const [registry, setRegistry] = useState<Conference[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -25,7 +29,7 @@ export default function ConferenceMatcher() {
 
     if (isLoading) {
         return (
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex items-center justify-center min-h-[200px]">
+            <div className={`flex items-center justify-center min-h-[200px] ${isTabbed ? '' : 'bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm'}`}>
                 <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
             </div>
         );
@@ -33,17 +37,19 @@ export default function ConferenceMatcher() {
 
     const conferences = registry.length > 0 ? registry : DEFAULT_CONFERENCES;
 
-    return (
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-                <div className="p-3 bg-amber-500 text-white rounded-2xl">
-                    <Trophy className="w-5 h-5" />
+    const content = (
+        <div className="space-y-6">
+            {!isTabbed && (
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-amber-500 text-white rounded-2xl">
+                        <Trophy className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-advent-navy tracking-tight">Conference Matcher</h3>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Upcoming Academic Deadlines</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 className="text-xl font-black text-advent-navy tracking-tight">Conference Matcher</h3>
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Upcoming Academic Deadlines</p>
-                </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 gap-4">
                 {conferences.map((conf, idx) => {
@@ -88,6 +94,16 @@ export default function ConferenceMatcher() {
                     Submit your abstract through the ORA Portal.
                 </p>
             </div>
+        </div>
+    );
+
+    if (isTabbed) {
+        return content;
+    }
+
+    return (
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
+            {content}
         </div>
     );
 }
