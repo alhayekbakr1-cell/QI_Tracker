@@ -476,7 +476,7 @@ function EditProjectContent() {
                     <PHIWarning />
                 </div>
                 <div className="lg:col-span-1">
-                    <AIAuditCard project={{ ...project, title, primary_outcome }} />
+                    <AIAuditCard project={{ ...project, title, primary_outcome: primaryOutcome }} />
                 </div>
             </div>
 
