@@ -9,7 +9,7 @@ import { AlertCircle } from "lucide-react";
 export default function QIConsultantChat() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([
-        { role: 'ai', content: "Hello! I am your QI Academic Consultant. How can I help you with your project methodology today?" }
+        { role: 'ai', content: "Welcome, colleague. I am Dr. QI, your senior academic research and Quality Improvement mentor. Share your current project title, PICO parameters, or any methodology challenges you are facing. I will review them against SQUIRE 2.0 and IRB guidelines, suggest systems-level improvements, and ask clarifying questions to refine your scholarly design to publication standards." }
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);

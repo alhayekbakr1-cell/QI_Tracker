@@ -2,13 +2,69 @@ import { createClient } from "./supabase/client";
 
 const supabase = createClient();
 
-export async function askAI(prompt: string) {
+export async function askAI(prompt: string, options?: { mode?: 'json' | 'text' }) {
+  const isJsonRequest = options?.mode === 'json' || 
+    /output\s+ONLY\s+a\s+valid,?\s+raw\s+JSON/i.test(prompt) || 
+    /output\s+ONLY\s+the\s+JSON/i.test(prompt) ||
+    /schema:/i.test(prompt);
+
+  const requestMode = isJsonRequest ? 'json' : 'text';
+
+  // If it's a standard text/dialogue prompt, wrap it with our elite senior academic consultant instructions.
+  let finalPrompt = prompt;
+  if (!isJsonRequest) {
+    finalPrompt = `[ACADEMIC DIRECTIVE: You are Dr. QI, the Senior Academic Expert in Clinical Research and GME Quality Improvement.
+    
+    1. ZERO PREAMBLE: Start your answer immediately. Do not say "Okay", "Sure", "Let's begin", "Here is a plan", "Great question", or any conversational throat-clearing.
+    2. SHARP ACADEMIC TONE: Speak directly to the resident as a high-level research peer. Use authoritative clinical terminology (SQUIRE 2.0, IHI, PICO).
+    3. ACTIVE METHODOLOGY PROBING: If the resident's input or question is vague or lacks specific metrics (e.g., baseline rates, target change %, timeline, safety/balancing measures), you MUST constructively point out these deficiencies and ask 2-3 specific, direct questions to clarify and perfect their project.
+    4. SUGGEST CONCRETE SYSTEMS-LEVEL PATHWAYS: Recommend specific electronic medical record (EMR/EHR) triggers, interdisciplinary audits, or robust statistical tools (McNemar's, Paired t-test, Segmented ITS Regression) to optimize their implementation strategy.
+    ]
+    
+    User Query: ${prompt}`;
+  }
+
   const { data, error } = await supabase.functions.invoke('qi-consultant', {
-    body: { prompt }
+    body: { 
+      prompt: finalPrompt,
+      mode: requestMode
+    }
   });
 
   if (error) throw error;
-  return data.text;
+  
+  let responseText = data.text || "";
+
+  // Client-side Bulletproof post-processing: strip all conversational preambles/throat-clearing
+  if (!isJsonRequest) {
+    const preamblesToStrip = [
+      /^(okay|ok|alright|sure|great|absolutely|of course|certainly),?\s+(let's|we can|tackle|start|look at|begin|outline|plan)\b[^\n]*/i,
+      /^here is a (plan|summary|breakdown|guide):?\s*/i,
+      /^great question\.?\s*/i,
+      /^certainly,?\s*/i,
+      /^sure,?\s*/i,
+      /^as an ai,?\s*/i,
+      /^as your qi consultant,?\s*/i
+    ];
+    
+    let cleaned = true;
+    while (cleaned) {
+      cleaned = false;
+      for (const regex of preamblesToStrip) {
+        if (regex.test(responseText)) {
+          responseText = responseText.replace(regex, "").trim();
+          cleaned = true;
+        }
+      }
+    }
+    
+    // Capitalize the first letter of the cleaned output if needed
+    if (responseText.length > 0) {
+      responseText = responseText.charAt(0).toUpperCase() + responseText.slice(1);
+    }
+  }
+
+  return responseText;
 }
 
 export async function draftSummary(points: string) {
@@ -92,17 +148,44 @@ export async function suggestMetrics(projectTitle: string) {
 }
 
 export async function getQIAdvice(question: string, context?: string, handbookContent?: string) {
+  const defaultHandbook = `
+  ADVENTHEALTH GME QI & SCHOLARLY ACTIVITY ACADEMIC GUIDELINES:
+  
+  1. GRADUATION & MILESTONE REQUIREMENTS:
+     - Residents must fulfill three distinct scholarly milestones to satisfy GME Board requirements and be cleared as "Board Ready":
+       a. QI Protocol Approved: Complete a formal project protocol mapped with PICOT criteria.
+       b. 2+ PDSA Cycles Completed: Iterative testing of process changes (a single cycle is insufficient for rigorous quality tracking).
+       c. Institutional Presentation: Present findings at a regional/national conference or our annual Institutional GME Research Day.
+     
+  2. METRICS & DATA TRACKING DEFINITIONS:
+     - Process Metrics: Measure compliance with the new standard workflow checklist (e.g., "% of eligible patients with EMR best practice advisory triggered"). Target: Process compliance must be audited frequently.
+     - Outcome Metrics: Direct clinical impact or patient benefit (e.g., "absolute reduction in telemetry hours per patient", "decrease in safety-event rate").
+     - Balancing Metrics: Safety checks tracking unintended consequences, workload shifts, or systems-level impacts (e.g., "nurse cognitive load score", "median emergency room length of stay", "total hospital cost changes").
+     - Run Charts (IHI Standards): Requires a minimum of 10-12 data points to establish a stable run chart. Apply the four standard IHI Run Chart rules for non-random change detection:
+       - Rule 1 (Shift): 6 or more consecutive points all above or all below the median.
+       - Rule 2 (Trend): 5 or more consecutive points continuously increasing or decreasing.
+       - Rule 3 (Runs): Too many or too few crossings of the median.
+       - Rule 4 (Astronomical Point): An obvious, singular, extreme outlier.
+  
+  3. ROOT CAUSE ANALYSIS (RCA) METHODOLOGY:
+     - Ishikawa (Fishbone) Domains: Every project must evaluate five distinct root-cause dimensions: People (staffing, knowledge), Process (workflows, standard protocols), Equipment (EHR configurations, order sets), Environment (culture, layout), and Materials (templates, educational handouts).
+     - 5-Whys Analysis: A sequence of logical queries leading to the actionable organizational root cause.
+     
+  4. IRB DETERMINATION & COMPLIANCE:
+     - Quality Improvement projects are classified under 45 CFR 46.102(l) as systemic, data-guided activities designed for local clinical improvement, and are typically determined as "Exempt/Non-Research". However, any activity seeking generalizable knowledge through randomized trials is classified as Human Subjects Research (HSR) and requires full IRB review.
+  `;
+
   const prompt = `
-    You are a Quality Improvement (QI) Academic Consultant at AdventHealth.
-    The resident is asking a question about QI methodology. 
+    You are Dr. QI, the Senior Academic Expert in Clinical Research and GME Quality Improvement at AdventHealth.
+    The resident is asking an academic question regarding QI or clinical research methodology.
     
-    HANDBOOK CONTEXT (Follow these rules and terminology):
-    ${handbookContent || "Standard QI Best Practices (SQUIRE 2.0, PDSA)."}
+    ACADEMIC HANDBOOK & KNOWLEDGE BASE:
+    ${handbookContent || defaultHandbook}
     
-    Resident Question: ${question}
-    ${context ? `Specific Project Context: ${context}` : ''}
+    Resident's Query: ${question}
+    ${context ? `Project Context: ${context}` : ''}
     
-    Provide a scholarly, and helpful response. Be concise but cite specific steps from the handbook if provided.
+    Provide a publication-grade, scholarly, and direct clinical research guidance response. If their query is vague, actively ask 2-3 specific questions to clarify their baseline rate, outcome metrics, PICO parameters, or PDSA cycle plan. Suggest concrete systems improvements (e.g., EMR Best Practice Alerts, interdisciplinary audits). Cite specific rules from the handbook where appropriate.
   `;
   return askAI(prompt);
 }
