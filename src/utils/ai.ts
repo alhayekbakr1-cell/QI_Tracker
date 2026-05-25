@@ -2,7 +2,7 @@ import { createClient } from "./supabase/client";
 
 const supabase = createClient();
 
-export async function askAI(prompt: string, options?: { mode?: 'json' | 'text' }) {
+export async function askAI(prompt: string, options?: { mode?: 'json' | 'text'; useSearch?: boolean }) {
   const isJsonRequest = options?.mode === 'json' || 
     /output\s+ONLY\s+a\s+valid,?\s+raw\s+JSON/i.test(prompt) || 
     /output\s+ONLY\s+the\s+JSON/i.test(prompt) ||
@@ -24,7 +24,7 @@ export async function askAI(prompt: string, options?: { mode?: 'json' | 'text' }
        - Highlight crucial clinical parameters in bold text (e.g. **SMART Aim**, **Baseline Rate**, **Process Metric**).
        - Format all interactive clarifying queries as clean checkboxes (e.g. "- [ ] Checkbox Query").
        - Present suggestions in neat bulleted lists or structured key-value summaries.
-    ]
+     ]
     
     User Query: ${prompt}`;
   }
@@ -32,7 +32,8 @@ export async function askAI(prompt: string, options?: { mode?: 'json' | 'text' }
   const { data, error } = await supabase.functions.invoke('qi-consultant', {
     body: { 
       prompt: finalPrompt,
-      mode: requestMode
+      mode: requestMode,
+      useSearch: options?.useSearch
     }
   });
 
@@ -270,20 +271,31 @@ export async function getProtocolSectionAdvice(section: string, question: string
 
 export async function getLiveConferenceDeadline(conferenceName: string) {
   const prompt = `
-    You are a Quality Improvement (QI) Academic Scout.
-    Search the web for the official abstract submission deadline for the next "${conferenceName}" conference.
+    You are a Senior GME Academic Quality Improvement Scout. 
+    Using Google Search grounding, look up the absolute most recent and official abstract submission requirements, dates, and writing guidelines for the next upcoming "${conferenceName}" conference.
     
-    CRITICAL:
-    1. Look for the exact date and year (e.g., Nov 24, 2026).
-    2. Identify the official website URL.
-    3. If the date is not yet announced, provide the estimated month based on historical data.
+    CRITICAL LOOKUP DIRECTIONS:
+    1. Search for the next official abstract submission deadline and year (e.g. for SHM, ACP, CHEST, SGIM, etc.). Focus on the upcoming cycle.
+    2. Extract the exact word or character count limit for abstract submissions.
+    3. Identify the exact required structural headings (e.g. "INTRODUCTION, METHODS, RESULTS, DISCUSSION" vs "BACKGROUND, METHODS, RESULTS, CONCLUSIONS").
+    4. Extract the official poster physical dimensions and orientation (e.g. "4' x 6' Horizontal", "4' x 4' Square").
+    5. Summarize a 1-sentence "GME success strategy" for resident physicians submitting QI work to this specific conference.
+    6. Identify the exact direct URL for abstract submissions or author guidelines.
     
-    Output format:
-    {"deadline": "ISO DATE", "displayDate": "Readable Date", "url": "URL", "confidence": "High/Medium/Low", "notes": "Brief explanation"}
-    
-    Output ONLY the JSON.
+    You MUST output ONLY a valid, raw JSON object matching this schema:
+    {
+      "deadline": "YYYY-MM-DD",
+      "displayDate": "Readable Date (e.g., November 24, 2026)",
+      "url": "Direct Abstract submission/guidelines URL link",
+      "abstractLimit": "Word/char limit (e.g. '300 words' or '2,500 characters')",
+      "requiredSections": "Comma-separated required headings (e.g. 'INTRODUCTION, METHODS, RESULTS, CONCLUSIONS')",
+      "posterDimensions": "Poster physical size (e.g. '4\\\' x 4\\\' (48\" x 48\") Square' or '4\\\' x 6\\\' (48\" x 72\") Horizontal')",
+      "gmeTips": "High-value, actionable clinical advice for resident quality improvement submissions",
+      "confidence": "High/Medium/Low",
+      "notes": "Brief explanation of the search findings and verified year"
+    }
   `;
-  return askAI(prompt);
+  return askAI(prompt, { mode: 'json', useSearch: true });
 }
 
 export async function generateAbstract(project: any, format: 'standard' | 'acp' | 'shm' | 'ihi' | 'bmj' = 'standard') {

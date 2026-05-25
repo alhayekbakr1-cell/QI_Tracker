@@ -34,7 +34,7 @@ serve(async (req) => {
 
     try {
         const body = await req.json()
-        const { prompt, mode } = body  // mode: 'json' | 'text' (default: 'text')
+        const { prompt, mode, useSearch } = body  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
         const apiKey = Deno.env.get('GEMINI_API_KEY')
 
         if (!apiKey) {
@@ -55,6 +55,7 @@ serve(async (req) => {
                 maxOutputTokens: 1024,
                 ...(mode === 'json' ? { responseMimeType: "application/json" } : {})
             },
+            ...(useSearch ? { tools: [{ googleSearch: {} }] } : {})
         })
 
         const result = await model.generateContent(prompt)

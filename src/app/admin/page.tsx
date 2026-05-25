@@ -215,7 +215,15 @@ export default function AdminPage() {
                                             <span className="text-[8px] text-slate-400 italic">Last Sync: {new Date(conf.last_ai_check).toLocaleDateString()}</span>
                                         )}
                                     </div>
-                                    <LiveConferenceVerify conferenceName={conf.name} currentDeadline="Annual Rollover" />
+                                    <LiveConferenceVerify 
+                                        conferenceId={conf.id}
+                                        conferenceName={conf.name} 
+                                        currentDeadline="Annual Rollover" 
+                                        onUpdateComplete={async () => {
+                                            const updated = await fetchRegistry();
+                                            setRegistry(updated);
+                                        }}
+                                    />
                                 </div>
                             </div>
                         ))}
