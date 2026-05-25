@@ -5,6 +5,8 @@ import { MessageSquare, X, Send, Sparkles, Loader2, Bot } from "lucide-react";
 import { getQIAdvice } from "@/utils/ai";
 import { scanForPHI } from "@/utils/phi_guard";
 import { AlertCircle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function QIConsultantChat() {
     const [isOpen, setIsOpen] = useState(false);
@@ -67,11 +69,28 @@ export default function QIConsultantChat() {
                     <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[85%] p-3 rounded-2xl text-sm font-medium leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-advent-blue text-white rounded-br-none'
-                                    : 'bg-white text-slate-700 border border-slate-100 shadow-sm rounded-bl-none'
+                                <div className={`max-w-[90%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
+                                    ? 'bg-advent-blue text-white rounded-br-none font-medium'
+                                    : 'bg-white text-slate-700 border border-slate-200 shadow-sm rounded-bl-none'
                                     }`}>
-                                    {msg.content}
+                                    {msg.role === 'user' ? (
+                                        msg.content
+                                    ) : (
+                                        <ReactMarkdown 
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                p: ({node, ...props}) => <p className="mb-2.5 last:mb-0 text-slate-700 leading-relaxed font-semibold text-[13px] sm:text-[14px]" {...props} />,
+                                                ul: ({node, ...props}) => <ul className="list-disc pl-5 space-y-2 my-2.5 text-slate-600 font-medium text-[13px] sm:text-[14px]" {...props} />,
+                                                ol: ({node, ...props}) => <ol className="list-decimal pl-5 space-y-2 my-2.5 text-slate-600 font-medium text-[13px] sm:text-[14px]" {...props} />,
+                                                li: ({node, ...props}) => <li className="marker:text-advent-sky" {...props} />,
+                                                strong: ({node, ...props}) => <strong className="font-black text-advent-navy" {...props} />,
+                                                code: ({node, ...props}) => <code className="bg-slate-100 text-advent-navy px-1.5 py-0.5 rounded text-xs font-mono font-bold" {...props} />,
+                                                h4: ({node, ...props}) => <h4 className="text-xs font-black uppercase tracking-wider text-advent-navy mt-4 mb-2 border-b border-slate-100 pb-1" {...props} />
+                                            }}
+                                        >
+                                            {msg.content}
+                                        </ReactMarkdown>
+                                    )}
                                 </div>
                             </div>
                         ))}
