@@ -301,12 +301,16 @@ export async function getProtocolSectionAdvice(section: string, question: string
 }
 
 export async function getLiveConferenceDeadline(conferenceName: string) {
+  const currentYear = new Date().getFullYear();
+  const currentDateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const prompt = `
     You are a Senior GME Academic Quality Improvement Scout. 
-    Using Google Search grounding, look up the absolute most recent and official abstract submission requirements, dates, and writing guidelines for the next upcoming "${conferenceName}" conference.
+    The current local date is ${currentDateStr}.
+    
+    Using Google Search grounding, look up the absolute most recent and official abstract submission requirements, dates, and writing guidelines for the next upcoming "${conferenceName}" conference (focusing strictly on the upcoming cycle in ${currentYear} or ${currentYear + 1}).
     
     CRITICAL LOOKUP DIRECTIONS:
-    1. Search for the next official abstract submission deadline and year (e.g. for SHM, ACP, CHEST, SGIM, etc.). Focus on the upcoming cycle.
+    1. Search for the next official abstract submission deadline and year (e.g. for SHM, ACP, CHEST, SGIM, etc.). Focus strictly on the upcoming cycle in ${currentYear} or ${currentYear + 1}. Do NOT return historical dates from ${currentYear - 1} or earlier (like 2024 or 2025).
     2. Extract the exact word or character count limit for abstract submissions.
     3. Identify the exact required structural headings (e.g. "INTRODUCTION, METHODS, RESULTS, DISCUSSION" vs "BACKGROUND, METHODS, RESULTS, CONCLUSIONS").
     4. Extract the official poster physical dimensions and orientation (e.g. "4' x 6' Horizontal", "4' x 4' Square").
