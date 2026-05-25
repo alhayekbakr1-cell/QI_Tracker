@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import {
     FileText, Sparkles, CheckCircle, Clipboard,
     ArrowRight, RefreshCw, BarChart2, Users, Save, HelpCircle,
-    UserCheck, ShieldAlert, Copy, Plus, Trash2
+    UserCheck, ShieldAlert, Copy, Plus, Trash2, Download
 } from 'lucide-react'
 
 // Types for components
@@ -1230,8 +1230,9 @@ function FishboneBuilder() {
             const px = ribStart.x + (ribEnd.x - ribStart.x) * t;
             const py = ribStart.y + (ribEnd.y - ribStart.y) * t;
 
-            // Draw horizontal cause line
-            const length = 75;
+            // Calculate dynamic line length based on text length to prevent overlap/truncation
+            const textLengthEstimate = cause.length * 5.5;
+            const length = Math.max(75, textLengthEstimate + 10);
             const cx1 = px;
             const cx2 = px - length; // Draw leftwards
             const cy = py;
@@ -1258,15 +1259,32 @@ function FishboneBuilder() {
                         fontWeight="600"
                         className="font-sans"
                     >
-                        {cause.length > 25 ? cause.substring(0, 22) + "..." : cause}
+                        {cause}
                     </text>
                 </g>
             )
         })
     }
 
-    // Dynamic SVG String for clipboard copying
+    // Dynamic SVG String for clipboard copying and downloading
     const getSvgString = () => {
+        const renderSvgRib = (startX: number, endX: number, startY: number, endY: number, causes: string[]) => {
+            return causes.map((cause, idx) => {
+                const t = 0.25 + 0.22 * idx;
+                if (t > 0.95) return "";
+                const px = startX + (endX - startX) * t;
+                const py = startY + (endY - startY) * t;
+                const textLengthEstimate = cause.length * 5.5;
+                const length = Math.max(75, textLengthEstimate + 10);
+                const cx1 = px;
+                const cx2 = px - length;
+                const textX = cx2 + 5;
+                const escapedCause = cause.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<line x1="${cx1}" y1="${py}" x2="${cx2}" y2="${py}" class="cause-line"/>
+  <text x="${textX}" y="${py - 4}" class="cause-text">${escapedCause}</text>`;
+            }).join('\n');
+        }
+
         return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="100%" height="100%" style="background-color: #FFFFFF; font-family: sans-serif;">
   <style>
     .spine { stroke: #003057; stroke-width: 4; fill: none; }
@@ -1285,7 +1303,7 @@ function FishboneBuilder() {
   <rect x="820" y="200" width="165" height="100" class="problem-box" />
   <foreignObject x="825" y="205" width="155" height="90">
     <div xmlns="http://www.w3.org/1999/xhtml" style="color: #FFFFFF; font-weight: bold; font-size: 11px; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center; padding: 2px;">
-      \${problem}
+      ${problem.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
     </div>
   </foreignObject>
 
@@ -1293,63 +1311,33 @@ function FishboneBuilder() {
   <rect x="220" y="20" width="100" height="30" class="category-box"/>
   <text x="270" y="38" class="category-text">PEOPLE</text>
   <line x1="270" y1="50" x2="350" y2="250" class="rib"/>
-  \${categories.people.map((cause, idx) => {
-      const t = 0.25 + 0.22 * idx; if (t > 0.95) return "";
-      const px = 270 + (350 - 270) * t; const py = 50 + (250 - 50) * t;
-      return \`<line x1="\${px}" y1="\${py}" x2="\${px - 75}" y2="\${py}" class="cause-line"/>
-  <text x="\${px - 70}" y="\${py - 4}" class="cause-text">\${cause.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\`;
-  }).join('\\n')}
+  ${renderSvgRib(270, 350, 50, 250, categories.people)}
 
   <rect x="420" y="20" width="100" height="30" class="category-box"/>
   <text x="470" y="38" class="category-text">PROCESS</text>
   <line x1="470" y1="50" x2="550" y2="250" class="rib"/>
-  \${categories.process.map((cause, idx) => {
-      const t = 0.25 + 0.22 * idx; if (t > 0.95) return "";
-      const px = 470 + (550 - 470) * t; const py = 50 + (250 - 50) * t;
-      return \`<line x1="\${px}" y1="\${py}" x2="\${px - 75}" y2="\${py}" class="cause-line"/>
-  <text x="\${px - 70}" y="\${py - 4}" class="cause-text">\${cause.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\`;
-  }).join('\\n')}
+  ${renderSvgRib(470, 550, 50, 250, categories.process)}
 
   <rect x="620" y="20" width="100" height="30" class="category-box"/>
   <text x="670" y="38" class="category-text">EQUIPMENT</text>
   <line x1="670" y1="50" x2="750" y2="250" class="rib"/>
-  \${categories.equipment.map((cause, idx) => {
-      const t = 0.25 + 0.22 * idx; if (t > 0.95) return "";
-      const px = 670 + (750 - 670) * t; const py = 50 + (250 - 50) * t;
-      return \`<line x1="\${px}" y1="\${py}" x2="\${px - 75}" y2="\${py}" class="cause-line"/>
-  <text x="\${px - 70}" y="\${py - 4}" class="cause-text">\${cause.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\`;
-  }).join('\\n')}
+  ${renderSvgRib(670, 750, 50, 250, categories.equipment)}
 
   <!-- BOTTOM RIBS -->
   <rect x="220" y="450" width="100" height="30" class="category-box"/>
   <text x="270" y="468" class="category-text">MATERIALS</text>
   <line x1="270" y1="450" x2="350" y2="250" class="rib"/>
-  \${categories.materials.map((cause, idx) => {
-      const t = 0.25 + 0.22 * idx; if (t > 0.95) return "";
-      const px = 270 + (350 - 270) * t; const py = 450 + (250 - 450) * t;
-      return \`<line x1="\${px}" y1="\${py}" x2="\${px - 75}" y2="\${py}" class="cause-line"/>
-  <text x="\${px - 70}" y="\${py - 4}" class="cause-text">\${cause.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\`;
-  }).join('\\n')}
+  ${renderSvgRib(270, 350, 450, 250, categories.materials)}
 
   <rect x="420" y="450" width="100" height="30" class="category-box"/>
   <text x="470" y="468" class="category-text">ENVIRONMENT</text>
   <line x1="470" y1="450" x2="550" y2="250" class="rib"/>
-  \${categories.environment.map((cause, idx) => {
-      const t = 0.25 + 0.22 * idx; if (t > 0.95) return "";
-      const px = 470 + (550 - 470) * t; const py = 450 + (250 - 450) * t;
-      return \`<line x1="\${px}" y1="\${py}" x2="\${px - 75}" y2="\${py}" class="cause-line"/>
-  <text x="\${px - 70}" y="\${py - 4}" class="cause-text">\${cause.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\`;
-  }).join('\\n')}
+  ${renderSvgRib(470, 550, 450, 250, categories.environment)}
 
   <rect x="620" y="450" width="100" height="30" class="category-box"/>
   <text x="670" y="468" class="category-text">MANAGEMENT</text>
   <line x1="670" y1="450" x2="750" y2="250" class="rib"/>
-  \${categories.management.map((cause, idx) => {
-      const t = 0.25 + 0.22 * idx; if (t > 0.95) return "";
-      const px = 670 + (750 - 670) * t; const py = 450 + (250 - 450) * t;
-      return \`<line x1="\${px}" y1="\${py}" x2="\${px - 75}" y2="\${py}" class="cause-line"/>
-  <text x="\${px - 70}" y="\${py - 4}" class="cause-text">\${cause.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>\`;
-  }).join('\\n')}
+  ${renderSvgRib(670, 750, 450, 250, categories.management)}
 </svg>`;
     }
 
@@ -1357,6 +1345,54 @@ function FishboneBuilder() {
         navigator.clipboard.writeText(getSvgString())
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
+    }
+
+    const downloadSvg = () => {
+        const svgString = getSvgString()
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `fishbone_diagram_${problem.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.svg`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+    }
+
+    const downloadPng = () => {
+        const svgString = getSvgString()
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+        const DOMURL = window.URL || window.webkitURL || window
+        const url = DOMURL.createObjectURL(svgBlob)
+        
+        const img = new Image()
+        img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = 2000
+            canvas.height = 1000
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+                ctx.fillStyle = '#FFFFFF'
+                ctx.fillRect(0, 0, canvas.width, canvas.height)
+                ctx.drawImage(img, 0, 0, 2000, 1000)
+                
+                try {
+                    const pngUrl = canvas.toDataURL('image/png')
+                    const link = document.createElement('a')
+                    link.href = pngUrl
+                    link.download = `fishbone_diagram_${problem.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                } catch (e) {
+                    console.error("Canvas toDataURL failed:", e)
+                    downloadSvg()
+                }
+            }
+            DOMURL.revokeObjectURL(url)
+        }
+        img.src = url
     }
 
     return (
@@ -1425,12 +1461,12 @@ function FishboneBuilder() {
                                             value={newCause[cat]}
                                             onChange={(e) => setNewCause(prev => ({ ...prev, [cat]: e.target.value }))}
                                             placeholder="Add specific cause..."
-                                            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:border-advent-navy transition-all"
+                                            className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:border-advent-navy transition-all"
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleAddCause(cat) }}
                                         />
                                         <button
                                             onClick={() => handleAddCause(cat)}
-                                            className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-all"
+                                            className="w-8 h-8 flex items-center justify-center shrink-0 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-all"
                                         >
                                             <Plus className="w-4 h-4 text-advent-green" />
                                         </button>
@@ -1470,15 +1506,31 @@ function FishboneBuilder() {
 
             {activeTab === 'preview' && (
                 <div className="space-y-6 animate-in fade-in duration-200">
-                    <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live SVG Canvas</span>
-                        <button
-                            onClick={copySvgXml}
-                            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
-                        >
-                            <Copy className="w-3.5 h-3.5 text-advent-green" />
-                            <span>{copied ? "Copied XML!" : "Copy SVG XML"}</span>
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={copySvgXml}
+                                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                            >
+                                <Copy className="w-3.5 h-3.5 text-advent-green" />
+                                <span>{copied ? "Copied XML!" : "Copy SVG XML"}</span>
+                            </button>
+                            <button
+                                onClick={downloadPng}
+                                className="flex items-center gap-2 bg-advent-navy hover:bg-advent-cobalt text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-sm"
+                            >
+                                <Download className="w-3.5 h-3.5 text-advent-green" />
+                                <span>Download PNG (High-Res)</span>
+                            </button>
+                            <button
+                                onClick={downloadSvg}
+                                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-sm"
+                            >
+                                <Download className="w-3.5 h-3.5 text-advent-sky" />
+                                <span>Download SVG (Vector)</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="bg-white border border-slate-250 rounded-3xl p-4 shadow-sm flex items-center justify-center overflow-x-auto min-h-[400px]">
