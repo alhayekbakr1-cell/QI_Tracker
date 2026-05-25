@@ -88,8 +88,8 @@ export const DEFAULT_CONFERENCES: Conference[] = [
         fullName: 'American College of Cardiology Scientific Session',
         month: 8, // September
         day: 30,
-        website: 'https://www.acc.org/Annual-Scientific-Session',
-        submissionUrl: 'https://www.acc.org/Annual-Scientific-Session/Submit-Abstracts',
+        website: 'https://accscientificsession.acc.org/',
+        submissionUrl: 'https://accscientificsession.acc.org/Submit-Your-Science',
         abstractLimit: '2,800 characters (~350 words)',
         requiredSections: 'INTRODUCTION, METHODS, RESULTS, CONCLUSIONS',
         posterDimensions: "4' x 8' (48\" x 96\") Horizontal",

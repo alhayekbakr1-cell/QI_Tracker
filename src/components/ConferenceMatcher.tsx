@@ -25,6 +25,7 @@ import { createClient } from '@/utils/supabase/client';
 import { generateAbstract } from '@/utils/ai';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import LiveConferenceVerify from '@/components/LiveConferenceVerify';
 
 interface ConferenceMatcherProps {
     isTabbed?: boolean;
@@ -161,6 +162,15 @@ export default function ConferenceMatcher({ isTabbed = false }: ConferenceMatche
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-1.5">
+                                    <LiveConferenceVerify 
+                                        conferenceId={conf.id} 
+                                        conferenceName={conf.fullName} 
+                                        currentDeadline={deadline.toISOString()}
+                                        onUpdateComplete={async () => {
+                                            const data = await fetchRegistry();
+                                            setRegistry(data);
+                                        }}
+                                    />
                                     <a 
                                         href={conf.website} 
                                         target="_blank" 
@@ -276,11 +286,11 @@ export default function ConferenceMatcher({ isTabbed = false }: ConferenceMatche
                                             <p className="text-[10px] font-bold text-slate-400 italic">No registered projects found. Create a project to draft an abstract.</p>
                                         ) : (
                                             <div className="space-y-3.5">
-                                                <div className="flex flex-col sm:flex-row gap-3">
+                                                <div className="flex flex-col sm:flex-row gap-3 min-w-0">
                                                     <select 
                                                         value={selectedProjId}
                                                         onChange={(e) => setSelectedProjId(e.target.value)}
-                                                        className="flex-1 p-2.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all"
+                                                        className="flex-1 min-w-0 w-full p-2.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all"
                                                     >
                                                         {myProjects.map(p => (
                                                             <option key={p.id} value={p.id}>{p.title}</option>
