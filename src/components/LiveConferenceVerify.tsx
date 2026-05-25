@@ -123,7 +123,7 @@ export default function LiveConferenceVerify({ conferenceId, conferenceName, cur
             )}
 
             {status === 'found' && result && (
-                <div className="absolute right-0 top-full mt-2 flex flex-col gap-2.5 p-4.5 bg-white border border-slate-200 rounded-2xl shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300 w-[280px] z-50">
+                <div className="absolute right-[40px] top-full mt-2 flex flex-col gap-2.5 p-4.5 bg-white border border-slate-200 rounded-2xl shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300 w-[280px] z-50">
                     <div className="flex justify-between items-start border-b border-slate-100 pb-1.5">
                         <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-amber-500" /> AI Scraped Guidelines
