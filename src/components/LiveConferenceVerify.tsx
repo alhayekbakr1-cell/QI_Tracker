@@ -27,8 +27,10 @@ export default function LiveConferenceVerify({ conferenceId, conferenceName, cur
             const data = JSON.parse(cleaned);
             setResult(data);
             setStatus('found');
-        } catch (err) {
+        } catch (err: any) {
             console.error('AI Scout Error:', err);
+            const errMsg = err.message || 'Unknown error occurred during AI search grounding.';
+            toast.error(`Verification Failed: ${errMsg}`);
             setStatus('error');
         }
     };
