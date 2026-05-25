@@ -139,6 +139,54 @@ export default function Dashboard() {
     { name: 'Outpatient', value: projects.filter(p => p.category === 'Outpatient').length },
   ];
 
+  // Dynamic 6-month project cumulative growth calculation
+  const getTimelineData = () => {
+    const months = [];
+    const now = new Date();
+    // Generate last 6 months labels, e.g., ["Dec", "Jan", "Feb", "Mar", "Apr", "May"]
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        name: d.toLocaleString('default', { month: 'short' }),
+        year: d.getFullYear(),
+        monthNum: d.getMonth(),
+        count: 0
+      });
+    }
+
+    // Distribute projects to months based on created_at or last_updated_date if created_at is missing
+    projects.forEach(p => {
+      const targetDateStr = p.created_at || p.last_updated_date;
+      if (!targetDateStr) return;
+      const createdDate = new Date(targetDateStr);
+      // Find matching month
+      const match = months.find(m => m.year === createdDate.getFullYear() && m.monthNum === createdDate.getMonth());
+      if (match) {
+        match.count++;
+      } else {
+        // If it was created before the 6-month window, it should count towards the baseline of the first month
+        const firstMonthDate = new Date(months[0].year, months[0].monthNum, 1);
+        if (createdDate < firstMonthDate) {
+          months[0].count++;
+        }
+      }
+    });
+
+    // Compute cumulative sum
+    let cumulative = 0;
+    const timelineData = months.map(m => {
+      cumulative += m.count;
+      return {
+        name: m.name,
+        value: cumulative
+      };
+    });
+
+    return timelineData;
+  };
+
+  const timelineChartData = getTimelineData();
+
   const recentProjects = projects.slice(0, 6);
 
   const displayName = formatName(userEmail, userProfile?.full_name);
@@ -357,7 +405,7 @@ export default function Dashboard() {
                     </h2>
                   </div>
                 </div>
-                <DashboardCharts statusData={statusChartData} categoryData={categoryChartData} />
+                <DashboardCharts statusData={statusChartData} categoryData={categoryChartData} timelineData={timelineChartData} />
               </div>
             )}
           </div>

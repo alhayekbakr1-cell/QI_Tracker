@@ -11,7 +11,24 @@ import { draftSummary, generateSMARTAim, checkDuplication } from "@/utils/ai";
 import { sendEmail, TEMPLATES } from "@/utils/email";
 import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
 import { toast, CustomConfirmDialog } from "@/components/ui/custom-ui";
+import { createNotification } from "@/utils/createNotification";
 
+const FACULTY_MENTORS_PRESET = [
+  "Dr. Lidia Sepulveda Rubiera",
+  "Dr. Claudia Kroker-Bode (Dr. KB)",
+  "Dr. Anna Hadid",
+  "Dr. Muhammad Anwar",
+  "Dr. Sara Bibi",
+  "Dr. Thomas Carson",
+  "Dr. Asha Ramsakal",
+  "Dr. Faheem Ahmad",
+  "Dr. Mounica Banala",
+  "Dr. Ryan Brink",
+  "Dr. Raja Ramesh Gummalla",
+  "Dr. Carlos Santos De Jesus",
+  "Dr. James Vernace",
+  "Dr. Christopher Yanichko"
+];
 function AIUpdateSection({ initialValue, onChange }: { initialValue: string, onChange: (val: string) => void }) {
     const [value, setValue] = useState(initialValue);
     const [isDrafting, setIsDrafting] = useState(false);
@@ -81,6 +98,7 @@ export default function NewProjectPage() {
     const [primaryOutcome, setPrimaryOutcome] = useState("");
     const [title, setTitle] = useState("");
     const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+    const [selectedFaculty, setSelectedFaculty] = useState("");
 
     // Custom Modal Dialog state
     const [dialogState, setDialogState] = useState<{
@@ -189,6 +207,9 @@ export default function NewProjectPage() {
 
         const facultyId = formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string;
         let facultyName = formData.get('faculty_name') as string || "";
+        if (facultyName === "Other") {
+            facultyName = formData.get('faculty_name_manual') as string || "";
+        }
 
         // Robust matching & synchronization of faculty names/IDs:
         let finalFacultyId = facultyId;
@@ -352,6 +373,19 @@ export default function NewProjectPage() {
             if (error) {
                 toast.error(error.message);
             } else {
+                if (finalFacultyId) {
+                    try {
+                        await createNotification({
+                            user_id: finalFacultyId,
+                            type: 'general',
+                            title: 'Assigned as Faculty Mentor',
+                            message: `You have been assigned as the faculty mentor for the new project proposal: "${title}". Please review it and provide feedback.`,
+                            project_id: data?.id
+                        });
+                    } catch (err) {
+                        console.error("Failed to trigger proposal notification:", err);
+                    }
+                }
                 toast.success("Project proposal submitted for sponsorship and GME approval! 🚀");
                 router.push("/");
                 router.refresh();
@@ -389,6 +423,19 @@ export default function NewProjectPage() {
         if (error) {
             toast.error(error.message);
         } else {
+            if (finalFacultyId) {
+                try {
+                    await createNotification({
+                        user_id: finalFacultyId,
+                        type: 'general',
+                        title: 'Assigned as Faculty Mentor',
+                        message: `You have been assigned as the faculty mentor for the active project: "${title}".`,
+                        project_id: data?.id
+                    });
+                } catch (err) {
+                    console.error("Failed to trigger active project notification:", err);
+                }
+            }
             toast.success("Initiative created successfully!");
             // Trigger Email to Mentor
             const triggerEmail = async () => {
@@ -537,23 +584,60 @@ export default function NewProjectPage() {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
                                     <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Faculty advisor guiding the academic charter</span>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input
-                                        id="faculty-name-input"
-                                        name="faculty_name"
-                                        placeholder="Dr. Full Name (Manual name)"
-                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-300 text-sm"
-                                    />
-                                    <select
-                                        id="faculty-id-select"
-                                        name="faculty_id"
-                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
-                                    >
-                                        <option value="">-- Link registered user account --</option>
-                                        {facultyProfiles.map(p => (
-                                            <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
-                                        ))}
-                                    </select>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <select
+                                            id="faculty-name-select"
+                                            name="faculty_name"
+                                            value={selectedFaculty}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setSelectedFaculty(val);
+                                                
+                                                if (val && val !== "Other") {
+                                                    const cleanName = val.toLowerCase().replace(/^dr\.\s+/i, '');
+                                                    const match = facultyProfiles.find(p => {
+                                                        const cleanProfileName = p.full_name.toLowerCase().replace(/^dr\.\s+/i, '');
+                                                        return cleanProfileName === cleanName || 
+                                                               cleanProfileName.includes(cleanName) || 
+                                                               cleanName.includes(cleanProfileName);
+                                                    });
+                                                    const selectEl = document.getElementById("faculty-id-select") as HTMLSelectElement;
+                                                    if (selectEl) {
+                                                        selectEl.value = match ? match.id : "";
+                                                    }
+                                                }
+                                            }}
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                        >
+                                            <option value="">-- Select Faculty Mentor --</option>
+                                            {FACULTY_MENTORS_PRESET.map(name => (
+                                                <option key={name} value={name}>{name}</option>
+                                            ))}
+                                            <option value="Other">Other / Manual Entry...</option>
+                                        </select>
+                                        <select
+                                            id="faculty-id-select"
+                                            name="faculty_id"
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                        >
+                                            <option value="">-- Link registered user account --</option>
+                                            {facultyProfiles.map(p => (
+                                                <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    {selectedFaculty === 'Other' && (
+                                        <div className="animate-in slide-in-from-top-1 duration-200">
+                                            <input
+                                                id="faculty-name-input-manual"
+                                                name="faculty_name_manual"
+                                                placeholder="Dr. Full Name (Enter custom name)"
+                                                className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-350 text-sm shadow-inner"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

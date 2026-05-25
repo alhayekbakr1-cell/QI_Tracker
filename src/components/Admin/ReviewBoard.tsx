@@ -18,6 +18,8 @@ import {
     ArrowRight
 } from "lucide-react";
 import ProtocolReader from "@/components/ProtocolReader";
+import { createPortal } from "react-dom";
+import { createNotification } from "@/utils/createNotification";
 
 interface RegistrationRequest {
     id: string;
@@ -47,6 +49,7 @@ export default function ReviewBoard() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterTab, setFilterTab] = useState<'pending_audit' | 'all' | 'registered' | 'revisions'>('pending_audit');
+    const [mounted, setMounted] = useState(false);
     
     // Detailed SQUIRE Viewer State
     const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
@@ -97,6 +100,7 @@ export default function ReviewBoard() {
     };
 
     useEffect(() => {
+        setMounted(true);
         fetchRequests();
     }, []);
 
@@ -127,6 +131,20 @@ export default function ReviewBoard() {
             console.error("Error approving request:", error);
             alert("Failed to approve and register the proposal. " + error.message);
         } else {
+            try {
+                await createNotification({
+                    user_id: request.created_by,
+                    type: 'faculty_approval',
+                    title: 'Project Registration Approved! 🎉',
+                    message: isFacultyApproved 
+                        ? `Your project proposal "${request.title}" has been audited and approved by the GME Review Board. It is now ACTIVE!`
+                        : `Your project proposal "${request.title}" GME audit has been approved! It will be fully registered as active once your faculty mentor signs off.`,
+                    project_id: request.id
+                });
+            } catch (err) {
+                console.error("Failed to notify user of approval:", err);
+            }
+
             alert(isFacultyApproved 
                 ? "Project approved and successfully registered as ACTIVE! 🚀 The resident has been notified."
                 : "Registry audit approved! Awaiting Faculty Mentor clinical sponsorship to complete activation."
@@ -157,6 +175,22 @@ export default function ReviewBoard() {
             console.error("Error requesting revisions:", error);
             alert("Failed to request revisions. " + error.message);
         } else {
+            try {
+                const reqTitle = requests.find(r => r.id === feedbackRequestId)?.title || '';
+                const reqCreator = requests.find(r => r.id === feedbackRequestId)?.created_by;
+                if (reqCreator) {
+                    await createNotification({
+                        user_id: reqCreator,
+                        type: 'general',
+                        title: 'Revisions Requested 📝',
+                        message: `The GME Review Board has requested revisions for your project proposal "${reqTitle}". Feedback: ${feedbackText}`,
+                        project_id: feedbackRequestId
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to notify user of revisions request:", err);
+            }
+
             alert("Revisions requested successfully! 📝 The resident has been notified with your structured feedback.");
             setShowFeedbackModal(false);
             setFeedbackText("");
@@ -476,7 +510,7 @@ export default function ReviewBoard() {
             )}
 
             {/* Revision Feedback Drawer / Modal */}
-            {showFeedbackModal && (
+            {showFeedbackModal && mounted && createPortal(
                 <div className="fixed inset-0 z-[120] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
                     <div className="bg-white/95 backdrop-blur-lg border border-slate-200/80 shadow-2xl max-w-xl w-full rounded-[2.5rem] overflow-hidden animate-in zoom-in-95 duration-300">
                         {/* Header */}
@@ -543,7 +577,8 @@ export default function ReviewBoard() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

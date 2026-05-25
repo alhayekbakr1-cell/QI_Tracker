@@ -76,9 +76,9 @@ export default function NudgeModal({ isOpen, onClose, project, recipientEmail, e
 
                 {/* Content */}
                 <div className="p-6 space-y-6">
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 flex gap-2 items-start">
-                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                        <p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex gap-2.5 items-start">
+                        <AlertTriangle className="w-4.5 h-4.5 mt-0.5 shrink-0 text-amber-600" />
+                        <p className="flex-1 min-w-0 leading-relaxed font-medium">
                             We've prepared an email for you. Click <strong>Launch Outlook</strong> below.
                             If nothing happens, copy the details manually.
                         </p>

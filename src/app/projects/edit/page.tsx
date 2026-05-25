@@ -13,6 +13,24 @@ import { useEffect, useState, useTransition, Suspense } from "react";
 import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
 import { draftSummary, auditProjectQuality, suggestMetrics, generateSMARTAim } from "@/utils/ai";
 import { toast, CustomConfirmDialog, Skeleton } from "@/components/ui/custom-ui";
+import { createNotification } from "@/utils/createNotification";
+
+const FACULTY_MENTORS_PRESET = [
+  "Dr. Lidia Sepulveda Rubiera",
+  "Dr. Claudia Kroker-Bode (Dr. KB)",
+  "Dr. Anna Hadid",
+  "Dr. Muhammad Anwar",
+  "Dr. Sara Bibi",
+  "Dr. Thomas Carson",
+  "Dr. Asha Ramsakal",
+  "Dr. Faheem Ahmad",
+  "Dr. Mounica Banala",
+  "Dr. Ryan Brink",
+  "Dr. Raja Ramesh Gummalla",
+  "Dr. Carlos Santos De Jesus",
+  "Dr. James Vernace",
+  "Dr. Christopher Yanichko"
+];
 
 function AIUpdateSection({ initialValue, onChange }: { initialValue: string, onChange: (val: string) => void }) {
     const [value, setValue] = useState(initialValue);
@@ -213,6 +231,7 @@ function EditProjectContent() {
     const [primaryOutcome, setPrimaryOutcome] = useState("");
     const [title, setTitle] = useState("");
     const [isPolishingAim, setIsPolishingAim] = useState(false);
+    const [selectedFaculty, setSelectedFaculty] = useState("");
 
     // Custom Modal Dialog state
     const [dialogState, setDialogState] = useState<{
@@ -263,6 +282,12 @@ function EditProjectContent() {
             setUpdatesText(proj.updates_and_barriers || "");
             setSelectedLeadIds(proj.lead_proponent_ids || []);
             setSelectedProponentIds(proj.proponent_ids || []);
+            if (proj.faculty) {
+                const isPreset = FACULTY_MENTORS_PRESET.includes(proj.faculty);
+                setSelectedFaculty(isPreset ? proj.faculty : "Other");
+            } else {
+                setSelectedFaculty("");
+            }
 
             // Fetch all profiles
             const { data: profiles } = await supabase
@@ -313,14 +338,42 @@ function EditProjectContent() {
         const linkedProponentNames = allProfiles.filter(p => selectedProponentIds.includes(p.id)).map(p => p.full_name);
         const linkedLeadNames = allProfiles.filter(p => selectedLeadIds.includes(p.id)).map(p => p.full_name);
 
+        let facultyName = formData.get('faculty_name') as string || "";
+        if (facultyName === "Other") {
+            facultyName = formData.get('faculty_name_manual') as string || "";
+        }
+        const facultyId = formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string;
+
+        let finalFacultyId = facultyId;
+        let finalFacultyName = facultyName;
+
+        if (finalFacultyId) {
+            const matchingProfile = facultyProfiles.find(p => p.id === finalFacultyId);
+            if (matchingProfile) {
+                finalFacultyName = matchingProfile.full_name;
+            }
+        } else if (finalFacultyName.trim()) {
+            const cleanName = finalFacultyName.trim().toLowerCase().replace(/^dr\.\s+/i, '');
+            const matchingProfile = facultyProfiles.find(p => {
+                const cleanProfileName = p.full_name.toLowerCase().replace(/^dr\.\s+/i, '');
+                return cleanProfileName === cleanName || 
+                       cleanProfileName.includes(cleanName) || 
+                       cleanName.includes(cleanProfileName);
+            });
+            if (matchingProfile) {
+                finalFacultyId = matchingProfile.id;
+                finalFacultyName = matchingProfile.full_name;
+            }
+        }
+
         const updates = {
             title: title,
             status: formData.get('status') as any,
             category: formData.get('category') as string,
             subcategory: formData.get('subcategory') as string,
             pdsa_cycle: parseInt(formData.get('pdsa_cycle') as string) || 1,
-            faculty: formData.get('faculty_name') as string,
-            faculty_id: formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string,
+            faculty: finalFacultyName,
+            faculty_id: finalFacultyId,
             primary_outcome: primaryOutcome,
             proponents: Array.from(new Set([...manualProponents, ...linkedProponentNames])),
             lead_proponents: Array.from(new Set([...manualLeads, ...linkedLeadNames])),
@@ -399,6 +452,19 @@ function EditProjectContent() {
         if (error) {
             toast.error(error.message);
         } else {
+            if (updates.faculty_id && updates.faculty_id !== project.faculty_id) {
+                try {
+                    await createNotification({
+                        user_id: updates.faculty_id,
+                        type: 'general',
+                        title: 'Assigned as Faculty Mentor',
+                        message: `You have been assigned as the faculty mentor for the project: "${updates.title}". Please review it and provide feedback.`,
+                        project_id: id
+                    });
+                } catch (notifyError) {
+                    console.error("Assignment notification error:", notifyError);
+                }
+            }
             toast.success("Initiative updated successfully!");
             router.push(`/projects/view?id=${id}`);
             router.refresh();
@@ -572,23 +638,61 @@ function EditProjectContent() {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
                                     <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Faculty advisor guiding the academic charter</span>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input
-                                        name="faculty_name"
-                                        placeholder="Dr. Full Name (Manual name)"
-                                        defaultValue={project.faculty || ''}
-                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-300 text-sm"
-                                    />
-                                    <select
-                                        name="faculty_id"
-                                        defaultValue={project.faculty_id || ""}
-                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
-                                    >
-                                        <option value="">-- No Account Linked --</option>
-                                        {facultyProfiles.map(p => (
-                                            <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
-                                        ))}
-                                    </select>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <select
+                                            id="faculty-name-select"
+                                            name="faculty_name"
+                                            value={selectedFaculty}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setSelectedFaculty(val);
+                                                
+                                                if (val && val !== "Other") {
+                                                    const cleanName = val.toLowerCase().replace(/^dr\.\s+/i, '');
+                                                    const match = facultyProfiles.find(p => {
+                                                        const cleanProfileName = p.full_name.toLowerCase().replace(/^dr\.\s+/i, '');
+                                                        return cleanProfileName === cleanName || 
+                                                               cleanProfileName.includes(cleanName) || 
+                                                               cleanName.includes(cleanProfileName);
+                                                    });
+                                                    const selectEl = document.getElementsByName("faculty_id")[0] as HTMLSelectElement;
+                                                    if (selectEl) {
+                                                        selectEl.value = match ? match.id : "";
+                                                    }
+                                                }
+                                            }}
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                        >
+                                            <option value="">-- Select Faculty Mentor --</option>
+                                            {FACULTY_MENTORS_PRESET.map(name => (
+                                                <option key={name} value={name}>{name}</option>
+                                            ))}
+                                            <option value="Other">Other / Manual Entry...</option>
+                                        </select>
+                                        <select
+                                            name="faculty_id"
+                                            defaultValue={project.faculty_id || ""}
+                                            className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                        >
+                                            <option value="">-- No Account Linked --</option>
+                                            {facultyProfiles.map(p => (
+                                                <option key={p.id} value={p.id}>{p.full_name} ({p.role})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    {(selectedFaculty === 'Other' || (project.faculty && !FACULTY_MENTORS_PRESET.includes(project.faculty) && selectedFaculty === 'Other')) && (
+                                        <div className="animate-in slide-in-from-top-1 duration-200">
+                                            <input
+                                                id="faculty-name-input-manual"
+                                                name="faculty_name_manual"
+                                                placeholder="Dr. Full Name (Enter custom name)"
+                                                defaultValue={FACULTY_MENTORS_PRESET.includes(project.faculty || '') ? '' : (project.faculty || '')}
+                                                className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-350 text-sm shadow-inner"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Project } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
-import { MoreHorizontal, Clock, AlertCircle } from "lucide-react";
+import { MoreHorizontal, Clock, AlertCircle, Eye, Edit2, CheckSquare, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { format, subDays, isBefore } from "date-fns";
 import ExportCSVButton from "@/components/ExportCSVButton";
@@ -16,9 +16,37 @@ import { Skeleton } from "@/components/ui/custom-ui";
 export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const supabase = createClient();
+
+    useEffect(() => {
+        const handleOutsideClick = () => {
+            setActiveDropdownId(null);
+        };
+        window.addEventListener("click", handleOutsideClick);
+        return () => window.removeEventListener("click", handleOutsideClick);
+    }, []);
+
+    const handleDeleteProject = async (id: string, title: string) => {
+        if (!confirm(`Are you sure you want to delete "${title}"?\n\nThis will permanently remove the project, its PDSA cycles, task lists, files, and audit records. This action cannot be undone.`)) {
+            return;
+        }
+        setDeletingId(id);
+        try {
+            const { error } = await supabase.from("projects").delete().eq("id", id);
+            if (error) throw error;
+            setProjects(prev => prev.filter(p => p.id !== id));
+        } catch (err: any) {
+            console.error("Failed to delete project:", err);
+            alert("Failed to delete project. " + (err.message || ""));
+        } finally {
+            setDeletingId(null);
+            setActiveDropdownId(null);
+        }
+    };
 
     const status = searchParams.get("status");
     const q = searchParams.get("q");
@@ -225,11 +253,61 @@ export default function ProjectsPage() {
                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-500 font-medium">
                                             {format(new Date(project.last_updated_date), 'MMM d, yyyy')}
                                         </td>
-                                        <td className="px-6 py-5 whitespace-nowrap text-right flex items-center justify-end gap-2">
+                                        <td className="px-6 py-5 whitespace-nowrap text-right flex items-center justify-end gap-2 relative">
                                             <NudgeButton project={project} />
-                                            <button className="text-slate-400 hover:text-slate-600 p-1">
-                                                <MoreHorizontal className="w-5 h-5" />
-                                            </button>
+                                            <div className="relative">
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveDropdownId(activeDropdownId === project.id ? null : project.id);
+                                                    }}
+                                                    className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100/60 rounded-xl transition-all cursor-pointer"
+                                                >
+                                                    <MoreHorizontal className="w-5 h-5" />
+                                                </button>
+                                                
+                                                {activeDropdownId === project.id && (
+                                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                        <Link 
+                                                            href={`/projects/view?id=${project.id}`}
+                                                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-advent-navy hover:bg-slate-50 transition-colors text-left"
+                                                        >
+                                                            <Eye className="w-4 h-4 text-slate-400" />
+                                                            View Details
+                                                        </Link>
+                                                        <Link 
+                                                            href={`/projects/edit?id=${project.id}`}
+                                                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-advent-navy hover:bg-slate-50 transition-colors text-left"
+                                                        >
+                                                            <Edit2 className="w-4 h-4 text-slate-400" />
+                                                            Edit Project
+                                                        </Link>
+                                                        <Link 
+                                                            href={`/projects/kanban?id=${project.id}`}
+                                                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-advent-navy hover:bg-slate-50 transition-colors text-left"
+                                                        >
+                                                            <CheckSquare className="w-4 h-4 text-slate-400" />
+                                                            Manage Tasks
+                                                        </Link>
+                                                        <hr className="border-slate-100 my-1" />
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteProject(project.id, project.title);
+                                                            }}
+                                                            disabled={deletingId === project.id}
+                                                            className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50/50 transition-colors disabled:opacity-50"
+                                                        >
+                                                            {deletingId === project.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                                                            ) : (
+                                                                <Trash2 className="w-4 h-4 text-rose-450" />
+                                                            )}
+                                                            Delete Project
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 );
