@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import { Download, FileText, CheckCircle2, TrendingUp, Trophy, User, Calendar } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { exportToSquireWord } from '@/utils/squireExporter';
+import { toast } from '@/components/ui/custom-ui';
 
 interface ProjectReportGeneratorProps {
     project: Project;
@@ -38,22 +40,44 @@ export default function ProjectReportGenerator({ project, metrics }: ProjectRepo
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`QI_Report_${project.title.replace(/\s+/g, '_')}.pdf`);
+            toast.success('Executive PDF report downloaded successfully!');
         } catch (error) {
             console.error('PDF Generation Error:', error);
+            toast.error('Failed to generate PDF report.');
         } finally {
             element.style.display = 'none';
         }
     };
 
+    const handleWordExport = async () => {
+        try {
+            await exportToSquireWord(project, metrics);
+            toast.success('SQUIRE 2.0 manuscript draft exported successfully!');
+        } catch (error) {
+            console.error('Word Export Error:', error);
+            toast.error('Failed to generate SQUIRE 2.0 Word draft.');
+        }
+    };
+
     return (
         <>
-            <button
-                onClick={handleDownload}
-                className="flex items-center gap-2 bg-advent-navy text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-advent-cobalt transition-all shadow-lg shadow-advent-navy/10"
-            >
-                <Download className="w-4 h-4" />
-                Executive Report
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+                <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 bg-advent-navy text-white px-5 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-advent-cobalt transition-all shadow-lg shadow-advent-navy/10 cursor-pointer"
+                >
+                    <Download className="w-4 h-4" />
+                    Executive PDF
+                </button>
+
+                <button
+                    onClick={handleWordExport}
+                    className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-xs cursor-pointer"
+                >
+                    <FileText className="w-4 h-4 text-advent-navy" />
+                    SQUIRE 2.0 Word
+                </button>
+            </div>
 
             {/* Hidden Report Template (Rendered only for capture) */}
             <div
