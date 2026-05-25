@@ -327,7 +327,7 @@ export default function ConferenceMatcher({ isTabbed = false }: ConferenceMatche
                                                                 remarkPlugins={[remarkGfm]}
                                                                 components={{
                                                                     p: ({node, ...props}) => <p className="mb-2 last:mb-0 text-slate-700 leading-relaxed font-semibold text-[11px]" {...props} />,
-                                                                    strong: ({node, ...props}) => <strong className="font-black text-advent-navy block mt-3 mb-1 uppercase tracking-wider text-[10px]" {...props} />
+                                                                    strong: ({node, ...props}) => <strong className="font-black text-advent-navy inline" {...props} />
                                                                 }}
                                                             >
                                                                 {generatedAbstract}
