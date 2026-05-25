@@ -1,4 +1,5 @@
 import { createClient } from "./supabase/client";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const supabase = createClient();
 
@@ -29,17 +30,47 @@ export async function askAI(prompt: string, options?: { mode?: 'json' | 'text'; 
     User Query: ${prompt}`;
   }
 
-  const { data, error } = await supabase.functions.invoke('qi-consultant', {
-    body: { 
-      prompt: finalPrompt,
-      mode: requestMode,
-      useSearch: options?.useSearch
-    }
-  });
+  let responseText = "";
 
-  if (error) throw error;
-  
-  let responseText = data.text || "";
+  try {
+    const { data, error } = await supabase.functions.invoke('qi-consultant', {
+      body: { 
+        prompt: finalPrompt,
+        mode: requestMode,
+        useSearch: options?.useSearch
+      }
+    });
+
+    if (error) throw error;
+    responseText = data.text || "";
+  } catch (invokeError) {
+    console.warn("Supabase Edge Function invoke failed, executing client-side browser Gemini fallback:", invokeError);
+    
+    const clientApiKey = process.env.NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY || 
+                         process.env.NEXT_PUBLIC_GEMINI_API_KEY || 
+                         "";
+                         
+    if (clientApiKey) {
+      try {
+        const genAI = new GoogleGenerativeAI(clientApiKey);
+        // Fall back to standard model generation directly in browser
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.0-flash",
+          generationConfig: {
+            temperature: requestMode === 'json' ? 0.1 : 0.4,
+            ...(requestMode === 'json' ? { responseMimeType: "application/json" } : {})
+          }
+        });
+        const result = await model.generateContent(finalPrompt);
+        responseText = result.response.text();
+      } catch (clientError) {
+        console.error("Client-side fallback execution failed:", clientError);
+        throw invokeError; // rethrow original if fallback also fails
+      }
+    } else {
+      throw invokeError;
+    }
+  }
 
   // Client-side Bulletproof post-processing: strip all conversational preambles/throat-clearing
   if (!isJsonRequest) {

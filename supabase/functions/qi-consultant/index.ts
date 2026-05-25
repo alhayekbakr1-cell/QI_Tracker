@@ -35,7 +35,7 @@ serve(async (req) => {
     try {
         const body = await req.json()
         const { prompt, mode, useSearch } = body  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
-        const apiKey = Deno.env.get('GEMINI_API_KEY')
+        const apiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_GENERATIVE_AI_API_KEY')
 
         if (!apiKey) {
             return new Response(
@@ -45,20 +45,44 @@ serve(async (req) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            systemInstruction: SYSTEM_INSTRUCTION,
-            generationConfig: {
-                temperature: mode === 'json' ? 0.1 : 0.4,  // Lower for JSON (precision), slightly higher for chat (natural)
-                topP: 0.85,
-                topK: 30,
-                maxOutputTokens: 1024,
-                ...(mode === 'json' ? { responseMimeType: "application/json" } : {})
-            },
-            ...(useSearch ? { tools: [{ googleSearch: {} }] } : {})
-        })
+        let result;
+        
+        try {
+            if (useSearch) {
+                // Attempt search grounding with Gemini 2.0
+                const modelWithSearch = genAI.getGenerativeModel({
+                    model: "gemini-2.0-flash",
+                    systemInstruction: SYSTEM_INSTRUCTION,
+                    generationConfig: {
+                        temperature: mode === 'json' ? 0.1 : 0.4,
+                        topP: 0.85,
+                        topK: 30,
+                        maxOutputTokens: 1024,
+                        ...(mode === 'json' ? { responseMimeType: "application/json" } : {})
+                    },
+                    tools: [{ googleSearch: {} }]
+                });
+                result = await modelWithSearch.generateContent(prompt);
+            } else {
+                throw new Error("Search not requested");
+            }
+        } catch (searchError) {
+            console.warn("Search grounding failed or skipped, falling back to standard generation:", searchError.message);
+            // Fallback: standard model generation without tools
+            const standardModel = genAI.getGenerativeModel({
+                model: "gemini-2.0-flash",
+                systemInstruction: SYSTEM_INSTRUCTION,
+                generationConfig: {
+                    temperature: mode === 'json' ? 0.1 : 0.4,
+                    topP: 0.85,
+                    topK: 30,
+                    maxOutputTokens: 1024,
+                    ...(mode === 'json' ? { responseMimeType: "application/json" } : {})
+                }
+            });
+            result = await standardModel.generateContent(prompt);
+        }
 
-        const result = await model.generateContent(prompt)
         const responseText = result.response.text()
 
         if (!responseText) {
