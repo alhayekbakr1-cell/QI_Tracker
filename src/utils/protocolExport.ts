@@ -160,7 +160,7 @@ export async function generateProtocolDoc(data: ProtocolData): Promise<Blob> {
                     children: [
                         new TextRun({
                             text: "AdventHealth Internal Medicine Graduate Medical Education — Tampa, Florida",
-                            italic: true,
+                            italics: true,
                             size: 20, // 10pt
                             color: "555555",
                         }),
@@ -189,19 +189,27 @@ export async function generateProtocolDoc(data: ProtocolData): Promise<Blob> {
                 }),
 
                 new Paragraph({
-                    text: "Use this as a working protocol for your QI project. Keep it concise but specific. Replace all placeholders and delete guidance text before submission/presentation.",
-                    italic: true,
-                    size: 18,
-                    color: "666666",
+                    children: [
+                        new TextRun({
+                            text: "Use this as a working protocol for your QI project. Keep it concise but specific. Replace all placeholders and delete guidance text before submission/presentation.",
+                            italics: true,
+                            size: 18,
+                            color: "666666",
+                        }),
+                    ],
                     spacing: { before: 200, after: 300 },
                 }),
 
                 // Section 1: Project Overview Matrix
                 createSectionHeading("1. Project Overview"),
                 new Paragraph({
-                    text: "Briefly summarize the problem, the aim, and what you will change.",
-                    italic: true,
-                    size: 19,
+                    children: [
+                        new TextRun({
+                            text: "Briefly summarize the problem, the aim, and what you will change.",
+                            italics: true,
+                            size: 19,
+                        }),
+                    ],
                     spacing: { after: 150 },
                 }),
                 new Table({
@@ -232,7 +240,15 @@ export async function generateProtocolDoc(data: ProtocolData): Promise<Blob> {
                 createSubSectionHeading("Evidence Gaps or Local Barriers"),
                 new Paragraph({ text: data.evidenceGaps || "No local barriers/gaps described.", spacing: { after: 150 } }),
                 createSubSectionHeading("Citations"),
-                new Paragraph({ text: data.citations || "None listed in this section.", italic: true, spacing: { after: 200 } }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: data.citations || "None listed in this section.",
+                            italics: true,
+                        }),
+                    ],
+                    spacing: { after: 200 },
+                }),
 
                 // Section 3: Study Outcomes Table
                 createSectionHeading("3. Study Outcomes and Aim Statement"),
@@ -501,7 +517,7 @@ function createSectionHeading(text: string) {
             }),
         ],
         spacing: { before: 300, after: 100 },
-        keepWithNext: true,
+        keepNext: true,
     });
 }
 
@@ -516,7 +532,7 @@ function createSubSectionHeading(text: string) {
             }),
         ],
         spacing: { before: 150, after: 60 },
-        keepWithNext: true,
+        keepNext: true,
     });
 }
 
@@ -525,7 +541,7 @@ function createGuidanceParagraph(text: string) {
         children: [
             new TextRun({
                 text: text,
-                italic: true,
+                italics: true,
                 size: 18,
                 color: "777777",
             })

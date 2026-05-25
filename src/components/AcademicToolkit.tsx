@@ -1489,7 +1489,7 @@ function FishboneBuilder() {
 
                                 <rect x="820" y="200" width="165" height="100" fill="#003057" rx="12" ry="12" />
                                 <foreignObject x="825" y="205" width="155" height="90">
-                                    <div xmlns="http://www.w3.org/1999/xhtml" className="text-white font-serif italic font-bold text-[11px] text-center h-full flex items-center justify-center p-2 leading-relaxed">
+                                    <div className="text-white font-serif italic font-bold text-[11px] text-center h-full flex items-center justify-center p-2 leading-relaxed">
                                         {problem}
                                     </div>
                                 </foreignObject>

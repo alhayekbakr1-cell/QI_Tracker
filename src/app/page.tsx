@@ -141,7 +141,7 @@ export default function Dashboard() {
 
   // Dynamic 6-month project cumulative growth calculation
   const getTimelineData = () => {
-    const months = [];
+    const months: { name: string; year: number; monthNum: number; count: number }[] = [];
     const now = new Date();
     // Generate last 6 months labels, e.g., ["Dec", "Jan", "Feb", "Mar", "Apr", "May"]
     for (let i = 5; i >= 0; i--) {

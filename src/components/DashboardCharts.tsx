@@ -152,7 +152,7 @@ export default function DashboardCharts({ statusData, categoryData, timelineData
                                 type="category"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 10, fontWeight: 900, fill: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                                tick={{ fontSize: 10, fontWeight: 900, fill: '#475569', style: { textTransform: 'uppercase', letterSpacing: '0.05em' } }}
                                 width={85}
                             />
                             <Tooltip cursor={{ fill: '#F8FAFC' }} content={<CategoryTooltip />} />

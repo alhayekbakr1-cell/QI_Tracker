@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Project, Comment, Metric, Profile } from "@/types";
+import { Project, Comment, Metric, Profile, ProjectStatus } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 import PHIWarning from "@/components/PHIWarning";
 import MetricCharts from "@/components/MetricCharts";
