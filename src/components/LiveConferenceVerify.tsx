@@ -10,7 +10,7 @@ interface LiveConferenceVerifyProps {
     conferenceId: string;
     conferenceName: string;
     currentDeadline: string;
-    onUpdateComplete?: () => void;
+    onUpdateComplete?: (scrapedResult?: any) => void;
 }
 
 export default function LiveConferenceVerify({ conferenceId, conferenceName, currentDeadline, onUpdateComplete }: LiveConferenceVerifyProps) {
@@ -79,14 +79,29 @@ export default function LiveConferenceVerify({ conferenceId, conferenceName, cur
                 if (basicError) throw basicError;
             }
 
-            toast.success(`${conferenceName} guidelines & dates updated successfully!`);
+            toast.success(`${conferenceName} guidelines & dates synced to registry database!`);
             setStatus('idle');
             setResult(null);
-            if (onUpdateComplete) onUpdateComplete();
-        } catch (err) {
-            console.error('Failed to sync to database:', err);
-            toast.error('Failed to save scraped guidelines to database.');
-            setStatus('found');
+            if (onUpdateComplete) onUpdateComplete(result);
+        } catch (err: any) {
+            console.warn('Database Sync restricted or failed:', err);
+            
+            // Check if this is an RLS or permission restriction
+            const isRestricted = err.message?.includes('violates row-level security') || 
+                                 err.code === '42501' || 
+                                 err.status === 403 ||
+                                 err.message?.includes('permission') ||
+                                 err.message?.includes('row-level security');
+                                 
+            if (isRestricted) {
+                toast.success(`${conferenceName} guidelines loaded for this session! (Database sync is restricted to mentors.)`);
+                setStatus('idle');
+                setResult(null);
+                if (onUpdateComplete) onUpdateComplete(result);
+            } else {
+                toast.error(`Sync Failed: ${err.message || 'Unknown database write error'}`);
+                setStatus('found');
+            }
         }
     };
 
@@ -108,7 +123,7 @@ export default function LiveConferenceVerify({ conferenceId, conferenceName, cur
             )}
 
             {status === 'found' && result && (
-                <div className="absolute right-0 bottom-8 flex flex-col gap-2.5 p-4.5 bg-white border border-slate-200 rounded-2xl shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300 w-[280px] z-50">
+                <div className="absolute right-0 top-full mt-2 flex flex-col gap-2.5 p-4.5 bg-white border border-slate-200 rounded-2xl shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300 w-[280px] z-50">
                     <div className="flex justify-between items-start border-b border-slate-100 pb-1.5">
                         <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-amber-500" /> AI Scraped Guidelines

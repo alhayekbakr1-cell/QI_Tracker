@@ -166,9 +166,31 @@ export default function ConferenceMatcher({ isTabbed = false }: ConferenceMatche
                                         conferenceId={conf.id} 
                                         conferenceName={conf.fullName} 
                                         currentDeadline={deadline.toISOString()}
-                                        onUpdateComplete={async () => {
-                                            const data = await fetchRegistry();
-                                            setRegistry(data);
+                                        onUpdateComplete={async (scrapedData) => {
+                                            if (scrapedData) {
+                                                // Live local memory merge
+                                                setRegistry(prev => prev.map(c => {
+                                                    if (c.id === conf.id) {
+                                                        const date = new Date(scrapedData.deadline);
+                                                        return {
+                                                            ...c,
+                                                            month: date.getMonth(),
+                                                            day: date.getDate(),
+                                                            website: scrapedData.url || scrapedData.website || c.website,
+                                                            submissionUrl: scrapedData.url || c.submissionUrl,
+                                                            abstractLimit: scrapedData.abstractLimit || c.abstractLimit,
+                                                            requiredSections: scrapedData.requiredSections || c.requiredSections,
+                                                            posterDimensions: scrapedData.posterDimensions || c.posterDimensions,
+                                                            gmeTips: scrapedData.gmeTips || c.gmeTips
+                                                        };
+                                                    }
+                                                    return c;
+                                                }));
+                                            } else {
+                                                // Complete db refresh
+                                                const data = await fetchRegistry();
+                                                setRegistry(data);
+                                            }
                                         }}
                                     />
                                     <a 
