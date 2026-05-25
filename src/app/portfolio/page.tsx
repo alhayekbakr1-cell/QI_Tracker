@@ -20,7 +20,8 @@ import {
     ChevronDown
 } from "lucide-react";
 import Link from "next/link";
-import { Skeleton } from "@/components/ui/custom-ui";
+import { Skeleton, toast } from "@/components/ui/custom-ui";
+import jsPDF from "jspdf";
 
 export default function PortfolioPage() {
     const [myProjects, setMyProjects] = useState<Project[]>([]);
@@ -125,6 +126,176 @@ export default function PortfolioPage() {
             </div>
         );
     }
+
+    const downloadBoardLetter = () => {
+        try {
+            const doc = new jsPDF({
+                orientation: "portrait",
+                unit: "pt",
+                format: "letter"
+            });
+
+            // Set document metadata
+            doc.setProperties({
+                title: "GME QI Board Certification Letter",
+                subject: "Quality Improvement Milestones Cleared",
+                author: "AdventHealth Graduate Medical Education",
+                creator: "QI Tracker Chief"
+            });
+
+            const residentName = userProfile?.full_name || userEmail?.split("@")[0].split(".").map((n: string) => n.charAt(0).toUpperCase() + n.slice(1)).join(" ") || "Resident Physician";
+            
+            // Branding colors
+            const navy = [15, 44, 89]; // #0f2c59
+            const teal = [0, 169, 224]; // #00a9e0
+            const darkGrey = [60, 60, 60];
+
+            // 1. Header Banner Background
+            doc.setFillColor(navy[0], navy[1], navy[2]);
+            doc.rect(0, 0, 612, 120, "F");
+
+            // 2. Accent Bar
+            doc.setFillColor(teal[0], teal[1], teal[2]);
+            doc.rect(0, 120, 612, 5, "F");
+
+            // 3. Header Text
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("ADVENTHEALTH GRADUATE MEDICAL EDUCATION", 54, 55);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(190, 210, 230);
+            doc.text("QUALITY IMPROVEMENT & SCHOLARLY ACTIVITY TRACKER", 54, 75);
+            
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(9);
+            doc.text(`Verification Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 54, 92);
+
+            // 4. Document Title
+            doc.setTextColor(navy[0], navy[1], navy[2]);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.text("QI BOARD ELIGIBILITY CERTIFICATION", 54, 165);
+
+            // 5. Divider Line
+            doc.setDrawColor(220, 225, 230);
+            doc.setLineWidth(1);
+            doc.line(54, 175, 558, 175);
+
+            // 6. Memo Metadata Block
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(navy[0], navy[1], navy[2]);
+            doc.text("TO:", 54, 205);
+            doc.text("FROM:", 54, 225);
+            doc.text("DATE:", 54, 245);
+            doc.text("RE:", 54, 265);
+            doc.text("STATUS:", 54, 285);
+
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+            doc.text("Clinical Competency Committee (CCC) & Respective Specialty Board", 120, 205);
+            doc.text("Office of Graduate Medical Education, Quality Improvement Division", 120, 225);
+            doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), 120, 245);
+            
+            doc.setFont("helvetica", "bold");
+            doc.text(`Official QI Milestone Clearance - Dr. ${residentName}`, 120, 265);
+            
+            doc.setTextColor(16, 185, 129); // Green
+            doc.text("BOARD-READY / COMPLIANT", 120, 285);
+
+            // Divider Line
+            doc.setDrawColor(220, 225, 230);
+            doc.line(54, 305, 558, 305);
+
+            // 7. Memo Body Text
+            doc.setTextColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10.5);
+            
+            const p1 = `This letter serves as official verification that Dr. ${residentName} has successfully completed all institutional Quality Improvement (QI) and Clinical Milestone requirements set forth by the Graduate Medical Education (GME) committee and ACGME Common Program Requirements.`;
+            const splitP1 = doc.splitTextToSize(p1, 504);
+            doc.text(splitP1, 54, 335);
+
+            const p2 = `Through active engagement in continuous clinical improvement, Dr. ${residentName} has successfully designed, executed, and analyzed institutional scholarly projects using robust methodologies. The resident's portfolio has officially satisfied the three key GME scholarly milestones:`;
+            const splitP2 = doc.splitTextToSize(p2, 504);
+            doc.text(splitP2, 54, 390);
+
+            // 8. Milestones Checklist Box
+            const boxY = 460;
+            doc.setFillColor(245, 247, 250);
+            doc.rect(54, boxY, 504, 105, "F");
+            doc.setDrawColor(226, 232, 240);
+            doc.rect(54, boxY, 504, 105, "D");
+
+            // Bullet points inside box
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(navy[0], navy[1], navy[2]);
+            doc.text("Milestone", 74, boxY + 25);
+            doc.text("Requirement Status", 300, boxY + 25);
+            doc.text("Verification", 450, boxY + 25);
+
+            doc.setDrawColor(226, 232, 240);
+            doc.line(74, boxY + 32, 538, boxY + 32);
+
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+            doc.text("1. QI Protocol Approval", 74, boxY + 50);
+            doc.setTextColor(16, 185, 129);
+            doc.text("Completed", 300, boxY + 50);
+            doc.text("Verified", 450, boxY + 50);
+
+            doc.setTextColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+            doc.text("2. Iterative PDSA Testing", 74, boxY + 68);
+            doc.setTextColor(16, 185, 129);
+            doc.text(`Completed (${totalPDSAs} Cycles)`, 300, boxY + 68);
+            doc.text("Verified", 450, boxY + 68);
+
+            doc.setTextColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+            doc.text("3. Scholarly Dissemination", 74, boxY + 85);
+            doc.setTextColor(16, 185, 129);
+            doc.text("Completed", 300, boxY + 85);
+            doc.text("Verified", 450, boxY + 85);
+
+            // 9. Concluding paragraph
+            doc.setTextColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+            doc.setFont("helvetica", "normal");
+            const p3 = "Consequently, the GME Office clears the above-named physician as 'Board Ready' with respect to our Quality Improvement & Patient Safety curriculum requirements. We commend their dedication to enhancing patient safety, improving clinical pathways, and leading institutional research.";
+            const splitP3 = doc.splitTextToSize(p3, 504);
+            doc.text(splitP3, 54, boxY + 130);
+
+            // 10. Signature Section
+            const sigY = boxY + 210;
+            doc.setDrawColor(200, 200, 200);
+            doc.line(54, sigY, 220, sigY);
+            doc.line(340, sigY, 506, sigY);
+
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(navy[0], navy[1], navy[2]);
+            doc.text("GME QI Committee Chairperson", 54, sigY + 15);
+            doc.text("Designated Institutional Official (DIO)", 340, sigY + 15);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text("AdventHealth Clinical Research & Education", 54, sigY + 28);
+            doc.text("Office of Graduate Medical Education", 340, sigY + 28);
+
+            // Footer Branding
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(8);
+            doc.text("AdventHealth GME QI Tracker - Document Verification ID: AH-QI-" + Math.random().toString(36).substring(2, 10).toUpperCase(), 54, 730);
+
+            // Save PDF
+            doc.save(`QI_Board_Certification_Letter_${residentName.replace(/\s+/g, "_")}.pdf`);
+            toast.success("Board certification letter generated successfully!");
+        } catch (error) {
+            console.error("PDF generation error:", error);
+            toast.error("Failed to generate board certification letter.");
+        }
+    };
 
     // Graduation Requirements Logic
     const hasProtocol = myProjects.some(p => p.protocol_url);
@@ -242,9 +413,21 @@ export default function PortfolioPage() {
                         </h3>
                         <div className="space-y-3">
                             {completedCount === requirements.length ? (
-                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
-                                    <Award className="w-5 h-5 text-emerald-600" />
-                                    <p className="text-xs font-bold text-emerald-800">Board Ready / QI Milestone Met</p>
+                                <div className="space-y-3">
+                                    <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
+                                        <Award className="w-5 h-5 text-emerald-600 animate-pulse" />
+                                        <div>
+                                            <p className="text-xs font-bold text-emerald-800">Board Ready / QI Milestone Met</p>
+                                            <p className="text-[10px] text-emerald-600 font-medium">All ACGME scholarly milestones fully satisfied.</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={downloadBoardLetter}
+                                        className="w-full py-3 bg-advent-green hover:bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-advent-green/20 hover:shadow-emerald-600/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <Award className="w-4 h-4" />
+                                        Download Board Letter
+                                    </button>
                                 </div>
                             ) : (
                                 <p className="text-xs text-slate-500 italic px-2">Complete all milestones to unlock your QI Board Certification Letter.</p>
