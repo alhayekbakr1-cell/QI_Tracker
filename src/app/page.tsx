@@ -22,8 +22,8 @@ export default function Dashboard() {
   const [userProfile, setUserProfile] = useState<{ role: string; full_name: string | null } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCharts, setShowCharts] = useState(false);
-  const [activeMainTab, setActiveMainTab] = useState<'initiatives' | 'toolkit' | 'analytics'>('initiatives');
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'search' | 'matcher' | 'updates'>('search');
+  const [activeMainTab, setActiveMainTab] = useState<'initiatives' | 'matcher' | 'toolkit' | 'analytics'>('initiatives');
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'search' | 'updates'>('search');
   const router = useRouter();
   const supabase = createClient();
 
@@ -298,6 +298,7 @@ export default function Dashboard() {
           <div className="flex p-2 bg-slate-100/80 rounded-[2rem] border border-slate-200/80 shadow-[inset_0_2px_4px_rgba(15,23,42,0.03)] backdrop-blur-md">
             {[
               { id: 'initiatives', label: 'Active Initiatives', icon: List },
+              { id: 'matcher', label: 'Conference Matcher', icon: Trophy },
               { id: 'toolkit', label: 'Scholarly Toolkit', icon: Sparkles },
               { id: 'analytics', label: 'Surveillance Hub', icon: Activity }
             ].map((tab) => {
@@ -306,8 +307,8 @@ export default function Dashboard() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveMainTab(tab.id as 'initiatives' | 'toolkit' | 'analytics')}
-                  className={`flex-1 flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 cursor-pointer ${
+                  onClick={() => setActiveMainTab(tab.id as 'initiatives' | 'matcher' | 'toolkit' | 'analytics')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-4 px-3 sm:px-5 rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] sm:tracking-[0.15em] transition-all duration-300 cursor-pointer ${
                     isActive
                       ? "bg-white text-advent-navy border border-slate-200/60 shadow-[0_10px_25px_-5px_rgba(15,23,42,0.05)] scale-102"
                       : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
@@ -384,6 +385,13 @@ export default function Dashboard() {
               </div>
             )}
 
+            {activeMainTab === 'matcher' && (
+              <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-xs relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600" />
+                <ConferenceMatcher isTabbed={true} />
+              </div>
+            )}
+
             {activeMainTab === 'toolkit' && (
               <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-xs relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy via-advent-sky to-advent-green" />
@@ -434,7 +442,6 @@ export default function Dashboard() {
             <div className="flex p-1 bg-slate-50 border border-slate-200/70 rounded-2xl relative shadow-[inset_0_1px_2px_rgba(15,23,42,0.02)]">
               {[
                 { id: 'search', label: 'Search', icon: Search, color: 'text-advent-navy' },
-                { id: 'matcher', label: 'Matcher', icon: Trophy, color: 'text-amber-500' },
                 { id: 'updates', label: 'Updates', icon: Activity, color: 'text-emerald-500' }
               ].map((tab) => {
                 const TabIcon = tab.icon;
@@ -442,7 +449,7 @@ export default function Dashboard() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveSidebarTab(tab.id as 'search' | 'matcher' | 'updates')}
+                    onClick={() => setActiveSidebarTab(tab.id as 'search' | 'updates')}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                       isActive
                         ? "bg-white text-slate-900 border border-slate-200/65 shadow-2xs scale-102"
@@ -504,18 +511,6 @@ export default function Dashboard() {
                       ))}
                     </div>
                   </section>
-                </div>
-              )}
-
-              {activeSidebarTab === 'matcher' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
-                      <Trophy className="w-3.5 h-3.5 text-amber-500/80" />
-                      Academic Matching
-                    </h4>
-                  </div>
-                  <ConferenceMatcher isTabbed={true} />
                 </div>
               )}
 
