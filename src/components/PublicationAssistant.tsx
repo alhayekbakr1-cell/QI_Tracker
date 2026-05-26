@@ -94,6 +94,81 @@ async function searchPubMed(query: string) {
     }
 }
 
+async function searchSemanticScholar(query: string) {
+    try {
+        const apiKey = process.env.NEXT_PUBLIC_SEMANTIC_SCHOLAR_KEY || '';
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        if (apiKey) {
+            headers['x-api-key'] = apiKey;
+        }
+
+        const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(
+            query
+        )}&limit=5&fields=title,authors,venue,year,url,abstract`;
+
+        const response = await fetch(url, { headers });
+        if (!response.ok) throw new Error('Semantic Scholar search failed');
+        const data = await response.json();
+        const papers = data.data || [];
+
+        return papers.map((paper: any) => {
+            const authorsList = paper.authors 
+                ? paper.authors.map((a: any) => a.name).join(', ')
+                : 'Unknown Authors';
+            return {
+                id: paper.paperId,
+                title: paper.title || 'No Title Available',
+                authors: authorsList,
+                journal: paper.venue || 'No Venue Listed',
+                date: paper.year ? paper.year.toString() : 'No Year',
+                url: paper.url || `https://www.semanticscholar.org/paper/${paper.paperId}`,
+                abstract: paper.abstract || ''
+            };
+        });
+    } catch (err) {
+        console.error('Semantic Scholar search failed:', err);
+        throw err;
+    }
+}
+
+async function searchOpenAlex(query: string) {
+    try {
+        const priorityMail = process.env.NEXT_PUBLIC_OPENALEX_KEY || '';
+        let url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per_page=5`;
+        if (priorityMail && priorityMail.includes('@')) {
+            url += `&mailto=${encodeURIComponent(priorityMail)}`;
+        } else if (priorityMail) {
+            url += `&api_key=${encodeURIComponent(priorityMail)}`;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('OpenAlex search failed');
+        const data = await response.json();
+        const results = data.results || [];
+
+        return results.map((work: any) => {
+            const authorsList = work.authorships
+                ? work.authorships.map((a: any) => a.author.display_name).join(', ')
+                : 'Unknown Authors';
+            const sourceName = work.primary_location?.source?.display_name || 'No Source Listed';
+            return {
+                id: work.id,
+                title: work.title || 'No Title Available',
+                authors: authorsList,
+                journal: `${sourceName} (Citations: ${work.cited_by_count || 0})`,
+                date: work.publication_year ? work.publication_year.toString() : 'No Date',
+                url: work.doi || `https://openalex.org/${work.id.split('/').pop()}`,
+                abstract: ''
+            };
+        });
+    } catch (err) {
+        console.error('OpenAlex search failed:', err);
+        throw err;
+    }
+}
+
 async function searchClinicalTrials(query: string) {
     try {
         const res = await fetch(
@@ -163,7 +238,7 @@ export default function PublicationAssistant({
 
     // New literature search/synthesis states
     const [searchQuery, setSearchQuery] = useState('')
-    const [searchDb, setSearchDb] = useState<'pubmed' | 'clinicaltrials'>('pubmed')
+    const [searchDb, setSearchDb] = useState<'pubmed' | 'clinicaltrials' | 'semanticscholar' | 'openalex'>('pubmed')
     const [searchResults, setSearchResults] = useState<any[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchError, setSearchError] = useState<string | null>(null)
@@ -461,13 +536,19 @@ export default function PublicationAssistant({
             if (searchDb === 'pubmed') {
                 const results = await searchPubMed(searchQuery);
                 setSearchResults(results);
+            } else if (searchDb === 'semanticscholar') {
+                const results = await searchSemanticScholar(searchQuery);
+                setSearchResults(results);
+            } else if (searchDb === 'openalex') {
+                const results = await searchOpenAlex(searchQuery);
+                setSearchResults(results);
             } else {
                 const results = await searchClinicalTrials(searchQuery);
                 setSearchResults(results);
             }
         } catch (err) {
             console.error(err);
-            setSearchError('Search failed. Please refine your query or try again.');
+            setSearchError('Search failed. Please refine your query or verify your API key configurations.');
         } finally {
             setIsSearching(false);
         }
@@ -477,12 +558,34 @@ export default function PublicationAssistant({
         if (synthesizingId) return;
         setSynthesizingId(result.id);
         try {
+            let textToPass = result.abstract || '';
+            const jinaKey = process.env.NEXT_PUBLIC_JINA_READER_KEY || '';
+            
+            // If the paper has a URL and Jina Key is present, and we don't have an abstract yet, fetch it
+            if (result.url && jinaKey && !textToPass) {
+                try {
+                    const jinaRes = await fetch(`https://r.jina.ai/${encodeURIComponent(result.url)}`, {
+                        headers: {
+                            'Authorization': `Bearer ${jinaKey}`
+                        }
+                    });
+                    if (jinaRes.ok) {
+                        const jinaText = await jinaRes.text();
+                        // Truncate to prevent token bloat
+                        textToPass = jinaText.substring(0, 4000);
+                    }
+                } catch (jinaErr) {
+                    console.warn("Jina Reader fetch failed:", jinaErr);
+                }
+            }
+
             const insight = await synthesizeLitInsight(
                 result.title,
                 result.authors,
                 result.journal,
-                searchDb === 'pubmed' ? 'pubmed' : 'trial',
-                project.title
+                searchDb === 'pubmed' ? 'pubmed' : searchDb === 'semanticscholar' ? 'semanticscholar' : searchDb === 'openalex' ? 'openalex' : 'trial',
+                project.title,
+                textToPass
             );
             setSynthesizedInsights(prev => ({
                 ...prev,
@@ -693,11 +796,11 @@ export default function PublicationAssistant({
                                     </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                                    <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/60 w-full sm:w-auto">
+                                    <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/60 w-full sm:w-auto overflow-x-auto">
                                         <button
                                             type="button"
                                             onClick={() => setSearchDb('pubmed')}
-                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                                                 searchDb === 'pubmed'
                                                     ? 'bg-white text-advent-blue shadow-sm border border-slate-200/10'
                                                     : 'text-slate-500 hover:text-slate-800'
@@ -708,15 +811,39 @@ export default function PublicationAssistant({
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setSearchDb('clinicaltrials')}
-                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                                searchDb === 'clinicaltrials'
+                                            onClick={() => setSearchDb('semanticscholar')}
+                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                                                searchDb === 'semanticscholar'
+                                                    ? 'bg-white text-advent-blue shadow-sm border border-slate-200/10'
+                                                    : 'text-slate-500 hover:text-slate-800'
+                                            }`}
+                                        >
+                                            <BookOpen className="w-3 h-3" />
+                                            Semantic Scholar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchDb('openalex')}
+                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                                                searchDb === 'openalex'
                                                     ? 'bg-white text-advent-blue shadow-sm border border-slate-200/10'
                                                     : 'text-slate-500 hover:text-slate-800'
                                             }`}
                                         >
                                             <Sparkles className="w-3 h-3" />
-                                            ClinicalTrials.gov
+                                            OpenAlex
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchDb('clinicaltrials')}
+                                            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                                                searchDb === 'clinicaltrials'
+                                                    ? 'bg-white text-advent-blue shadow-sm border border-slate-200/10'
+                                                    : 'text-slate-500 hover:text-slate-800'
+                                            }`}
+                                        >
+                                            <Activity className="w-3 h-3" />
+                                            ClinicalTrials
                                         </button>
                                     </div>
 
@@ -775,10 +902,20 @@ export default function PublicationAssistant({
                                                         <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
                                                             searchDb === 'pubmed' 
                                                                 ? 'bg-blue-50 border border-blue-100 text-blue-600' 
-                                                                : 'bg-indigo-50 border border-indigo-100 text-indigo-600'
+                                                                : searchDb === 'semanticscholar'
+                                                                    ? 'bg-emerald-50 border border-emerald-100 text-emerald-600'
+                                                                    : searchDb === 'openalex'
+                                                                        ? 'bg-purple-50 border border-purple-100 text-purple-600'
+                                                                        : 'bg-indigo-50 border border-indigo-100 text-indigo-600'
                                                         }`}>
                                                             <Database className="w-2.5 h-2.5" />
-                                                            {searchDb === 'pubmed' ? 'PubMed ID: ' + result.id : 'ClinicalTrials.gov: ' + result.id}
+                                                            {searchDb === 'pubmed' 
+                                                                ? 'PubMed ID: ' + result.id 
+                                                                : searchDb === 'semanticscholar'
+                                                                    ? 'Semantic Scholar'
+                                                                    : searchDb === 'openalex'
+                                                                        ? 'OpenAlex ID'
+                                                                        : 'ClinicalTrials.gov: ' + result.id}
                                                         </span>
                                                         <span className="text-[9px] font-bold text-slate-400">{result.date}</span>
                                                     </div>

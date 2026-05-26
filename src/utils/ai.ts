@@ -450,19 +450,21 @@ export async function synthesizeLitInsight(
   title: string,
   authors: string,
   journal: string,
-  type: 'pubmed' | 'trial',
-  projectTitle: string
+  type: 'pubmed' | 'trial' | 'semanticscholar' | 'openalex',
+  projectTitle: string,
+  fullTextOrAbstract?: string
 ) {
   const prompt = `
     You are a Quality Improvement (QI) Academic Consultant. 
     A resident is working on a clinical QI project titled "${projectTitle}".
-    They found the following ${type === 'pubmed' ? 'research paper' : 'clinical trial'} in the literature:
+    They found the following study in the literature:
     
     Title: ${title}
     Source: ${journal} ${authors ? `by ${authors}` : ''}
+    ${fullTextOrAbstract ? `\nPaper Abstract / Content Summary:\n${fullTextOrAbstract}\n` : ''}
     
     Provide a highly rigorous, clinical, and scientific synthesis (2-3 sentences max) explaining:
-    1. A concrete, quasi-experimental QI project intervention suggestion translated directly from the clinical methods or findings of this study.
+    1. A concrete, quasi-experimental QI project intervention suggestion translated directly from the clinical methods or findings of this study (or the provided abstract/text summary).
     2. A structured mapping of this intervention to a specific Process Metric (what to implement), Outcome Metric (intended clinical benefit), and Balancing Metric (potential unintended workflow or safety side-effect).
     
     Structure the output with an authoritative, academic medical tone. Do NOT include markdown headings, just write a cohesive, elegant, and action-oriented paragraph.
