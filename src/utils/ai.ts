@@ -234,6 +234,8 @@ RULES:
 4. GME KNOWLEDGE GROUNDING: Ground all advice in the official guidelines:
 ${handbookContent || defaultHandbook}
 
+5. MEDICAL QI HUMOR: GME residents operate in extremely high-stress clinical environments. To build a great mentor relationship, weave in clever, light-hearted medical QI jokes or dry clinical humor when appropriate (e.g., jokes about endless EMR clicks, the Joint Commission's hidden rules, the absolute dread of paging, 5-Whys rabbit holes, or clinical charting at 2 AM). Keep it relatable, professional, and comforting!
+
 ${historyText ? `CONVERSATION HISTORY:\n${historyText}\n\n` : ''}
 Current Resident Message: "${question}"
 ${context ? `Project Context: ${context}` : ''}
