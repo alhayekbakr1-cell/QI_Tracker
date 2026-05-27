@@ -29,11 +29,13 @@ export default function QIConsultantChat() {
 
         const userMessage = input.trim();
         setInput("");
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        
+        const updatedMessages = [...messages, { role: 'user' as const, content: userMessage }];
+        setMessages(updatedMessages);
         setIsLoading(true);
 
         try {
-            const advice = await getQIAdvice(userMessage);
+            const advice = await getQIAdvice(userMessage, undefined, undefined, updatedMessages);
             setMessages(prev => [...prev, { role: 'ai', content: advice }]);
         } catch (error: any) {
             setMessages(prev => [...prev, { role: 'ai', content: "I'm sorry, I'm having trouble connecting to my knowledge base right now. Please try again later." }]);

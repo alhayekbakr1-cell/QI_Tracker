@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const supabase = createClient();
 
-export async function askAI(prompt: string, options?: { mode?: 'json' | 'text'; useSearch?: boolean }) {
+export async function askAI(prompt: string, options?: { mode?: 'json' | 'text'; useSearch?: boolean; isChat?: boolean }) {
   const isJsonRequest = options?.mode === 'json' || 
     /output\s+ONLY\s+a\s+valid,?\s+raw\s+JSON/i.test(prompt) || 
     /output\s+ONLY\s+the\s+JSON/i.test(prompt) ||
@@ -13,7 +13,7 @@ export async function askAI(prompt: string, options?: { mode?: 'json' | 'text'; 
 
   // If it's a standard text/dialogue prompt, wrap it with our elite senior academic consultant instructions.
   let finalPrompt = prompt;
-  if (!isJsonRequest) {
+  if (!isJsonRequest && !options?.isChat) {
     finalPrompt = `[ACADEMIC DIRECTIVE: You are Dr. QI, the Senior Academic Expert in Clinical Research and GME Quality Improvement.
     
     1. ZERO PREAMBLE: Start your answer immediately. Do not say "Okay", "Sure", "Let's begin", "Here is a plan", "Great question", or any conversational throat-clearing.
@@ -184,7 +184,12 @@ export async function suggestMetrics(projectTitle: string) {
   return askAI(prompt);
 }
 
-export async function getQIAdvice(question: string, context?: string, handbookContent?: string) {
+export async function getQIAdvice(
+  question: string,
+  context?: string,
+  handbookContent?: string,
+  history?: { role: 'user' | 'ai'; content: string }[]
+) {
   const defaultHandbook = `
   ADVENTHEALTH GME QI & SCHOLARLY ACTIVITY ACADEMIC GUIDELINES:
   
@@ -207,24 +212,35 @@ export async function getQIAdvice(question: string, context?: string, handbookCo
   3. ROOT CAUSE ANALYSIS (RCA) METHODOLOGY:
      - Ishikawa (Fishbone) Domains: Every project must evaluate five distinct root-cause dimensions: People (staffing, knowledge), Process (workflows, standard protocols), Equipment (EHR configurations, order sets), Environment (culture, layout), and Materials (templates, educational handouts).
      - 5-Whys Analysis: A sequence of logical queries leading to the actionable organizational root cause.
-     
-  4. IRB DETERMINATION & COMPLIANCE:
+     - 4. IRB DETERMINATION & COMPLIANCE:
      - Quality Improvement projects are classified under 45 CFR 46.102(l) as systemic, data-guided activities designed for local clinical improvement, and are typically determined as "Exempt/Non-Research". However, any activity seeking generalizable knowledge through randomized trials is classified as Human Subjects Research (HSR) and requires full IRB review.
   `;
 
-  const prompt = `
-    You are Dr. QI, the Senior Academic Expert in Clinical Research and GME Quality Improvement at AdventHealth.
-    The resident is asking an academic question regarding QI or clinical research methodology.
-    
-    ACADEMIC HANDBOOK & KNOWLEDGE BASE:
-    ${handbookContent || defaultHandbook}
-    
-    Resident's Query: ${question}
-    ${context ? `Project Context: ${context}` : ''}
-    
-    Provide a publication-grade, scholarly, and direct clinical research guidance response. If their query is vague, actively ask 2-3 specific questions to clarify their baseline rate, outcome metrics, PICO parameters, or PDSA cycle plan. Suggest concrete systems improvements (e.g., EMR Best Practice Alerts, interdisciplinary audits). Cite specific rules from the handbook where appropriate.
-  `;
-  return askAI(prompt);
+  // Format the conversation history to feed to the LLM
+  const historyText = history && history.length > 0
+    ? history.map(msg => `${msg.role === 'user' ? 'Resident' : 'Dr. QI'}: ${msg.content}`).join('\n\n')
+    : '';
+
+  const prompt = `You are Dr. QI, a senior, friendly academic research and Quality Improvement mentor for residents at AdventHealth.
+Your goal is to guide the resident step-by-step through their scholarly projects in an interactive, encouraging, and highly educational manner.
+
+RULES:
+1. FRIENDLY & INTERACTIVE: Speak like a real conversational mentor. If the resident says hello (e.g. "hi", "hello", "hey"), greet them warmly and ask how their QI project brainstorming is going. Do not demand clinical metrics or throw lists of questions at them for simple greetings!
+2. STEP-BY-STEP GUIDANCE: Guide them through one phase at a time (e.g., brainstorming the problem, shaping a SMART Aim, mapping root causes, selecting Process/Outcome/Balancing metrics, and designing PDSA cycles). Praise their progress!
+3. HIGHLY VISUAL & SCANNABLE: Break up your replies into readable formatting:
+   - Use clean h4 headers (#### Section Name) to group advice segments.
+   - Highlight clinical parameters in bold (**SMART Aim**, **Process Metric**).
+   - Format interactive queries as clean checklists (e.g., "- [ ] Can you describe the clinical problem?") or bulleted lists.
+4. GME KNOWLEDGE GROUNDING: Ground all advice in the official guidelines:
+${handbookContent || defaultHandbook}
+
+${historyText ? `CONVERSATION HISTORY:\n${historyText}\n\n` : ''}
+Current Resident Message: "${question}"
+${context ? `Project Context: ${context}` : ''}
+
+Respond conversationally as Dr. QI:`;
+
+  return askAI(prompt, { isChat: true });
 }
 
 export async function generateExecutiveReport(projectsSummary: string) {
