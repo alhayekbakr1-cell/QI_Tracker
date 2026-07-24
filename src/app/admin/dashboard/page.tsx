@@ -7,8 +7,10 @@ import {
 } from "recharts";
 import {
     TrendingUp, Users, AlertTriangle, CheckCircle2,
-    Clock, ArrowRight, Activity, ShieldCheck, Mail, Loader2
+    Clock, ArrowRight, Activity, ShieldCheck, Mail, Loader2, Search, Filter
 } from "lucide-react";
+import ActivityFeed from "@/components/ActivityFeed";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types";
 import { differenceInDays, format } from "date-fns";
@@ -21,6 +23,7 @@ export default function ExecutiveDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isNudging, setIsNudging] = useState<string | null>(null);
     const [productionMode, setProductionMode] = useState(false);
+    const [activeSidebarTab, setActiveSidebarTab] = useState<'search' | 'updates'>('search');
 
     useEffect(() => {
         async function fetchData() {
@@ -234,6 +237,108 @@ export default function ExecutiveDashboard() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* GME Registry Control Console */}
+                <div className="lg:col-span-1 bg-white border border-slate-200/60 rounded-[2.5rem] p-7 shadow-sm space-y-6 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy via-amber-500 to-advent-green" />
+                    
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Command Center</span>
+                            <h3 className="text-sm font-serif italic font-bold text-slate-900">Academic Console</h3>
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200/60 shadow-sm">
+                            Active Surveillance
+                        </span>
+                    </div>
+
+                    <div className="flex p-1 bg-slate-50 border border-slate-200/70 rounded-2xl relative shadow-inner">
+                        {[
+                            { id: 'search', label: 'Search', icon: Search, color: 'text-advent-navy' },
+                            { id: 'updates', label: 'Updates', icon: Activity, color: 'text-emerald-500' }
+                        ].map((tab) => {
+                            const TabIcon = tab.icon;
+                            const isActive = activeSidebarTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveSidebarTab(tab.id as 'search' | 'updates')}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                                        isActive
+                                            ? "bg-white text-slate-900 border border-slate-200/65 shadow-sm scale-105"
+                                            : "text-slate-500 hover:text-slate-950 hover:bg-white/50"
+                                    }`}
+                                >
+                                    <TabIcon className={`w-3.5 h-3.5 ${isActive ? tab.color : 'text-slate-400'}`} />
+                                    <span>{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 min-h-[250px] flex flex-col justify-between">
+                        {activeSidebarTab === 'search' && (
+                            <div className="space-y-6">
+                                <section className="space-y-3">
+                                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-[0.25em]">
+                                        <Search className="w-3.5 h-3.5 text-advent-navy/60" />
+                                        Registry Search
+                                    </h4>
+                                    <div className="relative group">
+                                        <input
+                                            type="text"
+                                            placeholder="Search GME initiatives..."
+                                            className="w-full pl-10 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-advent-navy/10 focus:border-advent-navy outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
+                                        />
+                                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-advent-navy transition-colors" />
+                                    </div>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-[0.25em]">
+                                        <Filter className="w-3.5 h-3.5 text-advent-navy/60" />
+                                        Status Quick Filters
+                                    </h4>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {[
+                                            { name: 'Idea', dot: 'bg-violet-400' },
+                                            { name: 'Pre-Intervention', dot: 'bg-blue-400' },
+                                            { name: 'Intervention Ongoing', dot: 'bg-amber-400' },
+                                            { name: 'Sustain the Gains', dot: 'bg-cyan-400' },
+                                            { name: 'Impacted (Completed)', dot: 'bg-emerald-400' }
+                                        ].map(s => (
+                                            <Link
+                                                key={s.name}
+                                                href={`/projects?status=${s.name}`}
+                                                prefetch={false}
+                                                className="px-3 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 hover:border-advent-navy rounded-lg text-[8px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-advent-navy transition-all duration-300 flex items-center gap-1.5"
+                                            >
+                                                <span className={`w-1.5 h-1.5 rounded-full ${s.dot} inline-block`} />
+                                                {s.name}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </section>
+                            </div>
+                        )}
+
+                        {activeSidebarTab === 'updates' && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between border-b border-slate-50 pb-2">
+                                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-[0.25em]">
+                                        <Activity className="w-3.5 h-3.5 text-emerald-500/80 animate-pulse" />
+                                        Real-Time Updates
+                                    </h4>
+                                </div>
+                                <div className="max-h-[360px] overflow-y-auto pr-1">
+                                    <ActivityFeed />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

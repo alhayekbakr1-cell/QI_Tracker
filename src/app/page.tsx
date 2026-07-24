@@ -2,16 +2,11 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import PHIWarning from "@/components/PHIWarning";
 import ProjectCard from "@/components/ProjectCard";
-import { Project, ProjectStatus } from "@/types";
-import { Plus, Search, Filter, ArrowRight, List, LayoutPanelLeft, Activity, ChevronDown, ChevronRight, AlertTriangle, Sparkles, Trophy } from "lucide-react";
+import { Project } from "@/types";
+import { List, LayoutPanelLeft, Filter } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import DashboardCharts from "@/components/DashboardCharts";
-import ConferenceMatcher from "@/components/ConferenceMatcher";
-import ActivityFeed from "@/components/ActivityFeed";
-import AcademicToolkit from "@/components/AcademicToolkit";
 import { Skeleton } from "@/components/ui/custom-ui";
 import RequestPortal from "@/components/RequestPortal";
 
@@ -21,9 +16,6 @@ export default function Dashboard() {
   const [userId, setUserId] = useState<string>("");
   const [userProfile, setUserProfile] = useState<{ role: string; full_name: string | null } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCharts, setShowCharts] = useState(false);
-  const [activeMainTab, setActiveMainTab] = useState<'initiatives' | 'matcher' | 'toolkit' | 'analytics'>('initiatives');
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'search' | 'updates'>('search');
   const router = useRouter();
   const supabase = createClient();
 
@@ -139,96 +131,20 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Charts Skeleton */}
-        <Skeleton className="h-96 w-full rounded-[2.5rem] animate-pulse" />
-
         {/* Recent & Sidebar Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 pt-4">
-          <div className="lg:col-span-2 space-y-8">
+        <div className="grid grid-cols-1 gap-12 pt-4">
+          <div className="space-y-8">
             <Skeleton className="h-16 w-full rounded-2xl animate-pulse" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Skeleton className="h-48 rounded-3xl animate-pulse" />
               <Skeleton className="h-48 rounded-3xl animate-pulse" />
               <Skeleton className="h-48 rounded-3xl animate-pulse" />
             </div>
-          </div>
-          <div className="space-y-8">
-            <Skeleton className="h-96 w-full rounded-[2.5rem] animate-pulse" />
           </div>
         </div>
       </div>
     );
   }
-
-  // Statistics
-  const stats: Record<ProjectStatus | 'Total', number> = {
-    'Total': projects.length,
-    'Idea': projects.filter(p => p.status === 'Idea').length,
-    'Pre-Intervention': projects.filter(p => p.status === 'Pre-Intervention').length,
-    'Intervention Ongoing': projects.filter(p => p.status === 'Intervention Ongoing').length,
-    'Sustain the Gains': projects.filter(p => p.status === 'Sustain the Gains').length,
-    'Impacted (Completed)': projects.filter(p => p.status === 'Impacted (Completed)').length,
-  };
-
-  const statusChartData = [
-    { name: 'Idea', value: stats.Idea },
-    { name: 'Pre-Intervention', value: stats['Pre-Intervention'] },
-    { name: 'Intervention Ongoing', value: stats['Intervention Ongoing'] },
-    { name: 'Sustain the Gains', value: stats['Sustain the Gains'] },
-    { name: 'Impacted (Completed)', value: stats['Impacted (Completed)'] },
-  ].filter(d => d.value > 0);
-
-  const categoryChartData = [
-    { name: 'Inpatient', value: projects.filter(p => p.category === 'Inpatient').length },
-    { name: 'Outpatient', value: projects.filter(p => p.category === 'Outpatient').length },
-  ];
-
-  // Dynamic 6-month project cumulative growth calculation
-  const getTimelineData = () => {
-    const months: { name: string; year: number; monthNum: number; count: number }[] = [];
-    const now = new Date();
-    // Generate last 6 months labels, e.g., ["Dec", "Jan", "Feb", "Mar", "Apr", "May"]
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push({
-        name: d.toLocaleString('default', { month: 'short' }),
-        year: d.getFullYear(),
-        monthNum: d.getMonth(),
-        count: 0
-      });
-    }
-
-    // Distribute projects to months based on created_at or last_updated_date if created_at is missing
-    projects.forEach(p => {
-      const targetDateStr = p.created_at || p.last_updated_date;
-      if (!targetDateStr) return;
-      const createdDate = new Date(targetDateStr);
-      // Find matching month
-      const match = months.find(m => m.year === createdDate.getFullYear() && m.monthNum === createdDate.getMonth());
-      if (match) {
-        match.count++;
-      } else {
-        // If it was created before the 6-month window, it should count towards the baseline of the first month
-        const firstMonthDate = new Date(months[0].year, months[0].monthNum, 1);
-        if (createdDate < firstMonthDate) {
-          months[0].count++;
-        }
-      }
-    });
-
-    // Compute cumulative sum
-    let cumulative = 0;
-    const timelineData = months.map(m => {
-      cumulative += m.count;
-      return {
-        name: m.name,
-        value: cumulative
-      };
-    });
-
-    return timelineData;
-  };
-
-  const timelineChartData = getTimelineData();
 
   const recentProjects = projects.slice(0, 6);
 
@@ -287,42 +203,6 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-
-            {/* Embedded PHI Warning Banner with Luxury Gold Glow */}
-            <div className="flex items-start gap-4 bg-amber-500/5 border border-amber-500/15 text-amber-250/90 p-5 rounded-[2rem] text-xs font-semibold leading-relaxed max-w-2xl shadow-inner backdrop-blur-xs relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500/40" />
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
-              <div>
-                <strong className="text-amber-300 uppercase tracking-widest font-black block mb-1 text-[10px]">
-                  Protected Health Information (PHI) Notice
-                </strong>
-                Never enter patient identifiers (names, MRNs, DOBs). Ensure all registry inputs are de-identified under HIPAA Safe Harbor guidelines.
-              </div>
-            </div>
-          </div>
-
-          {/* Compact Stats 3x2 Grid - styled as Luxury Registry Gauges */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 w-full lg:w-[26rem] shrink-0 lg:border-l lg:border-slate-800/80 lg:pl-10 relative">
-            {[
-              { label: "Total Initiatives", value: stats.Total, style: "border-slate-800 bg-slate-950/60 text-white shadow-inner" },
-              { label: "Phase: Idea", value: stats.Idea, style: "border-violet-500/15 bg-violet-950/15 text-violet-300 neon-glow-violet" },
-              { label: "Pre-Intervention", value: stats['Pre-Intervention'], style: "border-blue-500/15 bg-blue-950/15 text-blue-300 neon-glow-sky" },
-              { label: "Ongoing PDSA", value: stats['Intervention Ongoing'], style: "border-amber-500/15 bg-amber-950/15 text-amber-300" },
-              { label: "Sustained Gains", value: stats['Sustain the Gains'], style: "border-cyan-500/15 bg-cyan-950/15 text-cyan-300" },
-              { label: "Completed Impact", value: stats['Impacted (Completed)'], style: "border-emerald-500/15 bg-emerald-950/15 text-emerald-300 neon-glow-emerald" },
-            ].map((chip) => (
-              <div
-                key={chip.label}
-                className={`flex flex-col justify-between p-4 rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] ${chip.style}`}
-              >
-                <span className="text-[8px] font-extrabold uppercase tracking-widest opacity-60 leading-tight block truncate">
-                  {chip.label}
-                </span>
-                <span className="text-2xl sm:text-3.5xl font-black mt-2 leading-none font-sans">
-                  {chip.value}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
         
@@ -332,278 +212,69 @@ export default function Dashboard() {
       </div>
 
       {/* 🏛️ Main Interactive Content Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
-        {/* Left Columns: Dynamic Tabbed Canvas */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Custom Luxury Tab Switcher Container */}
-          <div className="flex p-2 bg-slate-100/80 rounded-[2rem] border border-slate-200/80 shadow-[inset_0_2px_4px_rgba(15,23,42,0.03)] backdrop-blur-md">
-            {[
-              { id: 'initiatives', label: 'Active Initiatives', icon: List },
-              { id: 'matcher', label: 'Conference Matcher', icon: Trophy },
-              { id: 'toolkit', label: 'Scholarly Toolkit', icon: Sparkles },
-              { id: 'analytics', label: 'Surveillance Hub', icon: Activity }
-            ].map((tab) => {
-              const TabIcon = tab.icon;
-              const isActive = activeMainTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveMainTab(tab.id as 'initiatives' | 'matcher' | 'toolkit' | 'analytics')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-4 px-3 sm:px-5 rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] sm:tracking-[0.15em] transition-all duration-300 cursor-pointer ${
-                    isActive
-                      ? "bg-white text-advent-navy border border-slate-200/60 shadow-[0_10px_25px_-5px_rgba(15,23,42,0.05)] scale-102"
-                      : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
-                  }`}
-                >
-                  <TabIcon className={`w-4 h-4 transition-transform ${isActive ? "text-advent-navy animate-pulse" : "text-slate-400"}`} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+      <div className="space-y-8 mt-8">
+        <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
+          <div className="space-y-6">
+            {role === 'Viewer' ? (
+              <RequestPortal userId={userId} />
+            ) : (
+              <>
+                {/* Header Panel for Initiatives */}
+                <div className="flex justify-between items-center bg-white px-8 py-5 rounded-[2rem] border border-slate-200/60 shadow-xs relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy to-advent-green" />
+                  <div className="flex items-center gap-4">
+                    <div className="bg-slate-950 text-white p-3 rounded-2xl border border-slate-800 shadow-md">
+                      <List className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div>
+                      <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Institutional Initiatives</span>
+                      <h2 className="text-base font-serif italic font-bold text-slate-900">
+                        Active Quality Registry
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Link
+                      href="/projects/kanban"
+                      prefetch={false}
+                      className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-advent-navy flex items-center gap-1.5 transition-all"
+                    >
+                      Pipeline <LayoutPanelLeft className="w-3.5 h-3.5 text-slate-400" />
+                    </Link>
+                    <span className="text-slate-200">/</span>
+                    <Link
+                      href="/projects"
+                      prefetch={false}
+                      className="text-[9px] font-black uppercase tracking-[0.2em] text-advent-navy hover:text-advent-green flex items-center gap-1.5 transition-all"
+                    >
+                      View All <List className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
 
-          {/* Conditional Views with Smooth Animations */}
-          <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-            {activeMainTab === 'initiatives' && (
-              <div className="space-y-6">
-                {role === 'Viewer' ? (
-                  <RequestPortal userId={userId} />
-                ) : (
-                  <>
-                    {/* Header Panel for Initiatives */}
-                    <div className="flex justify-between items-center bg-white px-8 py-5 rounded-[2rem] border border-slate-200/60 shadow-xs relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy to-advent-green" />
-                      <div className="flex items-center gap-4">
-                        <div className="bg-slate-950 text-white p-3 rounded-2xl border border-slate-800 shadow-md">
-                          <List className="w-4 h-4 text-emerald-400" />
-                        </div>
-                        <div>
-                          <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Institutional Initiatives</span>
-                          <h2 className="text-base font-serif italic font-bold text-slate-900">
-                            Active Quality Registry
-                          </h2>
-                        </div>
+                {/* Quality Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {recentProjects.length > 0 ? (
+                    recentProjects.map(project => (
+                      <ProjectCard key={project.id} project={project} />
+                    ))
+                  ) : (
+                    <div className="col-span-3 py-24 text-center bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center justify-center p-8">
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300 border border-slate-100 shadow-inner">
+                        <Filter className="w-8 h-8 text-slate-400" />
                       </div>
-                      <div className="flex items-center gap-4">
-                        <Link
-                          href="/projects/kanban"
-                          prefetch={false}
-                          className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-advent-navy flex items-center gap-1.5 transition-all"
-                        >
-                          Pipeline <LayoutPanelLeft className="w-3.5 h-3.5 text-slate-400" />
-                        </Link>
-                        <span className="text-slate-200">/</span>
-                        <Link
-                          href="/projects"
-                          prefetch={false}
-                          className="text-[9px] font-black uppercase tracking-[0.2em] text-advent-navy hover:text-advent-green flex items-center gap-1.5 transition-all"
-                        >
-                          View All <List className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
+                      <h3 className="text-lg font-serif italic font-bold text-slate-700 mb-2">No Active Initiatives</h3>
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px] max-w-sm leading-relaxed">
+                        No project registrations have been finalized in this registry. Click the menu options above to register a new initiative.
+                      </p>
                     </div>
-
-                    {/* Quality Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {recentProjects.length > 0 ? (
-                        recentProjects.map(project => (
-                          <ProjectCard key={project.id} project={project} />
-                        ))
-                      ) : (
-                        <div className="col-span-2 py-24 text-center bg-white rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center justify-center p-8">
-                          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300 border border-slate-100 shadow-inner">
-                            <Filter className="w-8 h-8 text-slate-400" />
-                          </div>
-                          <h3 className="text-lg font-serif italic font-bold text-slate-700 mb-2">No Active Initiatives</h3>
-                          <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px] max-w-sm leading-relaxed">
-                            No project registrations have been finalized in this registry. Click the menu options above to register a new initiative.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {activeMainTab === 'matcher' && (
-              <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-xs relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600" />
-                <ConferenceMatcher isTabbed={true} />
-              </div>
-            )}
-
-            {activeMainTab === 'toolkit' && (
-              <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-xs relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy via-advent-sky to-advent-green" />
-                <AcademicToolkit />
-              </div>
-            )}
-
-            {activeMainTab === 'analytics' && (
-              <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-xs space-y-8 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-slate-900 via-slate-950 to-advent-cobalt" />
-                <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
-                  <div className="bg-slate-950 text-white p-3 rounded-2xl border border-slate-800 shadow-md">
-                    <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-                  </div>
-                  <div>
-                    <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Registry Analytics</span>
-                    <h2 className="text-base font-serif italic font-bold text-slate-900">
-                      Surveillance & Quality Metrics
-                    </h2>
-                  </div>
+                  )}
                 </div>
-                <DashboardCharts statusData={statusChartData} categoryData={categoryChartData} timelineData={timelineChartData} />
-              </div>
+              </>
             )}
-          </div>
-        </div>
-
-        {/* Right Columns: Elegant Sticky Sidebar */}
-        <div className="space-y-6 lg:sticky lg:top-24">
-          
-          {/* GME Registry Control Console */}
-          <div className="academic-card bg-white border border-slate-200/60 rounded-[2.5rem] p-7 shadow-xs space-y-6 relative overflow-hidden">
-            {/* Top highlight bar */}
-            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-advent-navy via-amber-500 to-advent-green" />
-            
-            {/* Command Console Title */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <span className="block text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Command Center</span>
-                <h3 className="text-sm font-serif italic font-bold text-slate-900">Academic Console</h3>
-              </div>
-              <span className="text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200/60 shadow-3xs">
-                Active Surveillance
-              </span>
-            </div>
-
-            {/* Premium Mini-Segmented Tab Controller */}
-            <div className="flex p-1 bg-slate-50 border border-slate-200/70 rounded-2xl relative shadow-[inset_0_1px_2px_rgba(15,23,42,0.02)]">
-              {[
-                { id: 'search', label: 'Search', icon: Search, color: 'text-advent-navy' },
-                { id: 'updates', label: 'Updates', icon: Activity, color: 'text-emerald-500' }
-              ].map((tab) => {
-                const TabIcon = tab.icon;
-                const isActive = activeSidebarTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveSidebarTab(tab.id as 'search' | 'updates')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
-                      isActive
-                        ? "bg-white text-slate-900 border border-slate-200/65 shadow-2xs scale-102"
-                        : "text-slate-500 hover:text-slate-950 hover:bg-white/40"
-                    }`}
-                  >
-                    <TabIcon className={`w-3.5 h-3.5 ${isActive ? tab.color : 'text-slate-400'}`} />
-                    <span className="hidden sm:inline lg:hidden xl:inline">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Dynamic Console Views */}
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 min-h-[250px] flex flex-col justify-between">
-              {activeSidebarTab === 'search' && (
-                <div className="space-y-6">
-                  {/* Registry Search */}
-                  <section className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
-                        <Search className="w-3.5 h-3.5 text-advent-navy/60" />
-                        Registry Search
-                      </h4>
-                    </div>
-                    <div className="relative group">
-                      <input
-                        type="text"
-                        placeholder="Search GME initiatives..."
-                        className="w-full pl-10 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-4 focus:ring-advent-navy/5 focus:border-advent-navy outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
-                      />
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-advent-navy transition-colors" />
-                    </div>
-                  </section>
-
-                  {/* Status Quick Filters */}
-                  <section className="space-y-3">
-                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
-                      <Filter className="w-3.5 h-3.5 text-advent-navy/60" />
-                      Status Quick Filters
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { name: 'Idea', dot: 'bg-violet-400' },
-                        { name: 'Pre-Intervention', dot: 'bg-blue-400' },
-                        { name: 'Intervention Ongoing', dot: 'bg-amber-400' },
-                        { name: 'Sustain the Gains', dot: 'bg-cyan-400' },
-                        { name: 'Impacted (Completed)', dot: 'bg-emerald-400' }
-                      ].map(s => (
-                        <Link
-                          key={s.name}
-                          href={`/projects?status=${s.name}`}
-                          prefetch={false}
-                          className="px-3 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 hover:border-advent-navy rounded-lg text-[8px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-advent-navy transition-all duration-300 shadow-3xs flex items-center gap-1.5"
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${s.dot} inline-block`} />
-                          {s.name}
-                        </Link>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-              )}
-
-              {activeSidebarTab === 'updates' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-50 pb-2">
-                    <h4 className="flex items-center gap-2 text-[9px] font-black text-slate-450 uppercase tracking-[0.25em]">
-                      <Activity className="w-3.5 h-3.5 text-emerald-500/80 animate-pulse" />
-                      Real-Time Updates
-                    </h4>
-                  </div>
-                  <div className="max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
-                    <ActivityFeed />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 3. Luxury Call-to-Action Analytics Suite Drawer */}
-          <div className="relative overflow-hidden premium-gradient-card p-8 rounded-[2.5rem] border border-slate-800/80 text-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
-            <div className="relative z-10 flex flex-col justify-between h-full space-y-6">
-              <div>
-                <div className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">
-                  Institutional Ledgers
-                </div>
-                <h3 className="font-serif italic font-bold text-2xl mb-2 text-white">
-                  Advanced Analytics
-                </h3>
-                <p className="text-[11px] text-slate-350 leading-relaxed font-medium">
-                  Export aggregate clinical studies, monitor PDSA compliance, and download professional quality boards.
-                </p>
-              </div>
-              <div className="pt-2">
-                <Link
-                  href="/metrics"
-                  prefetch={false}
-                  className="bg-white text-slate-900 px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:bg-emerald-400 hover:text-slate-950 flex items-center justify-center gap-2.5 group-hover:scale-102 duration-300 shadow-sm"
-                >
-                  Enter Registry Metrics <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-            {/* Visual background details */}
-            <div className="absolute top-0 right-0 w-56 h-56 bg-sky-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
           </div>
         </div>
       </div>
     </div>
   );
 }
-
