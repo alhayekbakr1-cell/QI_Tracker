@@ -140,7 +140,7 @@ export default function PortfolioPage() {
                 title: "GME QI Board Certification Letter",
                 subject: "Quality Improvement Milestones Cleared",
                 author: "AdventHealth Graduate Medical Education",
-                creator: "QI Tracker Chief"
+                creator: "Athena Clinical Wisdom Registry"
             });
 
             const residentName = userProfile?.full_name || userEmail?.split("@")[0].split(".").map((n: string) => n.charAt(0).toUpperCase() + n.slice(1)).join(" ") || "Resident Physician";
