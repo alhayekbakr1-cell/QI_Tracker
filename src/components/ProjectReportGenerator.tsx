@@ -172,7 +172,7 @@ export default function ProjectReportGenerator({ project, metrics }: ProjectRepo
                 {/* Institutional Footer */}
                 <div className="absolute bottom-10 left-15 right-15 flex justify-between border-t border-slate-100 pt-8 opacity-50">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Strictly Internal Use Only</p>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">QI Chief Tracker System</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Athena Clinical Registry System</p>
                 </div>
             </div>
         </>

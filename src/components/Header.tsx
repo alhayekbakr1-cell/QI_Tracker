@@ -113,10 +113,10 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-serif italic font-bold text-base tracking-tight text-advent-navy leading-none">
-                                    QI Chief
+                                    Athena
                                 </span>
                                 <span className="text-[8px] font-black tracking-[0.2em] text-slate-400 uppercase leading-none mt-0.5">
-                                    academic tracker
+                                    Clinical Wisdom Registry
                                 </span>
                             </div>
                         </Link>

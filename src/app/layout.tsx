@@ -18,8 +18,8 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "QI Project Tracker | AdventHealth",
-  description: "Secure, role-based QI project tracking dashboard.",
+  title: "Athena | Clinical Wisdom & Research Registry | AdventHealth",
+  description: "Secure, role-based academic quality & research tracking platform.",
   robots: {
     index: false,
     follow: false,
@@ -51,7 +51,7 @@ export default function RootLayout({
         <footer className="py-6 border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <p className="text-sm text-slate-500">
-              IM Resident QI Project Tracker &copy; {new Date().getFullYear()}
+              Athena Clinical Wisdom Registry &copy; {new Date().getFullYear()}
             </p>
           </div>
         </footer>

@@ -78,11 +78,11 @@ export default function ExecutiveDashboard() {
             const subject = encodeURIComponent(`QI Update Requested: ${p.title}`);
             const body = encodeURIComponent(
                 `Hi ${leadNames.join(", ") || "Team"},\n\n` +
-                `This is a formal nudge from the QI Chief office. Our records show "${p.title}" has not been updated in ${daysSinceUpdate} days.\n\n` +
-                `Please log in to the QI Tracker and provide an update on your progress, metrics, and any barriers you are facing.\n\n` +
+                `This is a formal nudge from the Athena Clinical Wisdom office. Our records show "${p.title}" has not been updated in ${daysSinceUpdate} days.\n\n` +
+                `Please log in to the Athena platform and provide an update on your progress, metrics, and any barriers you are facing.\n\n` +
                 `Last recorded update: ${format(lastUpdated, 'MMM d, yyyy')}\n` +
                 `Tracker Link: ${window.location.origin}/QI_Tracker/\n\n` +
-                `Thanks,\nQI Chief`
+                `Thanks,\nAthena Office`
             );
 
             window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;

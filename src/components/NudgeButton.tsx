@@ -70,7 +70,7 @@ export default function NudgeButton({ project, variant = "icon" }: NudgeButtonPr
         `I'm checking in on the "${project.title}" project. Our records show it hasn't been updated in ${daysSinceUpdate} days (last update: ${format(lastUpdated, 'MMM d')}).\n\n` +
         `Could you please take a moment to log into the QI Tracker and update the "Updates and Barriers" section or add any new data points?\n\n` +
         `Tracker Link: ${window.location.origin}/QI_Tracker/\n\n` +
-        `Thanks,\nQI Chief`
+        `Thanks,\nAthena Office`
     );
 
     const handleNudge = () => {
