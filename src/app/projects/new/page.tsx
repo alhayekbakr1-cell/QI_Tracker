@@ -60,7 +60,7 @@ function AIUpdateSection({ initialValue, onChange }: { initialValue: string, onC
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 ml-1">
                 <div className="flex flex-col">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Initial Updates/Barriers (Optional)</label>
+                    <label htmlFor="updates-textarea" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Initial Updates/Barriers (Optional)</label>
                     <span className="text-[10px] text-slate-300 font-bold italic">Quick notes or current operational state</span>
                 </div>
                 <button
@@ -74,6 +74,7 @@ function AIUpdateSection({ initialValue, onChange }: { initialValue: string, onC
                 </button>
             </div>
             <textarea
+                id="updates-textarea"
                 name="updates_and_barriers"
                 value={value}
                 onChange={(e) => {
@@ -97,6 +98,7 @@ export default function NewProjectPage() {
     const [isPolishingAim, setIsPolishingAim] = useState(false);
     const [primaryOutcome, setPrimaryOutcome] = useState("");
     const [title, setTitle] = useState("");
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
     const [selectedFaculty, setSelectedFaculty] = useState("");
 
@@ -201,9 +203,27 @@ export default function NewProjectPage() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setIsSaving(true);
-
+        
         const formData = new FormData(e.currentTarget);
+        
+        // Inline Validation
+        const errors: Record<string, string> = {};
+        if (!title.trim()) {
+            errors.title = "Project Title is required";
+        }
+        if (!formData.get('category')) {
+            errors.category = "Category is required";
+        }
+        
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            // Scroll to top to show errors
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        
+        setFormErrors({});
+        setIsSaving(true);
 
         const facultyId = formData.get('faculty_id') === "" ? null : formData.get('faculty_id') as string;
         let facultyName = formData.get('faculty_name') as string || "";
@@ -490,7 +510,7 @@ export default function NewProjectPage() {
 
             <PHIWarning />
 
-            <form onSubmit={handleSubmit} className="space-y-10 mt-8">
+            <form onSubmit={handleSubmit} noValidate className="space-y-10 mt-8">
                 <div className="grid grid-cols-1 gap-10">
                     
                     {/* SECTION 1: CORE PROJECT METADATA */}
@@ -498,7 +518,7 @@ export default function NewProjectPage() {
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 ml-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    <label htmlFor="project-title-input" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                                         Project Title <span className="text-rose-500 font-bold">*</span>
                                     </label>
                                     <button
@@ -518,13 +538,14 @@ export default function NewProjectPage() {
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     placeholder="e.g., Smoking Cessation in Outpatient Clinic"
-                                    className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all placeholder:text-slate-300 text-sm shadow-inner"
+                                    className={`w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-slate-900 font-bold transition-all placeholder:text-slate-300 text-sm shadow-inner ${formErrors.title ? 'border-rose-500 focus:border-rose-500 bg-rose-50' : 'border-slate-200/80 focus:border-advent-navy'}`}
                                 />
+                                {formErrors.title && <p className="text-rose-500 text-xs font-bold mt-1 ml-1 animate-in fade-in">{formErrors.title}</p>}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Initial Status</label>
+                                    <label htmlFor="status-select" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Initial Status</label>
                                     <select 
                                         id="status-select" 
                                         name="status" 
@@ -537,24 +558,27 @@ export default function NewProjectPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                                    <label htmlFor="category-select" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">
                                         Category <span className="text-rose-500 font-bold">*</span>
                                     </label>
                                     <select
+                                        id="category-select"
                                         name="category"
                                         required
-                                        className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
+                                        className={`w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-slate-900 font-bold transition-all cursor-pointer text-sm ${formErrors.category ? 'border-rose-500 focus:border-rose-500 bg-rose-50' : 'border-slate-200/80 focus:border-advent-navy'}`}
                                     >
                                         <option value="">-- Select Category --</option>
                                         {PROJECT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
+                                    {formErrors.category && <p className="text-rose-500 text-xs font-bold mt-1 ml-1 animate-in fade-in">{formErrors.category}</p>}
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Sub-Category</label>
+                                    <label htmlFor="subcategory-select" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Sub-Category</label>
                                     <select
+                                        id="subcategory-select"
                                         name="subcategory"
                                         className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
                                     >
@@ -564,8 +588,9 @@ export default function NewProjectPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">PDSA Cycle Number</label>
+                                    <label htmlFor="pdsa-input" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">PDSA Cycle Number</label>
                                     <input
+                                        id="pdsa-input"
                                         type="number"
                                         name="pdsa_cycle"
                                         defaultValue={1}
@@ -581,7 +606,7 @@ export default function NewProjectPage() {
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-5">
                                 <div className="flex flex-col">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
+                                    <label htmlFor="faculty-name-select" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Faculty Mentor</label>
                                     <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Faculty advisor guiding the academic charter</span>
                                 </div>
                                 <div className="space-y-4">
@@ -647,10 +672,11 @@ export default function NewProjectPage() {
                                 {/* LEAD PROPONENTS */}
                                 <div className="space-y-4">
                                     <div className="flex flex-col">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Lead Proponents</label>
+                                        <label htmlFor="lead-proponents-input" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Lead Proponents</label>
                                         <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Principal investigators driving operations</span>
                                     </div>
                                     <input 
+                                        id="lead-proponents-input"
                                         name="lead_proponents_text" 
                                         placeholder="Comma-separated manual names..." 
                                         className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
@@ -679,10 +705,11 @@ export default function NewProjectPage() {
                                 {/* ASSOCIATE PROPONENTS (TEAM MEMBERS) */}
                                 <div className="space-y-4">
                                     <div className="flex flex-col">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Team Members</label>
+                                        <label htmlFor="team-members-input" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Team Members</label>
                                         <span className="text-[9px] text-slate-300 font-bold ml-1 italic mb-2">Co-investigators and project collaborators</span>
                                     </div>
                                     <input 
+                                        id="team-members-input"
                                         name="proponents_text" 
                                         placeholder="Comma-separated manual names..." 
                                         className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 text-xs font-bold transition-all mb-2" 
@@ -717,7 +744,7 @@ export default function NewProjectPage() {
                             <div className="space-y-3">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 ml-1">
                                     <div className="flex flex-col">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <label htmlFor="primary-outcome-textarea" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
                                             Primary Outcome Goal (SMART Aim)
                                         </label>
                                         <span className="text-[9px] text-slate-300 font-bold italic">Should be Specific, Measurable, Achievable, Relevant, and Time-bound</span>
@@ -733,6 +760,7 @@ export default function NewProjectPage() {
                                     </button>
                                 </div>
                                 <textarea
+                                    id="primary-outcome-textarea"
                                     name="primary_outcome"
                                     value={primaryOutcome}
                                     onChange={(e) => setPrimaryOutcome(e.target.value)}
@@ -743,12 +771,13 @@ export default function NewProjectPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                    <label htmlFor="patients-impacted-input" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                                         Patients Impacted
                                         <Users className="w-3 h-3 text-slate-400" />
                                     </label>
                                     <div className="relative group">
                                         <input
+                                            id="patients-impacted-input"
                                             type="number"
                                             name="total_patients_impacted"
                                             placeholder="Estimated count..."
@@ -759,12 +788,13 @@ export default function NewProjectPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                                        Estimated Cost Savings ($)
-                                        <Target className="w-3 h-3 text-slate-400" />
+                                    <label htmlFor="cost-savings-input" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                        Estimated Cost Savings
+                                        <TrendingUp className="w-3 h-3 text-emerald-400" />
                                     </label>
                                     <div className="relative group">
                                         <input
+                                            id="cost-savings-input"
                                             type="number"
                                             name="estimated_cost_savings"
                                             step="0.01"
@@ -782,8 +812,9 @@ export default function NewProjectPage() {
                     <Section title="Academic Pathway & Dissemination" icon={<Trophy className="w-5 h-5 text-amber-500" />}>
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Target Conference Venue</label>
+                                <label htmlFor="conference-select" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Target Conference Venue</label>
                                 <select
+                                    id="conference-select"
                                     name="target_conference"
                                     className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
                                 >
@@ -799,6 +830,7 @@ export default function NewProjectPage() {
                                     Abstract Summary
                                 </label>
                                 <textarea
+                                    id="abstract-textarea"
                                     name="abstract_summary"
                                     placeholder="Draft your executive summary or abstract here..."
                                     className="w-full p-5 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all min-h-[160px] resize-none text-sm placeholder:text-slate-300"

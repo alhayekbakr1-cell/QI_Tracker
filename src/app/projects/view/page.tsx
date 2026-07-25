@@ -109,6 +109,31 @@ export default function ProjectDetailPage() {
         }
 
         fetchData();
+
+        // 🔴 Real-Time Project Updates Listener
+        const channel = supabase
+            .channel(`realtime-project-${id}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${id}` },
+                (payload) => {
+                    console.log('Project updated via realtime:', payload);
+                    fetchData(); // Re-fetch all data on change
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'metrics', filter: `project_id=eq.${id}` },
+                (payload) => {
+                    console.log('Metrics updated via realtime:', payload);
+                    fetchData(); // Re-fetch all data on change
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [id, supabase, router]);
 
     // handleSubmitComment, newComment, isSubmittingComment, comments, currentUser states are removed as ProjectComments component handles them.

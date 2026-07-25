@@ -71,31 +71,40 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-advent-green animate-pulse" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
                             AdventHealth GME Clinical Quality & Scholarly Registry
                         </span>
                     </div>
 
-                    <div className="hidden md:flex items-center gap-4 text-[10px] font-bold text-slate-600">
+                    <div className="hidden md:flex items-center gap-4 text-xs font-bold text-slate-600">
                         <div className="flex items-center gap-2 border-r border-slate-200/40 pr-4">
-                            <span className="font-serif italic font-semibold text-slate-800 text-[11px]">
-                                {displayName}
-                            </span>
-                            <span className={`text-[8px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded border shadow-3xs ${
-                                role === 'Admin'
-                                    ? 'bg-rose-500/5 text-rose-600 border-rose-200/40'
-                                    : role === 'Faculty' || role === 'Operator'
-                                        ? 'bg-emerald-500/5 text-emerald-600 border-emerald-200/40'
-                                        : 'bg-advent-cobalt/5 text-advent-cobalt border-advent-cobalt/10'
-                            }`}>
-                                {role === 'Admin' ? 'Overseer' : role === 'Operator' ? 'Faculty' : role || 'Viewer'}
-                            </span>
+                            {!userEmail ? (
+                                <>
+                                    <div className="h-4 w-24 bg-slate-200 animate-pulse rounded"></div>
+                                    <div className="h-4 w-16 bg-slate-200 animate-pulse rounded"></div>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="font-serif italic font-semibold text-slate-800 text-[11px]">
+                                        {displayName}
+                                    </span>
+                                    <span className={`text-[10px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded border shadow-3xs ${
+                                        role === 'Admin'
+                                            ? 'bg-rose-500/5 text-rose-600 border-rose-200/40'
+                                            : role === 'Faculty' || role === 'Operator'
+                                                ? 'bg-emerald-500/5 text-emerald-600 border-emerald-200/40'
+                                                : 'bg-advent-cobalt/5 text-advent-cobalt border-advent-cobalt/10'
+                                    }`}>
+                                        {role === 'Admin' ? 'Overseer' : role === 'Operator' ? 'Faculty' : role || 'Viewer'}
+                                    </span>
+                                </>
+                            )}
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="group flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-650 transition-all"
+                            className="group flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-rose-650 transition-all"
                         >
-                            <LogOut className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
+                            <LogOut className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
                             <span>Logout</span>
                         </button>
                     </div>
@@ -115,15 +124,15 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                                 <span className="font-serif italic font-bold text-base tracking-tight text-advent-navy leading-none">
                                     Athena
                                 </span>
-                                <span className="text-[8px] font-black tracking-[0.2em] text-slate-400 uppercase leading-none mt-0.5">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase leading-none mt-0.5">
                                     Clinical Wisdom Registry
                                 </span>
                             </div>
                         </Link>
 
                         <div className="hidden lg:flex items-center gap-2">
-                            <span className="text-slate-300">/</span>
-                            <span className="text-[8px] font-black uppercase tracking-[0.15em] bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-200/30">
+                            <span className="text-slate-400">/</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.15em] bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200/30">
                                 {getPageTitle(pathname)}
                             </span>
                         </div>
@@ -138,13 +147,13 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                                     key={item.href}
                                     href={item.href}
                                     prefetch={false}
-                                    className={`relative px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-1.5 border
+                                    className={`relative px-3 py-1 rounded-md text-[11px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-1.5 border
                                         ${isActive
                                             ? 'bg-slate-50 text-advent-navy border-slate-200/80 shadow-3xs font-black'
-                                            : 'text-slate-500 hover:text-advent-navy hover:bg-slate-50/50 border-transparent font-bold'
+                                            : 'text-slate-600 hover:text-advent-navy hover:bg-slate-50/50 border-transparent font-bold'
                                         }`}
                                 >
-                                    <item.icon className={`w-3.5 h-3.5 ${isActive ? 'text-advent-navy' : 'text-slate-400'}`} />
+                                    <item.icon className={`w-3.5 h-3.5 ${isActive ? 'text-advent-navy' : 'text-slate-500'}`} />
                                     {item.label}
                                 </Link>
                             )
@@ -155,9 +164,11 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                     <div className="flex items-center gap-3 md:hidden">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            aria-expanded={isMobileMenuOpen}
+                            aria-label="Toggle mobile menu"
                             className="p-1.5 text-advent-navy hover:bg-slate-100 rounded-lg transition-colors border border-slate-200/60"
                         >
-                            {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
                     </div>
                 </div>
@@ -175,13 +186,13 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                                     href={item.href}
                                     prefetch={false}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all border
+                                    className={`px-3.5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest flex items-center gap-3 transition-all border
                                         ${isActive
                                             ? 'bg-slate-50 text-advent-navy border-slate-200/60 shadow-2xs'
                                             : 'text-slate-600 hover:bg-slate-50/50 border-transparent'
                                         }`}
                                 >
-                                    <item.icon className={`w-4 h-4 ${isActive ? 'text-advent-navy' : 'text-slate-400'}`} />
+                                    <item.icon className={`w-4 h-4 ${isActive ? 'text-advent-navy' : 'text-slate-500'}`} />
                                     {item.label}
                                 </Link>
                             )
@@ -189,15 +200,15 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
                     </nav>
 
                     <div className="border-t border-slate-200/60 pt-4 mt-2">
-                        <div className="flex items-center justify-between px-2 mb-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        <div className="flex items-center justify-between px-2 mb-4 text-xs font-black uppercase tracking-widest text-slate-500">
                             <span>Signed in as</span>
                             <span className="font-serif italic font-bold text-slate-800 tracking-tight lowercase">{userEmail}</span>
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="w-full flex items-center justify-center gap-2 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-rose-100 transition-colors border border-rose-200/40"
+                            className="w-full flex items-center justify-center gap-2 bg-rose-50 text-rose-600 text-xs font-black uppercase tracking-widest py-3 rounded-xl hover:bg-rose-100 transition-colors border border-rose-200/40"
                         >
-                            <LogOut className="w-3.5 h-3.5" />
+                            <LogOut className="w-4 h-4" />
                             Sign Out
                         </button>
                     </div>

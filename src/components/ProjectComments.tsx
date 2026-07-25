@@ -22,6 +22,23 @@ export default function ProjectComments({ projectId, currentUserProfile }: Proje
 
     useEffect(() => {
         fetchComments();
+
+        // 🔴 Real-Time Comments Updates Listener
+        const channel = supabase
+            .channel(`realtime-comments-${projectId}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'comments', filter: `project_id=eq.${projectId}` },
+                (payload) => {
+                    console.log('Comments updated via realtime:', payload);
+                    fetchComments();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [projectId]);
 
     const fetchComments = async () => {

@@ -38,7 +38,7 @@ export default function ProjectCard({ project }: { project: Project }) {
                 <div className={`absolute -right-10 top-5 rotate-45 px-12 py-0.5 flex items-center gap-1 justify-center shadow-xs z-10 ${isRed ? 'bg-rose-600 text-white' : 'bg-amber-400 text-slate-900'
                     }`}>
                     <AlertTriangle className="w-2 h-2" />
-                    <span className="text-[7px] font-black uppercase tracking-[0.15em]">
+                    <span className="text-[9px] font-black uppercase tracking-[0.15em]">
                         {isRed ? 'Urgent' : 'Stale'}
                     </span>
                 </div>
@@ -54,13 +54,13 @@ export default function ProjectCard({ project }: { project: Project }) {
 
             <div className="flex items-center gap-1.5 mb-4">
                 <StatusBadge status={project.status} />
-                <span className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.15em] bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200/60 shadow-2xs">
+                <span className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.15em] bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200/60 shadow-2xs">
                     Cycle {project.pdsa_cycle}
                 </span>
                 {project.faculty_approved_protocol && project.faculty_approved_pdsa && (
                     <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md border border-emerald-200/50 shadow-2xs animate-in fade-in zoom-in duration-500">
                         <FileCheck className="w-3 h-3 text-emerald-600" />
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em]">Approved</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.15em]">Approved</span>
                     </div>
                 )}
             </div>
@@ -71,7 +71,7 @@ export default function ProjectCard({ project }: { project: Project }) {
 
             {/* Visual Stage Progress Bar */}
             <div className="mb-4 mt-2">
-                <div className="flex items-center justify-between mb-1 text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <div className="flex items-center justify-between mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                     <span>Research Stage Progress</span>
                     <span className={`font-mono ${stageConfig.color.replace('bg-', 'text-')}`}>{stageConfig.progress}%</span>
                 </div>
@@ -86,19 +86,19 @@ export default function ProjectCard({ project }: { project: Project }) {
             <div className="mt-auto space-y-3.5 pt-4 border-t border-slate-100/80">
                 <div className="flex items-center gap-2 text-slate-500">
                     <User className="w-3.5 h-3.5 text-advent-navy/60" />
-                    <span className="text-[11px] font-semibold truncate text-slate-650">
+                    <span className="text-xs font-semibold truncate text-slate-700">
                         {(project.lead_proponents || [])[0] || 'Unassigned Investigator'}
                     </span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <div className={`flex items-center gap-1.5 ${isRed ? 'text-rose-600 font-bold' : isYellow ? 'text-amber-600 font-bold' : 'text-slate-400'}`}>
+                    <div className={`flex items-center gap-1.5 ${isRed ? 'text-rose-600 font-bold' : isYellow ? 'text-amber-600 font-bold' : 'text-slate-500'}`}>
                         <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.15em]">
+                        <span className="text-[10px] font-black uppercase tracking-[0.15em]">
                             {format(new Date(project.last_updated_date), 'MMM d, yyyy')}
                         </span>
                         {(isRed || isYellow) && (
-                            <span className="text-[8px] opacity-60">({daysSinceUpdate}d ago)</span>
+                            <span className="text-[10px] opacity-60">({daysSinceUpdate}d ago)</span>
                         )}
                     </div>
                 </div>

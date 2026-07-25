@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import ProjectCard from "@/components/ProjectCard";
+import SkeletonProjectCard from "@/components/SkeletonProjectCard";
 import { Project } from "@/types";
 import { List, LayoutPanelLeft, Filter } from "lucide-react";
 import Link from "next/link";
@@ -106,6 +107,24 @@ export default function Dashboard() {
     }
 
     fetchDashboardData();
+
+    // 🔴 Real-Time Dashboard Updates Listener
+    const channel = supabase
+      .channel('realtime-projects')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          // Re-fetch to ensure all related data is current
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [supabase, router]);
 
   if (isLoading) {
@@ -136,9 +155,9 @@ export default function Dashboard() {
           <div className="space-y-8">
             <Skeleton className="h-16 w-full rounded-2xl animate-pulse" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Skeleton className="h-48 rounded-3xl animate-pulse" />
-              <Skeleton className="h-48 rounded-3xl animate-pulse" />
-              <Skeleton className="h-48 rounded-3xl animate-pulse" />
+              <SkeletonProjectCard />
+              <SkeletonProjectCard />
+              <SkeletonProjectCard />
             </div>
           </div>
         </div>
