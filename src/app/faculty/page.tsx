@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Project } from "@/types";
 import ProjectCard from "@/components/ProjectCard";
 import ProtocolReader from "@/components/ProtocolReader";
+import MentorWorkloadPanel from "@/components/MentorWorkloadPanel";
 import {
     Users,
     CheckCircle2,
@@ -229,6 +230,13 @@ export default function FacultyDashboard() {
                     </div>
                 </div>
             </header>
+
+            {/* Triage first: in the flat list below, a project stalled for 70 days
+                looked identical to one updated yesterday. */}
+            <MentorWorkloadPanel
+                projects={assignedProjects}
+                pendingApprovalCount={pendingSponsorships.length}
+            />
 
             {/* NEW: Faculty Sponsorship Requests Panel */}
             {pendingSponsorships.length > 0 && (
