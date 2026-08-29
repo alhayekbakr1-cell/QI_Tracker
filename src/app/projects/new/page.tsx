@@ -14,6 +14,26 @@ import { toast, CustomConfirmDialog } from "@/components/ui/custom-ui";
 import { createNotification } from "@/utils/createNotification";
 import { scanForPHI } from "@/utils/phi_guard";
 
+// The form is a stepped wizard, but every step stays MOUNTED and is hidden with
+// CSS rather than unmounted. handleSubmit reads uncontrolled inputs via
+// `new FormData(e.currentTarget)`; unmounting a step would drop its fields from
+// that FormData and silently discard the resident's answers.
+const WIZARD_STEPS = [
+    { label: "Foundation", hint: "What the project is" },
+    { label: "Team", hint: "Who is accountable" },
+    { label: "Aims", hint: "What success looks like" },
+    { label: "Dissemination", hint: "Where it goes" },
+] as const;
+
+// Which validation keys belong to which step, so a failed check can send the
+// resident back to the step that actually contains the offending field.
+const STEP_FIELDS: Record<number, string[]> = {
+    0: ['title', 'category'],
+    1: [],
+    2: ['primary_outcome', 'total_patients_impacted', 'estimated_cost_savings'],
+    3: ['updates_and_barriers', 'abstract_summary'],
+};
+
 const FACULTY_MENTORS_PRESET = [
   "Dr. Lidia Sepulveda Rubiera",
   "Dr. Claudia Kroker-Bode (Dr. KB)",
@@ -100,6 +120,7 @@ export default function NewProjectPage() {
     const [primaryOutcome, setPrimaryOutcome] = useState("");
     const [title, setTitle] = useState("");
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [step, setStep] = useState(0);
     const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
     const [selectedFaculty, setSelectedFaculty] = useState("");
 
@@ -204,7 +225,16 @@ export default function NewProjectPage() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        
+
+        // Pressing Enter in any text input submits the form natively. On a stepped
+        // form that would create the project from step 1, half-filled. Advance
+        // instead of submitting until the resident is actually on the last step.
+        if (step < WIZARD_STEPS.length - 1) {
+            setStep(s => Math.min(s + 1, WIZARD_STEPS.length - 1));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         const formData = new FormData(e.currentTarget);
         
         // Inline Validation
@@ -258,7 +288,16 @@ export default function NewProjectPage() {
 
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
-            // Scroll to top to show errors
+            // Send the resident to the step that actually contains the first
+            // problem. Otherwise a PHI hit on the Aims step reads as an
+            // unexplained refusal while they are looking at Dissemination.
+            const failed = Object.keys(errors);
+            const targetStep = Number(
+                Object.keys(STEP_FIELDS).find(s =>
+                    STEP_FIELDS[Number(s)].some(f => failed.includes(f))
+                ) ?? step
+            );
+            setStep(targetStep);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -602,6 +641,47 @@ export default function NewProjectPage() {
             <form onSubmit={handleSubmit} noValidate className="space-y-10 mt-8">
                 <div className="grid grid-cols-1 gap-10">
 
+                    {/* Wizard progress. Steps are clickable so nothing is trapped:
+                        every field stays mounted, so jumping around never loses data. */}
+                    <nav aria-label="Project creation progress" className="bg-white border border-slate-200/80 rounded-3xl p-2 shadow-sm">
+                        <ol className="flex flex-col sm:flex-row gap-1">
+                            {WIZARD_STEPS.map((s, i) => {
+                                const isCurrent = i === step;
+                                const isDone = i < step;
+                                return (
+                                    <li key={s.label} className="flex-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setStep(i); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                            aria-current={isCurrent ? 'step' : undefined}
+                                            className={`w-full text-left px-4 py-3 rounded-2xl transition-all ${
+                                                isCurrent
+                                                    ? 'bg-advent-navy text-white shadow-md'
+                                                    : isDone
+                                                        ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                                        : 'text-slate-400 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${
+                                                    isCurrent ? 'bg-white/20 text-white'
+                                                        : isDone ? 'bg-emerald-500 text-white'
+                                                        : 'bg-slate-100 text-slate-400'
+                                                }`}>
+                                                    {isDone ? '✓' : i + 1}
+                                                </span>
+                                                <span className="text-[10px] font-black uppercase tracking-[0.15em]">{s.label}</span>
+                                            </span>
+                                            <span className={`block mt-1 ml-7 text-[10px] font-medium ${isCurrent ? 'text-white/70' : 'text-slate-400'}`}>
+                                                {s.hint}
+                                            </span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ol>
+                    </nav>
+
                     {/* Validation summary. Individual fields only render errors for
                         title and category, so without this a failed PHI or SMART-Aim
                         check would block saving with nothing shown on screen. */}
@@ -625,7 +705,7 @@ export default function NewProjectPage() {
                     )}
 
                     {/* SECTION 1: CORE PROJECT METADATA */}
-                    <Section title="Project Metadata" icon={<LayoutGrid className="w-5 h-5 text-advent-navy" />}>
+                    <Section title="Project Metadata" className={step === 0 ? "" : "hidden"} icon={<LayoutGrid className="w-5 h-5 text-advent-navy" />}>
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 ml-1">
@@ -713,7 +793,7 @@ export default function NewProjectPage() {
                     </Section>
 
                     {/* SECTION 2: PROJECT TEAM & PEOPLE */}
-                    <Section title="Proponents & Governance" icon={<Users className="w-5 h-5 text-emerald-500" />}>
+                    <Section title="Proponents & Governance" className={step === 1 ? "" : "hidden"} icon={<Users className="w-5 h-5 text-emerald-500" />}>
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-5">
                                 <div className="flex flex-col">
@@ -850,7 +930,7 @@ export default function NewProjectPage() {
                     </Section>
 
                     {/* SECTION 3: STRATEGIC AIMS & OUTCOMES */}
-                    <Section title="Strategic Aims & Outcomes" icon={<TrendingUp className="w-5 h-5 text-advent-navy" />}>
+                    <Section title="Strategic Aims & Outcomes" className={step === 2 ? "" : "hidden"} icon={<TrendingUp className="w-5 h-5 text-advent-navy" />}>
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 ml-1">
@@ -920,7 +1000,7 @@ export default function NewProjectPage() {
                     </Section>
 
                     {/* SECTION 4: ACADEMIC TARGET & PUBLICATION */}
-                    <Section title="Academic Pathway & Dissemination" icon={<Trophy className="w-5 h-5 text-amber-500" />}>
+                    <Section title="Academic Pathway & Dissemination" className={step === 3 ? "" : "hidden"} icon={<Trophy className="w-5 h-5 text-amber-500" />}>
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="space-y-3">
                                 <label htmlFor="conference-select" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Target Conference Venue</label>
@@ -951,14 +1031,14 @@ export default function NewProjectPage() {
                     </Section>
 
                     {/* SECTION 5: UPDATES & BARRIERS */}
-                    <Section title="Updates and Barriers" icon={<Info className="w-5 h-5 text-sky-500" />}>
+                    <Section title="Updates and Barriers" className={step === 3 ? "" : "hidden"} icon={<Info className="w-5 h-5 text-sky-500" />}>
                         <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                              <AIUpdateSection initialValue="" onChange={setUpdatesText} />
                         </div>
                     </Section>
 
                     {/* SECTION 6: INSTITUTIONAL DEPOT */}
-                    <Section title="Project Depot (Protocols)" icon={<Save className="w-5 h-5 text-slate-400" />}>
+                    <Section title="Project Depot (Protocols)" className={step === 3 ? "" : "hidden"} icon={<Save className="w-5 h-5 text-slate-400" />}>
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-4 flex flex-col justify-between">
@@ -998,17 +1078,44 @@ export default function NewProjectPage() {
                 {/* STICKY BOTTOM ACTIONS FOOTER */}
                 <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/60 px-6 py-4 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center animate-in slide-in-from-bottom duration-300">
                     <div className="w-full max-w-4xl flex items-center justify-between">
-                        <Link 
-                            href="/projects" 
-                            className="px-6 py-3 rounded-2xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all hover:border-slate-300 active:scale-95"
-                        >
-                            Cancel
-                        </Link>
-                        
+                        {step === 0 ? (
+                            <Link
+                                href="/projects"
+                                className="px-6 py-3 rounded-2xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all hover:border-slate-300 active:scale-95"
+                            >
+                                Cancel
+                            </Link>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => { setStep(s => Math.max(0, s - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all hover:border-slate-300 active:scale-95"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Back
+                            </button>
+                        )}
+
+                        <div className="flex items-center gap-3">
+                            <span className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                Step {step + 1} of {WIZARD_STEPS.length}
+                            </span>
+
+                            {step < WIZARD_STEPS.length - 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setStep(s => Math.min(WIZARD_STEPS.length - 1, s + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    className="flex items-center gap-2.5 bg-advent-navy hover:bg-advent-cobalt text-white px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-advent-navy/10 active:scale-95 transition-all"
+                                >
+                                    Continue
+                                </button>
+                            )}
+
                         <button
                             id="create-project-submit"
                             type="submit"
                             disabled={isSaving}
+                            hidden={step < WIZARD_STEPS.length - 1}
                             className="flex items-center gap-2.5 bg-advent-navy hover:bg-advent-cobalt text-white px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-advent-navy/10 active:scale-95 transition-all disabled:opacity-50"
                         >
                             {isSaving ? (
@@ -1023,6 +1130,7 @@ export default function NewProjectPage() {
                                 </>
                             )}
                         </button>
+                        </div>
                     </div>
                 </div>
             </form>
