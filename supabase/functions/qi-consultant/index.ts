@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
 
+// Gemini model id. Pinned deliberately: gemini-2.0-flash was retired by Google
+// and every AI call in the app failed with a 404 until this was bumped.
+// Use "gemini-flash-latest" instead if you would rather auto-track new releases.
+const GEMINI_MODEL = "gemini-3.6-flash"
+
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -49,9 +54,9 @@ serve(async (req) => {
         
         try {
             if (useSearch) {
-                // Attempt search grounding with Gemini 2.0
+                // Attempt search grounding
                 const modelWithSearch = genAI.getGenerativeModel({
-                    model: "gemini-2.0-flash",
+                    model: GEMINI_MODEL,
                     systemInstruction: SYSTEM_INSTRUCTION,
                     generationConfig: {
                         temperature: mode === 'json' ? 0.1 : 0.4,
@@ -70,7 +75,7 @@ serve(async (req) => {
             console.warn("Search grounding failed or skipped, falling back to standard generation:", searchError.message);
             // Fallback: standard model generation without tools
             const standardModel = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+                model: GEMINI_MODEL,
                 systemInstruction: SYSTEM_INSTRUCTION,
                 generationConfig: {
                     temperature: mode === 'json' ? 0.1 : 0.4,
