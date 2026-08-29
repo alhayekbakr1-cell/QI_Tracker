@@ -406,7 +406,14 @@ Dr. QI directive: Incorporate findings or align your Quality Improvement suggest
             }
         } catch (err) {
             console.error("EBM search error:", err);
-            setSearchError("Database request failed. Please check connectivity or API limits.");
+            // Surface the actual reason. Semantic Scholar throttles heavily, and
+            // reporting that as "check connectivity" sends people debugging the
+            // wrong thing entirely.
+            setSearchError(
+                err instanceof Error && err.message
+                    ? err.message
+                    : "Registry request failed. Please try again or switch registry."
+            );
         } finally {
             setIsSearching(false);
         }

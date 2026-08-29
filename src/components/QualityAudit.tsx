@@ -1,9 +1,45 @@
 "use client"
 
 import { useState } from "react";
-import { Sparkles, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { auditProjectQuality } from "@/utils/ai";
 import { Project } from "@/types";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+// The model phrases the rating as "82/100", "82%", or "Quality Score: 82"
+// depending on where it lands, so try each form widest-first.
+function parseScore(text: string): number {
+    const match =
+        text.match(/(\d{1,3})\s*\/\s*100/) ||
+        text.match(/(\d{1,3})\s*%/) ||
+        text.match(/score[^\d]{0,15}(\d{1,3})/i);
+    const value = match ? parseInt(match[1], 10) : NaN;
+    return Number.isFinite(value) && value >= 0 && value <= 100 ? value : 70;
+}
+
+// The score is already shown as the big number, so strip it from the prose.
+// Leaving it in was rendering as a stray "**/100**" beside the dial. A line
+// that is *only* the score is dropped; a line that opens with the score and
+// then continues into real feedback keeps its remainder.
+const SCORE_CLAUSE =
+    /^\W*(?:overall\s+)?(?:quality\s+)?score\b[^.\n]*?\d{1,3}\s*(?:\/\s*100|%)?\s*[.:-]?\s*/i;
+const SCORE_ONLY = /^(?:overall)?(?:quality)?score[:-]?\d{1,3}(?:\/100|%)?$/i;
+
+export function stripScore(text: string): string {
+    return text
+        .replace(/^\s*["'`]+|["'`]+\s*$/g, "")
+        .split("\n")
+        .map((line, i) => {
+            if (i > 1 || !/\d/.test(line)) return line;
+            if (SCORE_ONLY.test(line.replace(/[*_#\s]/g, ""))) return "";
+            return line.replace(SCORE_CLAUSE, "");
+        })
+        .join("\n")
+        .replace(/^\s*\*{0,2}feedback\*{0,2}\s*[:-]\s*/im, "")
+        .replace(/^\s*[*_\s]+/, "")
+        .trim();
+}
 
 export default function QualityAudit({ project }: { project: Project }) {
     const [audit, setAudit] = useState<{ score: number, feedback: string } | null>(null);
@@ -13,11 +49,8 @@ export default function QualityAudit({ project }: { project: Project }) {
         setIsLoading(true);
         try {
             const result = await auditProjectQuality(project);
-            // Result is expected to be like "Score: 85 | Feedback: ..." or similar.
-            // Let's parse it if possible, else just show the text.
-            const scoreMatch = result.match(/(\d+)%/) || result.match(/Score: (\d+)/);
-            const score = scoreMatch ? parseInt(scoreMatch[1]) : 70;
-            setAudit({ score, feedback: result });
+            const cleaned = stripScore(result);
+            setAudit({ score: parseScore(result), feedback: cleaned || result });
         } catch (error: any) {
             console.error("Audit error:", error);
             setAudit({ score: 0, feedback: "Audit failed. Please try again." });
@@ -58,9 +91,19 @@ export default function QualityAudit({ project }: { project: Project }) {
                             </span>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Completeness Score</span>
                         </div>
-                        <p className="text-xs font-medium text-slate-300 leading-relaxed italic">
-                            "{audit.feedback}"
-                        </p>
+                        <div className="text-xs font-medium text-slate-300 leading-relaxed prose prose-invert max-w-none
+                                        prose-p:my-1.5 prose-p:text-xs prose-strong:text-white prose-strong:font-bold
+                                        prose-ul:my-1.5 prose-li:my-0.5 prose-li:text-xs prose-headings:hidden">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {audit.feedback}
+                            </ReactMarkdown>
+                        </div>
+                        <button
+                            onClick={handleAudit}
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                        >
+                            Re-run audit
+                        </button>
                     </div>
                 ) : (
                     <p className="text-xs font-medium text-slate-400 italic">

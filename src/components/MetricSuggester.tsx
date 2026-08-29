@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Sparkles, Loader2, ChevronRight } from "lucide-react";
 import { suggestMetrics } from "@/utils/ai";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function MetricSuggester({ projectTitle }: { projectTitle: string }) {
     const [suggestion, setSuggestion] = useState<string | null>(null);
@@ -39,9 +41,15 @@ export default function MetricSuggester({ projectTitle }: { projectTitle: string
 
             {suggestion ? (
                 <div className="bg-white/50 border border-white rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed font-medium italic">
-                        {suggestion}
-                    </p>
+                    <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed
+                                    prose-headings:text-[11px] prose-headings:font-black prose-headings:uppercase
+                                    prose-headings:tracking-widest prose-headings:text-advent-navy prose-headings:mt-4
+                                    prose-headings:mb-1.5 prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5
+                                    prose-strong:text-advent-navy prose-strong:font-bold">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {suggestion}
+                        </ReactMarkdown>
+                    </div>
                 </div>
             ) : (
                 <p className="text-[11px] text-slate-400 font-medium italic">
