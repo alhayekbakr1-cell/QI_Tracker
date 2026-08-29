@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0"
 
 // Gemini model id. Pinned deliberately: gemini-2.0-flash was retired by Google
 // and every AI call in the app failed with a 404 until this was bumped.
@@ -42,9 +43,67 @@ MATCH YOUR LENGTH TO THEIRS (this overrides the protocol above):
 - Reserve full structured breakdowns (headers, checklists, metric tables) for when a resident has actually laid out a project or asked something substantive.
 - Never pad a reply to look thorough. A resident who says "hi" and receives a three-section intake form will not come back.`
 
+// ─── ABUSE CONTROL ────────────────────────────────────────────────────────────
+// This endpoint proxies a paid Gemini key. It previously ran with
+// verify_jwt = false and no auth check of its own, which made it a free,
+// unauthenticated LLM proxy for anyone who read the function URL out of the
+// public bundle. Both guards below exist to close that.
+
+const RATE_LIMIT_MAX = 30            // requests per user
+const RATE_LIMIT_WINDOW_MS = 60_000  // per minute
+
+// Best-effort only: this map lives in one edge instance's memory, so it does
+// not coordinate across instances or survive a cold start. It is here to stop
+// runaway loops and casual abuse, not as a billing guarantee.
+const hits = new Map<string, number[]>()
+
+function rateLimited(userId: string): boolean {
+    const now = Date.now()
+    const recent = (hits.get(userId) ?? []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
+    recent.push(now)
+    hits.set(userId, recent)
+    if (hits.size > 5000) hits.clear() // crude guard against unbounded growth
+    return recent.length > RATE_LIMIT_MAX
+}
+
+// Resolves the caller to a real signed-in Supabase user. Returns null for
+// anonymous callers AND for the bare anon key, which is a valid JWT but
+// carries no user identity.
+async function getCallerId(req: Request): Promise<string | null> {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) return null
+    const token = authHeader.slice(7)
+    try {
+        const supabase = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+        )
+        const { data, error } = await supabase.auth.getUser(token)
+        if (error || !data?.user) return null
+        return data.user.id
+    } catch {
+        return null
+    }
+}
+
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
+    }
+
+    const callerId = await getCallerId(req)
+    if (!callerId) {
+        return new Response(
+            JSON.stringify({ error: 'Unauthorized. Sign in to use Dr. QI.' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        )
+    }
+
+    if (rateLimited(callerId)) {
+        return new Response(
+            JSON.stringify({ error: 'Too many requests. Please wait a moment and try again.' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        )
     }
 
     try {

@@ -1,2 +1,2 @@
 [functions.qi-consultant]
-verify_jwt = false
+verify_jwt = true
