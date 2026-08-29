@@ -12,6 +12,7 @@ import { sendEmail, TEMPLATES } from "@/utils/email";
 import { PROJECT_CATEGORIES, PROJECT_SUBCATEGORIES, CONFERENCE_OPTIONS, PROJECT_STATUSES } from "@/constants/projectData";
 import { toast, CustomConfirmDialog } from "@/components/ui/custom-ui";
 import { createNotification } from "@/utils/createNotification";
+import { scanForPHI } from "@/utils/phi_guard";
 
 const FACULTY_MENTORS_PRESET = [
   "Dr. Lidia Sepulveda Rubiera",
@@ -214,7 +215,47 @@ export default function NewProjectPage() {
         if (!formData.get('category')) {
             errors.category = "Category is required";
         }
-        
+        if (!primaryOutcome.trim()) {
+            errors.primary_outcome = "A SMART Aim is required. Use the AI polish button if you need help shaping one.";
+        }
+
+        // Numeric fields were previously coerced with `parseInt(x) || 0`, so a typo
+        // like "1o0" silently persisted as 0 and quietly corrupted the impact
+        // dashboard. Reject bad input instead of guessing.
+        const patientsRaw = (formData.get('total_patients_impacted') as string || '').trim();
+        if (patientsRaw && !/^\d+$/.test(patientsRaw)) {
+            errors.total_patients_impacted = "Enter a whole number of patients (digits only).";
+        }
+        const savingsRaw = (formData.get('estimated_cost_savings') as string || '').trim();
+        if (savingsRaw && !/^\d+(\.\d{1,2})?$/.test(savingsRaw)) {
+            errors.estimated_cost_savings = "Enter an amount like 12000 or 12000.50.";
+        }
+
+        // Zero-PHI is the core promise of this registry. scanForPHI already runs
+        // before text is sent to the AI, but nothing checked it on the way into
+        // the database — which is the copy that persists.
+        const phiFields: [string, string, string][] = [
+            ['title', 'Project Title', title],
+            ['primary_outcome', 'SMART Aim', primaryOutcome],
+            ['updates_and_barriers', 'Updates & Barriers', updatesText],
+            ['abstract_summary', 'Abstract Summary', (formData.get('abstract_summary') as string) || ''],
+        ];
+        for (const [field, label, value] of phiFields) {
+            if (!value) continue;
+            const findings = scanForPHI(value);
+            if (findings.length > 0) {
+                const shown = findings.slice(0, 3).map(f => `${f.type} "${f.value}"`).join(', ');
+                // The MRN rule matches any bare 7-9 digit run, so a legitimate large
+                // count ("1250000 charts") trips it. Comma-formatting sidesteps the
+                // pattern and reads better anyway, so say so rather than leaving the
+                // resident stuck with no way forward.
+                const hasBareNumber = findings.some(f => f.type === 'MRN' && /^\d{7,9}$/.test(f.value));
+                errors[field] =
+                    `${label} looks like it contains PHI (${shown}). Remove it before saving — this registry stores aggregate data only.` +
+                    (hasBareNumber ? ` If that is a legitimate count or amount, write it with commas (e.g. 1,250,000).` : '');
+            }
+        }
+
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
             // Scroll to top to show errors
@@ -244,15 +285,27 @@ export default function NewProjectPage() {
         } else if (finalFacultyName.trim()) {
             // Dropdown not selected, but a name was typed: try to match a registered faculty/operator by name (case-insensitive)
             const cleanName = finalFacultyName.trim().toLowerCase().replace(/^dr\.\s+/i, '');
-            const matchingProfile = facultyProfiles.find(p => {
+            // Only auto-link when the typed name resolves to exactly ONE profile.
+            // This used to take the first substring hit, so typing "John" could
+            // silently attach "Johnson" as the faculty mentor — who would then be
+            // notified and emailed about a project they have nothing to do with.
+            const candidates = facultyProfiles.filter(p => {
                 const cleanProfileName = p.full_name.toLowerCase().replace(/^dr\.\s+/i, '');
-                return cleanProfileName === cleanName || 
-                       cleanProfileName.includes(cleanName) || 
+                return cleanProfileName === cleanName ||
+                       cleanProfileName.includes(cleanName) ||
                        cleanName.includes(cleanProfileName);
             });
-            if (matchingProfile) {
-                finalFacultyId = matchingProfile.id;
-                finalFacultyName = matchingProfile.full_name; // Standardize to database profile spelling
+            const exact = candidates.find(p =>
+                p.full_name.toLowerCase().replace(/^dr\.\s+/i, '') === cleanName
+            );
+            const resolved = exact ?? (candidates.length === 1 ? candidates[0] : null);
+            if (resolved) {
+                finalFacultyId = resolved.id;
+                finalFacultyName = resolved.full_name; // Standardize to database profile spelling
+            } else if (candidates.length > 1) {
+                // Ambiguous: keep the typed name, link nothing, and say so rather
+                // than guessing at a mentor.
+                toast.error(`"${finalFacultyName}" matches ${candidates.length} faculty profiles. Pick one from the dropdown to link them.`);
             }
         }
 
@@ -473,8 +526,16 @@ export default function NewProjectPage() {
                         mentorEmail = (profile as any)?.email;
                     }
 
+                    // Deliberately NOT guessing an address here. This used to build
+                    // `First.Last@AdventHealth.com` from whatever name was typed and
+                    // email it — which either bounced or, worse, reached a real
+                    // colleague who had nothing to do with the project. If the mentor
+                    // is not a linked profile with a known address, send nothing.
                     if (!mentorEmail && mentorName) {
-                        mentorEmail = mentorName.replace(/ /g, ".") + "@AdventHealth.com";
+                        console.info(
+                            `No stored email for mentor "${mentorName}" — skipping notification. ` +
+                            `Link them from the faculty dropdown to enable mentor emails.`
+                        );
                     }
 
                     if (mentorEmail) {
@@ -489,10 +550,20 @@ export default function NewProjectPage() {
                     console.error("Failed to send mentor email:", e);
                 }
             };
-            triggerEmail();
+            // Awaited on purpose: navigating away mid-flight cancelled the request,
+            // so mentor emails were being dropped non-deterministically.
+            // triggerEmail swallows its own errors, so this cannot block the redirect.
+            await triggerEmail();
 
-            router.push(`/projects/view?id=${data.id}`);
-            router.refresh();
+            if (data?.id) {
+                router.push(`/projects/view?id=${data.id}`);
+                router.refresh();
+            } else {
+                // Insert reported success but returned no row — don't navigate to a
+                // broken detail page with an undefined id.
+                toast.error("Project saved, but its ID could not be read. Opening the project list instead.");
+                router.push('/projects');
+            }
         }
     };
 
@@ -512,7 +583,29 @@ export default function NewProjectPage() {
 
             <form onSubmit={handleSubmit} noValidate className="space-y-10 mt-8">
                 <div className="grid grid-cols-1 gap-10">
-                    
+
+                    {/* Validation summary. Individual fields only render errors for
+                        title and category, so without this a failed PHI or SMART-Aim
+                        check would block saving with nothing shown on screen. */}
+                    {Object.keys(formErrors).length > 0 && (
+                        <div
+                            role="alert"
+                            aria-live="assertive"
+                            className="bg-rose-50 border border-rose-200 rounded-2xl p-5 animate-in fade-in slide-in-from-top-2"
+                        >
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 mb-2">
+                                {Object.keys(formErrors).length === 1
+                                    ? "1 issue needs fixing before saving"
+                                    : `${Object.keys(formErrors).length} issues need fixing before saving`}
+                            </p>
+                            <ul className="list-disc list-inside space-y-1">
+                                {Object.entries(formErrors).map(([field, message]) => (
+                                    <li key={field} className="text-xs font-semibold text-rose-700">{message}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {/* SECTION 1: CORE PROJECT METADATA */}
                     <Section title="Project Metadata" icon={<LayoutGrid className="w-5 h-5 text-advent-navy" />}>
                         <div className="space-y-6 bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm">
