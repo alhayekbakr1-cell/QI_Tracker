@@ -104,9 +104,12 @@ export default function LoginPage() {
                 setIsLoading(false)
             } else {
                 setSuccess("Access Granted! Loading your dashboard...")
+                // Derive the basePath from where this page actually lives instead of
+                // hardcoding /QI_Tracker/, which 404s on local dev where basePath is "".
+                const basePath = window.location.pathname.replace(/\/login\/?$/, '')
                 router.push('/')
                 setTimeout(() => {
-                    window.location.href = '/QI_Tracker/'
+                    window.location.href = `${basePath}/`
                 }, 500)
             }
         } catch (err: any) {
