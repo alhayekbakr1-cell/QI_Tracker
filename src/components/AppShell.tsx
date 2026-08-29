@@ -4,7 +4,6 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import Header from '@/components/Header'
-import QIConsultantChat from '@/components/QIConsultantChat'
 import { CustomToastContainer } from '@/components/ui/custom-ui'
 
 export default function AppShell({ children }: { children: ReactNode }) {
@@ -108,7 +107,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <main className="flex-1 flex flex-col">
                 {children}
             </main>
-            {user && <QIConsultantChat />}
             <CustomToastContainer />
         </>
     )
