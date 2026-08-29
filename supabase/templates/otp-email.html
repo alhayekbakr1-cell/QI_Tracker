@@ -1,0 +1,96 @@
+<!--
+  Athena / QI Tracker — One-Time Passcode email
+
+  PASTE THIS INTO: Supabase Dashboard → Authentication → Emails → "Magic Link"
+  (this repo copy exists so the template is version-controlled; editing this
+  file alone changes nothing until it is pasted into the dashboard)
+
+  CRITICAL: the app's login screen asks for a 6-DIGIT CODE, not a link.
+  Supabase's stock template only ships {{ .ConfirmationURL }}, so a resident
+  receives an email with nothing to type. {{ .Token }} below is the passcode
+  and must not be removed.
+
+  Table-based layout with inline styles on purpose: recipients are on
+  @adventhealth.com, i.e. Outlook / Exchange, which ignores <style> blocks,
+  flexbox and grid.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background-color:#F1F5F9;">
+  <tr>
+    <td align="center" style="padding:32px 12px;">
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background-color:#FFFFFF;border-radius:12px;border:1px solid #E2E8F0;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#004F9F;background-image:linear-gradient(135deg,#004F9F 0%,#003057 100%);border-radius:12px 12px 0 0;padding:28px 32px;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#7DD3FC;">
+              AdventHealth &middot; Internal Medicine GME
+            </p>
+            <p style="margin:6px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;color:#FFFFFF;">
+              Athena Clinical Wisdom Registry
+            </p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#0F172A;">
+              Your sign-in passcode
+            </p>
+            <p style="margin:0 0 24px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;color:#475569;">
+              Enter this code on the sign-in screen to access the resident project tracker.
+            </p>
+
+            <!-- The passcode -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" style="background-color:#F8FAFC;border:1px solid #CBD5E1;border-radius:10px;padding:22px 12px;">
+                  <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:36px;font-weight:bold;letter-spacing:10px;color:#004F9F;">
+                    {{ .Token }}
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:20px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:#64748B;">
+              This code expires in 60 minutes and can be used once. If you did not
+              request it, you can ignore this email &mdash; no action will be taken
+              on your account.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Compliance footer -->
+        <tr>
+          <td style="padding:0 32px 28px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="background-color:#FEF2F2;border-left:3px solid #DC2626;border-radius:4px;padding:12px 14px;">
+                  <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#991B1B;">
+                    HIPAA &amp; PHI Notice
+                  </p>
+                  <p style="margin:4px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#7F1D1D;">
+                    This registry holds aggregate initiative metadata only. Do not
+                    enter Protected Health Information.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="border-top:1px solid #E2E8F0;padding:18px 32px;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:17px;color:#94A3B8;">
+              Sent by the Athena Clinical Wisdom Registry, AdventHealth Internal
+              Medicine Graduate Medical Education. Access is restricted to
+              institutional personnel.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
