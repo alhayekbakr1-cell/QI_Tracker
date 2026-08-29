@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Project } from "@/types";
 import ProjectCard from "@/components/ProjectCard";
+import MySubmissions from "@/components/MySubmissions";
 import {
     Award,
     CheckCircle2,
@@ -318,6 +319,13 @@ export default function PortfolioPage() {
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">My Academic Portfolio</h1>
                 <p className="text-slate-500 font-medium">Tracking Quality Improvement & Graduation Milestones for <span className="text-advent-navy font-bold">{userEmail}</span></p>
             </header>
+
+            {/* In-flight proposals. Submitting used to be a void: the request row
+                held both approval gates and reviewer feedback, but nothing here
+                ever read it. Renders nothing when there is nothing pending. */}
+            <div className="mb-8">
+                <MySubmissions userId={userProfile?.id ?? null} />
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Dynamic Tracker Card (Graduation vs Mentorship) */}
