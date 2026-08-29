@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
-import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X, Users, TrendingUp } from 'lucide-react'
+import { LogOut, LayoutDashboard, List, BookOpen, Activity, Menu, X, Users, TrendingUp, Bot } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -39,6 +39,7 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
         if (path === '/metrics') return 'Analytics';
         if (path === '/portfolio') return 'My Portfolio';
         if (path === '/resources') return 'Resources';
+        if (path === '/drqi') return 'Dr. QI Mentor';
         if (path === '/faculty') return 'Faculty Portal';
         if (path === '/admin') return 'Admin Panel';
         if (path === '/admin/dashboard') return 'Intelligence';
@@ -55,6 +56,7 @@ export default function Header({ userEmail, role, fullName }: HeaderProps) {
         { href: '/', label: 'Overview', icon: LayoutDashboard },
         { href: '/projects', label: 'Projects', icon: List },
         { href: '/impact', label: 'Impact', icon: Activity },
+        { href: '/drqi', label: 'Dr. QI', icon: Bot },
         { href: '/portfolio', label: 'My Portfolio', icon: BookOpen },
         { href: '/resources', label: 'Resources', icon: BookOpen },
         ...(role === 'Faculty' || role === 'Operator' ? [{ href: '/faculty', label: 'Faculty Portal', icon: Users }] : []),

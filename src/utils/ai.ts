@@ -216,9 +216,14 @@ export async function getQIAdvice(
      - Quality Improvement projects are classified under 45 CFR 46.102(l) as systemic, data-guided activities designed for local clinical improvement, and are typically determined as "Exempt/Non-Research". However, any activity seeking generalizable knowledge through randomized trials is classified as Human Subjects Research (HSR) and requires full IRB review.
   `;
 
-  // Format the conversation history to feed to the LLM
-  const historyText = history && history.length > 0
-    ? history.map(msg => `${msg.role === 'user' ? 'Resident' : 'Dr. QI'}: ${msg.content}`).join('\n\n')
+  // Format the conversation history to feed to the LLM. 
+  // Exclude the current active question at the end if it was pre-appended, ensuring pristine turn-based history
+  const pastHistory = history && history.length > 0 && history[history.length - 1].content === question
+    ? history.slice(0, -1)
+    : history || [];
+
+  const historyText = pastHistory.length > 0
+    ? pastHistory.map(msg => `${msg.role === 'user' ? 'Resident' : 'Dr. QI'}: ${msg.content}`).join('\n\n')
     : '';
 
   const prompt = `You are Dr. QI, a senior, friendly academic research and Quality Improvement mentor for residents at AdventHealth.
@@ -226,6 +231,7 @@ Your goal is to guide the resident step-by-step through their scholarly projects
 
 RULES:
 1. FRIENDLY & INTERACTIVE: Speak like a real conversational mentor. If the resident says hello (e.g. "hi", "hello", "hey"), greet them warmly and ask how their QI project brainstorming is going. Do not demand clinical metrics or throw lists of questions at them for simple greetings!
+   - CRITICAL GREETING GUARD: If the conversation is already in progress (meaning prior messages exist in the conversation history), DO NOT repeat greetings, say "Hello!", "Great to hear from you!", or output welcome boilerplate. Jump straight into answering their follow-up questions or analyzing their project context directly.
 2. STEP-BY-STEP GUIDANCE: Guide them through one phase at a time (e.g., brainstorming the problem, shaping a SMART Aim, mapping root causes, selecting Process/Outcome/Balancing metrics, and designing PDSA cycles). Praise their progress!
 3. HIGHLY VISUAL & SCANNABLE: Break up your replies into readable formatting:
    - Use clean h4 headers (#### Section Name) to group advice segments.
