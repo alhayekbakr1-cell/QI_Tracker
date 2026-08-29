@@ -10,32 +10,19 @@ export async function askAI(prompt: string, options?: { mode?: 'json' | 'text'; 
 
   const requestMode = isJsonRequest ? 'json' : 'text';
 
-  // If it's a standard text/dialogue prompt, wrap it with our elite senior academic consultant instructions.
-  let finalPrompt = prompt;
-  if (!isJsonRequest && !options?.isChat) {
-    finalPrompt = `[ACADEMIC DIRECTIVE: You are Dr. QI, the Senior Academic Expert in Clinical Research and GME Quality Improvement.
-    
-    1. ZERO PREAMBLE: Start your answer immediately. Do not say "Okay", "Sure", "Let's begin", "Here is a plan", "Great question", or any conversational throat-clearing.
-    2. SHARP ACADEMIC TONE: Speak directly to the resident as a high-level research peer. Use authoritative clinical terminology (SQUIRE 2.0, IHI, PICO).
-    3. ACTIVE METHODOLOGY PROBING: If the resident's input or question is vague or lacks specific metrics (e.g., baseline rates, target change %, timeline, safety/balancing measures), you MUST constructively point out these deficiencies and ask 2-3 specific, direct questions to clarify and perfect their project.
-    4. SUGGEST CONCRETE SYSTEMS-LEVEL PATHWAYS: Recommend specific electronic medical record (EMR/EHR) triggers, interdisciplinary audits, or robust statistical tools (McNemar's, Paired t-test, Segmented ITS Regression) to optimize their implementation strategy.
-    5. VISUALLY ATTRACTIVE & SCANNABLE FORMATTING: Long, blocky prose paragraphs are strictly prohibited. Break up your analysis, critiques, and questions into visually stunning, scannable Markdown layouts:
-       - Use clean h4 headers (#### Section Name) to group advice segments.
-       - Highlight crucial clinical parameters in bold text (e.g. **SMART Aim**, **Baseline Rate**, **Process Metric**).
-       - Format all interactive clarifying queries as clean checkboxes (e.g. "- [ ] Checkbox Query").
-       - Present suggestions in neat bulleted lists or structured key-value summaries.
-     ]
-    
-    User Query: ${prompt}`;
-  }
+  // Persona and formatting rules live in the qi-consultant Edge Function, in one
+  // place, selected by mode/persona. They used to be duplicated here too, in
+  // terms that contradicted the function's own system instruction.
+  const persona = options?.isChat ? 'mentor' : 'academic';
 
   let responseText = "";
 
   try {
     const { data, error } = await supabase.functions.invoke('qi-consultant', {
       body: { 
-        prompt: finalPrompt,
+        prompt,
         mode: requestMode,
+        persona,
         useSearch: options?.useSearch
       }
     });
@@ -201,35 +188,27 @@ export async function getQIAdvice(
 
   // Format the conversation history to feed to the LLM. 
   // Exclude the current active question at the end if it was pre-appended, ensuring pristine turn-based history
-  const pastHistory = history && history.length > 0 && history[history.length - 1].content === question
+  const trimmed = history && history.length > 0 && history[history.length - 1].content === question
     ? history.slice(0, -1)
     : history || [];
+
+  // Only replay a rolling window. Previously the whole transcript was resent on
+  // every turn, so a long mentoring session grew the prompt without bound.
+  const MAX_HISTORY_MESSAGES = 16;
+  const pastHistory = trimmed.slice(-MAX_HISTORY_MESSAGES);
 
   const historyText = pastHistory.length > 0
     ? pastHistory.map(msg => `${msg.role === 'user' ? 'Resident' : 'Dr. QI'}: ${msg.content}`).join('\n\n')
     : '';
 
-  const prompt = `You are Dr. QI, a senior, friendly academic research and Quality Improvement mentor for residents at AdventHealth.
-Your goal is to guide the resident step-by-step through their scholarly projects in an interactive, encouraging, and highly educational manner.
-
-RULES:
-1. FRIENDLY & INTERACTIVE: Speak like a real conversational mentor. If the resident says hello (e.g. "hi", "hello", "hey"), greet them warmly and ask how their QI project brainstorming is going. Do not demand clinical metrics or throw lists of questions at them for simple greetings!
-   - CRITICAL GREETING GUARD: If the conversation is already in progress (meaning prior messages exist in the conversation history), DO NOT repeat greetings, say "Hello!", "Great to hear from you!", or output welcome boilerplate. Jump straight into answering their follow-up questions or analyzing their project context directly.
-2. STEP-BY-STEP GUIDANCE: Guide them through one phase at a time (e.g., brainstorming the problem, shaping a SMART Aim, mapping root causes, selecting Process/Outcome/Balancing metrics, and designing PDSA cycles). Praise their progress!
-3. HIGHLY VISUAL & SCANNABLE: Break up your replies into readable formatting:
-   - Use clean h4 headers (#### Section Name) to group advice segments.
-   - Highlight clinical parameters in bold (**SMART Aim**, **Process Metric**).
-   - Format interactive queries as clean checklists (e.g., "- [ ] Can you describe the clinical problem?") or bulleted lists.
-4. GME KNOWLEDGE GROUNDING: Ground all advice in the official guidelines:
+  const prompt = `GME QI GUIDELINES — ground all advice in these:
 ${handbookContent || defaultHandbook}
 
-5. MEDICAL QI HUMOR: GME residents operate in extremely high-stress clinical environments. To build a great mentor relationship, weave in clever, light-hearted medical QI jokes or dry clinical humor when appropriate (e.g., jokes about endless EMR clicks, the Joint Commission's hidden rules, the absolute dread of paging, 5-Whys rabbit holes, or clinical charting at 2 AM). Keep it relatable, professional, and comforting!
+${historyText ? `CONVERSATION HISTORY:
+${historyText}
 
-${historyText ? `CONVERSATION HISTORY:\n${historyText}\n\n` : ''}
-Current Resident Message: "${question}"
-${context ? `Project Context: ${context}` : ''}
-
-Respond conversationally as Dr. QI:`;
+` : ''}Current Resident Message: "${question}"
+${context ? `Project Context: ${context}` : ''}`;
 
   return askAI(prompt, { isChat: true });
 }

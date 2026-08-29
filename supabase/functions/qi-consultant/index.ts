@@ -18,7 +18,46 @@ const corsHeaders = {
 
 // ─── WHO YOU ARE ──────────────────────────────────────────────────────────────
 // This defines the model's personality and behavior end-to-end.
-const SYSTEM_INSTRUCTION = `You are Dr. QI — a distinguished Senior Academic Expert in Clinical Research and Quality Improvement (QI) and an elite IRB Committee Member, serving as a senior research mentor for the Graduate Medical Education (GME) program.
+// ─── PERSONAS ─────────────────────────────────────────────────────────────────
+// One source of truth per task type. These used to be duplicated across
+// ai.ts (an "ACADEMIC DIRECTIVE" block and a separate getQIAdvice persona)
+// AND this file, in partially contradictory terms — which is how "hi" ended up
+// answered with a three-part intake form. Keep persona text HERE only.
+
+const SHARED_FORMATTING = `
+FORMATTING (when the reply is long enough to need structure):
+- Use h4 headers (#### Section Name) to group segments. Never wall-of-text prose.
+- Bold crucial clinical parameters (**SMART Aim**, **Baseline Rate**, **Process Metric**).
+- Put clarifying questions in checkbox form ("- [ ] question").
+- Use bulleted lists or key-value summaries for suggestions.
+- Skip all of this for short replies. Structure a two-sentence answer and it looks bureaucratic.`
+
+// Warm mentor voice — used by the Dr. QI chat workspace.
+const MENTOR_SYSTEM_INSTRUCTION = `You are Dr. QI, a senior academic Quality Improvement and clinical research mentor for Internal Medicine residents at AdventHealth.
+
+YOUR VOICE:
+- A real conversational mentor, not an intake form. Encouraging, collegial, human.
+- Residents work in high-stress clinical environments. Dry clinical humour is welcome when it fits — endless EMR clicks, 5-Whys rabbit holes, charting at 2 AM. Keep it warm and professional.
+- Guide ONE phase at a time (problem framing -> SMART Aim -> root cause -> metrics -> PDSA). Praise real progress.
+
+GREETINGS AND SHORT TURNS (this overrides everything below):
+- "hi" / "hello" / "thanks" / "ok" gets 1-3 warm sentences and ONE open question. No headers, no numbered parameter lists, no metric demands.
+- If the conversation is already in progress, do NOT re-greet or restate welcome boilerplate. Continue the thread directly.
+- Match reply length to input length. Never pad to look thorough.
+
+RIGOUR (for substantive turns):
+- Ground advice in SQUIRE 2.0, IHI run-chart rules, PICO framing, and 45 CFR 46 for IRB pre-screening.
+- Once a resident has actually described a project, name the gaps and ask 2-3 sharp clarifying questions.
+- Propose concrete systems-level interventions (EHR advisories, order sets, pharmacist-led audits) and real statistics (McNemar's, paired t-test, segmented ITS regression), never generic advice.
+
+NEVER:
+- Open with throat-clearing ("Okay", "Sure", "Great question", "Here is a plan").
+- Say "I am an AI" or "As a QI consultant". You are Dr. QI.
+- Vocalise internal reasoning steps.
+${SHARED_FORMATTING}`
+
+// Sharper, report-writing voice — used by the non-chat analysis helpers.
+const ACADEMIC_SYSTEM_INSTRUCTION = `You are Dr. QI — a distinguished Senior Academic Expert in Clinical Research and Quality Improvement (QI) and an elite IRB Committee Member, serving as a senior research mentor for the Graduate Medical Education (GME) program.
 
 YOUR CORE IDENTITY & ACADEMIC STANDARDS:
 - You think and write like a leading healthcare quality editor (e.g., BMJ Quality & Safety, JAMA Quality & Safety).
@@ -41,7 +80,22 @@ MATCH YOUR LENGTH TO THEIRS (this overrides the protocol above):
 - A greeting or one-liner ("hi", "hello", "thanks", "ok") gets 1-3 warm sentences and ONE open question. No headers, no numbered parameter lists, no metric demands. Do not open a workshop.
 - A short question gets a short, direct answer.
 - Reserve full structured breakdowns (headers, checklists, metric tables) for when a resident has actually laid out a project or asked something substantive.
-- Never pad a reply to look thorough. A resident who says "hi" and receives a three-section intake form will not come back.`
+- Never pad a reply to look thorough. A resident who says "hi" and receives a three-section intake form will not come back.
+${SHARED_FORMATTING}`
+
+// Structured output — deliberately minimal. The mentor persona used to be
+// applied to JSON calls too, which wasted ~850 tokens per request and leaked
+// conversational prose into responses that were meant to be parsed.
+const EXTRACTION_SYSTEM_INSTRUCTION = `You convert clinical quality-improvement inputs into structured data.
+Output ONLY valid JSON matching the requested schema. No prose, no commentary, no markdown code fences.
+Use domain-correct QI terminology (process / outcome / balancing metrics, SQUIRE 2.0, PDSA).
+If a value is genuinely unknown, use null rather than inventing it.`
+
+function systemInstructionFor(mode?: string, persona?: string): string {
+    if (mode === 'json') return EXTRACTION_SYSTEM_INSTRUCTION
+    if (persona === 'mentor') return MENTOR_SYSTEM_INSTRUCTION
+    return ACADEMIC_SYSTEM_INSTRUCTION
+}
 
 // ─── ABUSE CONTROL ────────────────────────────────────────────────────────────
 // This endpoint proxies a paid Gemini key. It previously ran with
@@ -86,6 +140,32 @@ async function getCallerId(req: Request): Promise<string | null> {
     }
 }
 
+// Google returns transient 429 (rate) and 503 (overloaded) under load. Without
+// this a resident simply saw the request fail — there is deliberately no
+// client-side fallback any more, so retrying here is the only cushion.
+function isTransient(err: unknown): boolean {
+    const msg = String((err as Error)?.message ?? err)
+    return /(429|500|502|503|504)/.test(msg) ||
+           /overloaded|unavailable|rate limit|try again|timeout/i.test(msg)
+}
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+    let lastErr: unknown
+    for (let i = 0; i < attempts; i++) {
+        try {
+            return await fn()
+        } catch (err) {
+            lastErr = err
+            if (i === attempts - 1 || !isTransient(err)) throw err
+            // 400ms, 800ms, plus jitter to avoid synchronised retries
+            const delay = 400 * Math.pow(2, i) + Math.random() * 200
+            console.warn(`Transient Gemini error, retrying in ${Math.round(delay)}ms:`, String(err))
+            await new Promise(r => setTimeout(r, delay))
+        }
+    }
+    throw lastErr
+}
+
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
@@ -108,7 +188,7 @@ serve(async (req) => {
 
     try {
         const body = await req.json()
-        const { prompt, mode, useSearch } = body  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
+        const { prompt, mode, useSearch, persona } = body  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
         const apiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_GENERATIVE_AI_API_KEY')
 
         if (!apiKey) {
@@ -119,6 +199,7 @@ serve(async (req) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey)
+        const systemInstruction = systemInstructionFor(mode, persona)
         let result;
         
         try {
@@ -126,7 +207,7 @@ serve(async (req) => {
                 // Attempt search grounding
                 const modelWithSearch = genAI.getGenerativeModel({
                     model: GEMINI_MODEL,
-                    systemInstruction: SYSTEM_INSTRUCTION,
+                    systemInstruction,
                     generationConfig: {
                         temperature: mode === 'json' ? 0.1 : 0.4,
                         topP: 0.85,
@@ -136,7 +217,7 @@ serve(async (req) => {
                     },
                     tools: [{ googleSearch: {} }]
                 });
-                result = await modelWithSearch.generateContent(prompt);
+                result = await withRetry(() => modelWithSearch.generateContent(prompt));
             } else {
                 throw new Error("Search not requested");
             }
@@ -145,7 +226,7 @@ serve(async (req) => {
             // Fallback: standard model generation without tools
             const standardModel = genAI.getGenerativeModel({
                 model: GEMINI_MODEL,
-                systemInstruction: SYSTEM_INSTRUCTION,
+                systemInstruction,
                 generationConfig: {
                     temperature: mode === 'json' ? 0.1 : 0.4,
                     topP: 0.85,
@@ -154,7 +235,7 @@ serve(async (req) => {
                     ...(mode === 'json' ? { responseMimeType: "application/json" } : {})
                 }
             });
-            result = await standardModel.generateContent(prompt);
+            result = await withRetry(() => standardModel.generateContent(prompt));
         }
 
         const responseText = result.response.text()
