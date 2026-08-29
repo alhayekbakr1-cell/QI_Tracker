@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Project } from "@/types";
 import ProjectCard from "@/components/ProjectCard";
 import MySubmissions from "@/components/MySubmissions";
+import NextMilestoneAction from "@/components/NextMilestoneAction";
 import {
     Award,
     CheckCircle2,
@@ -301,7 +302,10 @@ export default function PortfolioPage() {
     // Graduation Requirements Logic
     const hasProtocol = myProjects.some(p => p.protocol_url);
     const hasPresentation = myProjects.some(p => p.presentation_url);
-    const totalPDSAs = myProjects.reduce((sum, p) => sum + p.pdsa_cycle, 0);
+    // Coalesce: a single project row with a null pdsa_cycle turned this into NaN,
+    // which silently broke the whole graduation card (NaN >= 2 is false, and the
+    // progress bar rendered as NaN%).
+    const totalPDSAs = myProjects.reduce((sum, p) => sum + (Number(p.pdsa_cycle) || 0), 0);
     const pdsaProgress = Math.min((totalPDSAs / 2) * 100, 100);
 
     const requirements = [
@@ -323,8 +327,21 @@ export default function PortfolioPage() {
             {/* In-flight proposals. Submitting used to be a void: the request row
                 held both approval gates and reviewer feedback, but nothing here
                 ever read it. Renders nothing when there is nothing pending. */}
-            <div className="mb-8">
+            <div className="mb-8 space-y-6">
                 <MySubmissions userId={userProfile?.id ?? null} />
+
+                {/* The graduation card shows ticked/unticked requirements but never
+                    said what to do about an unticked one. Residents only need the
+                    next step, not the whole checklist restated. */}
+                {userProfile?.role !== 'Operator' && userProfile?.role !== 'Faculty' && (
+                    <NextMilestoneAction
+                        projectCount={myProjects.length}
+                        hasProtocol={hasProtocol}
+                        totalPDSAs={totalPDSAs}
+                        hasPresentation={hasPresentation}
+                        firstProjectId={myProjects[0]?.id ?? null}
+                    />
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
