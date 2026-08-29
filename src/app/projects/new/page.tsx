@@ -322,7 +322,25 @@ export default function NewProjectPage() {
         const proponentsArray = Array.from(new Set([...manualProponents, ...linkedProponentNames]));
         const leadProponentsArray = Array.from(new Set([...manualLeads, ...linkedLeadNames]));
 
-        if (currentUserProfile?.role === 'Viewer') {
+        // Nothing gates this form on the profile having loaded, and RLS lets any
+        // authenticated user insert into `projects`. So when currentUserProfile was
+        // still null, `?.role === 'Viewer'` evaluated false and a resident fell
+        // straight through to the direct-insert path — silently bypassing mentor and
+        // GME approval. Refuse to guess at identity.
+        if (!currentUserProfile) {
+            setIsSaving(false);
+            toast.error("Your profile is still loading. Give it a second and try again.");
+            return;
+        }
+
+        // Fail closed: only explicitly privileged roles may write straight to
+        // `projects`. Any other or unrecognised role goes through approval.
+        const canPublishDirectly =
+            currentUserProfile.role === 'Operator' ||
+            currentUserProfile.role === 'Admin' ||
+            currentUserProfile.role === 'Faculty';
+
+        if (!canPublishDirectly) {
             const defaultProtocolData = {
                 title: title,
                 setting: "AdventHealth Tampa",
