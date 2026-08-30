@@ -67,44 +67,60 @@ export default function Dashboard() {
       setUserEmail("bakr.alhayek@adventhealth.com");
       setUserId("demo-user-id");
       setUserProfile({ role: "Admin", full_name: "Bakr Alhayek MD" });
+      // Demo rows were missing most required Project fields and used
+      // `current_pdsa_cycle`, a name nothing in the app reads — so demo mode
+      // always showed 0 cycles. The cast to Project[] hid both problems.
+      // This factory supplies real defaults and keeps the data type-checked.
+      const demoProject = (
+        p: Partial<Project> & Pick<Project, 'id' | 'title' | 'status'>
+      ): Project => ({
+        category: null, subcategory: null, primary_outcome: null, pdsa_cycle: 0,
+        proponents: [], lead_proponents: [], proponent_ids: [], lead_proponent_ids: [],
+        faculty: null, faculty_id: null, updates_and_barriers: null, internal_notes: null,
+        last_updated_date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        updated_by: null, protocol_url: null, presentation_url: null,
+        target_conference: null, faculty_approved_protocol: false,
+        faculty_approved_pdsa: false,
+        ...p,
+      });
+
       setProjects([
-        {
+        demoProject({
           id: "demo-1",
           title: "MASH Screening with FIB-4 Score in Primary Care IM Clinic",
           category: "Outpatient",
           status: "Intervention Ongoing",
           lead_proponents: ["Dr. Muhammad Adnan", "Dr. Hadid"],
           faculty: "Dr. Ramsakal",
-          current_pdsa_cycle: 2,
+          pdsa_cycle: 2,
           last_updated_date: new Date().toISOString(),
-          updates_and_barriers: "PDSA Cycle 2 ongoing. Electronic health record screening template deployed.",
-          metrics: [{ date: "2026-07-01", numerator: 45, denominator: 50 }]
-        },
-        {
+          updates_and_barriers: "PDSA Cycle 2 ongoing. Electronic health record screening template deployed."
+        }),
+        demoProject({
           id: "demo-2",
           title: "Improving DXA Scan Screening for Female Inpatients > 65 Years",
           category: "Inpatient",
           status: "Pre-Intervention",
           lead_proponents: ["Dr. Alhayek"],
           faculty: "Dr. Sepulveda",
-          current_pdsa_cycle: 1,
+          pdsa_cycle: 1,
           last_updated_date: new Date().toISOString(),
-          updates_and_barriers: "Baseline data collection complete. Intervention order set pending approval.",
-          metrics: []
-        },
-        {
+          updates_and_barriers: "Baseline data collection complete. Intervention order set pending approval."
+        }),
+        demoProject({
           id: "demo-3",
           title: "Carvedilol vs Metoprolol Tartrate Discharge Optimization in HFrEF",
           category: "Inpatient",
           status: "Sustain the Gains",
           lead_proponents: ["Dr. Gummalla"],
           faculty: "Dr. Ramsakal",
-          current_pdsa_cycle: 3,
+          pdsa_cycle: 3,
           last_updated_date: new Date().toISOString(),
-          updates_and_barriers: "Sustained 94.8% target adherence across 3 consecutive clinical cycles.",
-          metrics: []
-        }
-      ] as Project[]);
+          updates_and_barriers: "Sustained 94.8% target adherence across 3 consecutive clinical cycles."
+        })
+      ]);
       setIsLoading(false);
     }
 

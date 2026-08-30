@@ -7,8 +7,12 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
   basePath: isProd ? "/QI_Tracker" : "",
   trailingSlash: true,
-  // Allow build to succeed during migration — pre-existing strict TS issues in Supabase inference
-  typescript: { ignoreBuildErrors: true },
+  // Type errors now fail the build. The escape hatch was added for pre-existing
+  // Supabase inference issues, but the repo currently has zero type errors, and
+  // the hatch was actively hiding real bugs: a null user dereference introduced
+  // with the dev auth bypass, and demo data using a field name nothing reads.
+  // If this ever needs re-enabling, fix the error instead.
+  typescript: { ignoreBuildErrors: false },
 };
 
 export default nextConfig;
