@@ -9,6 +9,7 @@ import ProjectCard from "@/components/ProjectCard";
 import MySubmissions from "@/components/MySubmissions";
 import NextMilestoneAction from "@/components/NextMilestoneAction";
 import { downloadScholarlyCV } from "@/utils/cvExport";
+import { resolveMilestones, graduationPercent, awaitingSignature, isBoardReady } from "@/utils/milestones";
 import { Award, CheckCircle2, Circle, FileText, ChevronRight, Trophy, GraduationCap, TrendingUp, Presentation, DollarSign, Users, ChevronDown, Plus } from "lucide-react";
 import Link from "next/link";
 import { Skeleton, toast } from "@/components/ui/custom-ui";
@@ -16,6 +17,7 @@ import jsPDF from "jspdf";
 
 export default function PortfolioPage() {
     const [myProjects, setMyProjects] = useState<Project[]>([]);
+    const [attestations, setAttestations] = useState<any[]>([]);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +88,17 @@ export default function PortfolioPage() {
                         (p.faculty && nameMatch(p.faculty));
                 });
                 setMyProjects(filtered as Project[]);
+
+                // Graduation counts VERIFIED milestones, so the signatures are
+                // needed here, not just the resident's own fields.
+                const ids = filtered.map((p: any) => p.id);
+                if (ids.length > 0) {
+                    const { data: signs } = await supabase
+                        .from("attestations")
+                        .select("project_id, milestone, faculty_name, signed_at, revoked_at")
+                        .in("project_id", ids);
+                    setAttestations(signs || []);
+                }
             }
             setIsLoading(false);
         }
@@ -289,23 +302,30 @@ export default function PortfolioPage() {
         }
     };
 
-    // Graduation Requirements Logic
-    const hasProtocol = myProjects.some(p => p.protocol_url);
-    const hasPresentation = myProjects.some(p => p.presentation_url);
-    // Coalesce: a single project row with a null pdsa_cycle turned this into NaN,
-    // which silently broke the whole graduation card (NaN >= 2 is false, and the
-    // progress bar rendered as NaN%).
+    // Graduation counts milestones a faculty mentor has SIGNED, not fields the
+    // resident filled in. Evidenced-but-unsigned is surfaced separately below as
+    // something awaiting the mentor, rather than counted or hidden.
+    const milestoneStates = resolveMilestones(myProjects as any, attestations);
+    const progressPercent = graduationPercent(milestoneStates);
+    const pendingSignature = awaitingSignature(milestoneStates);
+    const boardReady = isBoardReady(milestoneStates);
+
     const totalPDSAs = myProjects.reduce((sum, p) => sum + (Number(p.pdsa_cycle) || 0), 0);
-    const pdsaProgress = Math.min((totalPDSAs / 2) * 100, 100);
+    const hasProtocol = milestoneStates.find(m => m.key === "protocol")?.evidenced ?? false;
+    const hasPresentation = milestoneStates.find(m => m.key === "presentation")?.evidenced ?? false;
 
-    const requirements = [
-        { label: "QI Protocol Approved", status: hasProtocol, icon: FileText },
-        { label: "2+ PDSA Cycles Completed", status: totalPDSAs >= 2, icon: TrendingUp, sub: `${totalPDSAs}/2 Cycles` },
-        { label: "Institutional Presentation", status: hasPresentation, icon: Presentation }
-    ];
-
-    const completedCount = requirements.filter(r => r.status).length;
-    const progressPercent = Math.round((completedCount / requirements.length) * 100);
+    const ICONS = { protocol: FileText, pdsa: TrendingUp, presentation: Presentation } as const;
+    const requirements = milestoneStates.map(m => ({
+        label: m.label,
+        status: m.verified,
+        evidenced: m.evidenced,
+        icon: ICONS[m.key],
+        sub: m.verified
+            ? (m.verifiedBy ? `Signed by ${m.verifiedBy}` : "Verified")
+            : m.evidenced
+                ? "Awaiting mentor signature"
+                : m.detail,
+    }));
 
     return (
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -319,6 +339,29 @@ export default function PortfolioPage() {
                 ever read it. Renders nothing when there is nothing pending. */}
             <div className="mb-8 space-y-6">
                 <MySubmissions userId={userProfile?.id ?? null} />
+
+                {/* Evidenced but unsigned. Without this the resident sees a
+                    requirement greyed out with no way to tell whether they still
+                    owe work or are simply waiting on their mentor. */}
+                {pendingSignature.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700 mb-2">
+                            Waiting on your mentor
+                        </p>
+                        <p className="text-xs font-medium text-amber-800 leading-relaxed">
+                            You have completed {pendingSignature.length === 1 ? "a requirement" : `${pendingSignature.length} requirements`} that
+                            your faculty mentor still needs to sign off:
+                        </p>
+                        <ul className="mt-2 space-y-1">
+                            {pendingSignature.map(m => (
+                                <li key={m.key} className="text-xs font-bold text-amber-900">- {m.label}</li>
+                            ))}
+                        </ul>
+                        <p className="text-[10px] font-medium text-amber-700/80 italic mt-3">
+                            Nothing further is required from you. Milestones count once your mentor attests them.
+                        </p>
+                    </div>
+                )}
 
                 {/* The graduation card shows ticked/unticked requirements but never
                     said what to do about an unticked one. Residents only need the
@@ -427,7 +470,7 @@ export default function PortfolioPage() {
                             Academic Achievements
                         </h3>
                         <div className="space-y-3">
-                            {completedCount === requirements.length ? (
+                            {boardReady ? (
                                 <div className="space-y-3">
                                     <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
                                         <Award className="w-5 h-5 text-emerald-600 animate-pulse" />

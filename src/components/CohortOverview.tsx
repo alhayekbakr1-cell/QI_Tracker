@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Loader2, GraduationCap, AlertTriangle, UserX, Search } from "lucide-react";
 import { getProjectHealth } from "@/utils/projectHealth";
+import { resolveMilestones, graduationPercent } from "@/utils/milestones";
 
 interface Profile { id: string; full_name: string; role: string | null; }
 interface ProjectRow {
@@ -66,9 +67,10 @@ export default function CohortOverview() {
     useEffect(() => {
         let cancelled = false;
         (async () => {
-            const [{ data: profiles }, { data: projects }] = await Promise.all([
+            const [{ data: profiles }, { data: projects }, { data: attestations }] = await Promise.all([
                 supabase.from("profiles").select("id, full_name, role").order("full_name"),
                 supabase.from("projects").select("id, title, status, last_updated_date, protocol_url, presentation_url, pdsa_cycle, proponent_ids, lead_proponent_ids, proponents, lead_proponents"),
+                supabase.from("attestations").select("project_id, milestone, faculty_name, signed_at, revoked_at"),
             ]);
             if (cancelled) return;
 
@@ -90,10 +92,14 @@ export default function CohortOverview() {
                     nameMatches(p.proponents, profile.full_name) ||
                     nameMatches(p.lead_proponents, profile.full_name)
                 );
-                const hasProtocol = mine.some(p => !!p.protocol_url);
-                const hasPresentation = mine.some(p => !!p.presentation_url);
+                // Counts SIGNED milestones, matching the portfolio. Counting the
+                // resident's own fields overstated readiness: the programme issues
+                // board letters off these figures.
+                const states = resolveMilestones(mine as any, (attestations || []) as any);
+                const hasProtocol = states.find(x => x.key === "protocol")?.verified ?? false;
+                const hasPresentation = states.find(x => x.key === "presentation")?.verified ?? false;
                 const pdsaCount = mine.reduce((sum, p) => sum + (Number(p.pdsa_cycle) || 0), 0);
-                const metCount = [hasProtocol, pdsaCount >= 2, hasPresentation].filter(Boolean).length;
+                const metCount = Math.round((graduationPercent(states) / 100) * 3);
                 const stalledCount = mine.filter(p => getProjectHealth(p).needsAttention).length;
                 return { profile, projects: mine, hasProtocol, pdsaCount, hasPresentation, metCount, stalledCount };
             });
