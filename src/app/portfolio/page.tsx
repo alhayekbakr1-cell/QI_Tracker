@@ -9,20 +9,7 @@ import ProjectCard from "@/components/ProjectCard";
 import MySubmissions from "@/components/MySubmissions";
 import NextMilestoneAction from "@/components/NextMilestoneAction";
 import { downloadScholarlyCV } from "@/utils/cvExport";
-import {
-    Award,
-    CheckCircle2,
-    Circle,
-    FileText,
-    ChevronRight,
-    Trophy,
-    GraduationCap,
-    TrendingUp,
-    Presentation,
-    DollarSign,
-    Users,
-    ChevronDown
-} from "lucide-react";
+import { Award, CheckCircle2, Circle, FileText, ChevronRight, Trophy, GraduationCap, TrendingUp, Presentation, DollarSign, Users, ChevronDown, Plus } from "lucide-react";
 import Link from "next/link";
 import { Skeleton, toast } from "@/components/ui/custom-ui";
 import jsPDF from "jspdf";
@@ -482,9 +469,20 @@ export default function PortfolioPage() {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Participating Projects</h2>
-                        <span className="px-4 py-1.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-                            {myProjects.length} Active
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <span className="px-4 py-1.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                {myProjects.length} Active
+                            </span>
+                            {/* Previously rendered only in the empty state, so the entry
+                                point vanished the moment a resident had one project. */}
+                            <Link
+                                href="/projects/new"
+                                className="flex items-center gap-2 bg-advent-navy hover:bg-advent-cobalt text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                New Project
+                            </Link>
+                        </div>
                     </div>
 
                     {myProjects.length > 0 ? (

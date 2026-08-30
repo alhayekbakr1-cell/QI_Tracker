@@ -5,7 +5,7 @@ import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Project } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
-import { MoreHorizontal, Clock, AlertCircle, Eye, Edit2, CheckSquare, Trash2, Loader2 } from "lucide-react";
+import { MoreHorizontal, Clock, AlertCircle, Eye, Edit2, CheckSquare, Trash2, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { format, subDays, isBefore } from "date-fns";
 import ExportCSVButton from "@/components/ExportCSVButton";
@@ -176,6 +176,15 @@ export default function ProjectsPage() {
 
                 <div className="flex items-center gap-2">
                     <ExportCSVButton projects={projects} />
+                    {/* The masterlist had no create affordance at all, so anyone who
+                        already had a project had nowhere obvious to start another. */}
+                    <Link
+                        href="/projects/new"
+                        className="flex items-center gap-2 bg-advent-navy hover:bg-advent-cobalt text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        New Project
+                    </Link>
                 </div>
             </div>
 
