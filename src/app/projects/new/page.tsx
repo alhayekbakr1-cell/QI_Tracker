@@ -214,16 +214,6 @@ export default function NewProjectPage() {
         }
     };
 
-    const handleOpenWizardAlert = () => {
-        setDialogState({
-            isOpen: true,
-            title: "Protocol AI Wizard Locked",
-            message: "The Protocol AI Wizard is available immediately after creating the project. Please save the project details first.",
-            confirmLabel: "Understood",
-            cancelLabel: "",
-            onConfirm: () => setDialogState(prev => ({ ...prev, isOpen: false }))
-        });
-    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -615,7 +605,9 @@ export default function NewProjectPage() {
             await triggerEmail();
 
             if (data?.id) {
-                router.push(`/projects/view?id=${data.id}`);
+                // Straight into the protocol wizard: it is the next required step,
+                // and the create page can only point at it, not open it.
+                router.push(`/projects/view?id=${data.id}&protocol=1`);
                 router.refresh();
             } else {
                 // Insert reported success but returned no row — don't navigate to a
@@ -1061,16 +1053,18 @@ export default function NewProjectPage() {
                                 <div className="p-6 bg-emerald-50/20 border border-emerald-100 rounded-2xl space-y-4 flex flex-col justify-between">
                                     <div className="space-y-2">
                                         <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block">Protocol AI Assistant</span>
-                                        <p className="text-xs text-emerald-800/80 font-medium italic leading-relaxed">Unlock the Protocol AI Wizard after creating your project to draft full sections automatically.</p>
+                                        <p className="text-xs text-emerald-800/80 font-medium italic leading-relaxed">The 14-section protocol wizard opens automatically once you save, with the template&apos;s guidance built into every section.</p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleOpenWizardAlert}
-                                        className="flex items-center justify-center gap-2.5 w-full py-3.5 bg-white border border-emerald-200 hover:border-emerald-300 text-emerald-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm active:scale-[0.98] mt-4"
+                                    {/* Deliberately not a button. It used to be clickable and its only
+                                        behaviour was a modal saying it was locked - a dead end that
+                                        looked like a feature. Saving now redirects straight into it. */}
+                                    <div
+                                        aria-hidden="true"
+                                        className="flex items-center justify-center gap-2.5 w-full py-3.5 bg-white/50 border border-dashed border-emerald-200 text-emerald-700/60 rounded-xl text-xs font-black uppercase tracking-widest mt-4 select-none"
                                     >
-                                        <Sparkles className="w-4 h-4 text-emerald-500" />
-                                        Protocol AI Wizard
-                                    </button>
+                                        <Sparkles className="w-4 h-4 text-emerald-500/60" />
+                                        Opens after you save
+                                    </div>
                                 </div>
                             </div>
                         </div>

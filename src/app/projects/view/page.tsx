@@ -55,7 +55,10 @@ export default function ProjectDetailPage() {
 
     const [project, setProject] = useState<Project | null>(null);
     const [metrics, setMetrics] = useState<Metric[]>([]);
-    const [isWizardOpen, setIsWizardOpen] = useState(false);
+    // Opens straight away when arriving from project creation, which redirects
+    // with ?protocol=1. Previously the create page offered a Protocol AI Wizard
+    // button whose only behaviour was a modal saying it was locked.
+    const [isWizardOpen, setIsWizardOpen] = useState(searchParams.get("protocol") === "1");
     const [isPubAssistantOpen, setIsPubAssistantOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
