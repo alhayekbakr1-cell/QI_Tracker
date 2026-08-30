@@ -7,6 +7,7 @@ import { Project } from "@/types";
 import ProjectCard from "@/components/ProjectCard";
 import MySubmissions from "@/components/MySubmissions";
 import NextMilestoneAction from "@/components/NextMilestoneAction";
+import { downloadScholarlyCV } from "@/utils/cvExport";
 import {
     Award,
     CheckCircle2,
@@ -457,6 +458,20 @@ export default function PortfolioPage() {
                             ) : (
                                 <p className="text-xs text-slate-500 italic px-2">Complete all milestones to unlock your QI Board Certification Letter.</p>
                             )}
+
+                            {/* Always available, unlike the board letter: residents
+                                apply to fellowships mid-training, long before all
+                                three milestones are cleared. */}
+                            <button
+                                onClick={() => downloadScholarlyCV({
+                                    residentName: userProfile?.full_name || userEmail?.split("@")[0] || "Resident Physician",
+                                    projects: myProjects,
+                                })}
+                                className="w-full mt-3 py-3 bg-white border border-slate-200 hover:border-advent-navy/30 text-advent-navy rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <FileText className="w-4 h-4" />
+                                Export CV Section
+                            </button>
                         </div>
                     </div>
                 </div>
