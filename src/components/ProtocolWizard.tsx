@@ -6,6 +6,7 @@ import {
     Save, Download, CheckCircle, Bot, Plus, Trash2, HelpCircle
 } from "lucide-react";
 import { getProtocolSectionAdvice } from "@/utils/ai";
+import { PROTOCOL_GUIDANCE, SUBMISSION_CHECKLIST } from "@/constants/protocolGuidance";
 import { generateProtocolDoc, ProtocolData } from "@/utils/protocolExport";
 import { uploadToSharedFolder } from "@/utils/oneDrive";
 import { createClient } from "@/utils/supabase/client";
@@ -402,7 +403,14 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose, isReg
                         <div className="max-w-3xl mx-auto space-y-8">
                             
                             {/* Render step forms */}
+                            {/* The Word template carries instructions for every section.
+                                Without them residents filled labelled boxes with no
+                                explanation of what belonged in each. */}
+                            <SectionGuidance step={step} />
+
                             {renderWizardStep(step, formData, handleFieldChange, askAI, directory)}
+
+                            {step === 8 && <SubmissionChecklist data={formData} />}
 
                             {/* Floating AI Helper Panel */}
                             {aiAdvice && (
@@ -1247,5 +1255,75 @@ function CheckboxField({ label, checked, onChange }: { label: string, checked: b
             />
             <span className="text-[10.5px] font-bold text-slate-700">{label}</span>
         </label>
+    );
+}
+
+// Renders the template's own guidance for the current section.
+function SectionGuidance({ step }: { step: number }) {
+    const g = PROTOCOL_GUIDANCE[step];
+    if (!g) return null;
+    return (
+        <div className="bg-advent-navy/[0.03] border border-advent-navy/10 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center gap-2">
+                <HelpCircle className="w-3.5 h-3.5 text-advent-navy shrink-0" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-advent-navy">{g.covers}</span>
+            </div>
+            <p className="text-xs font-bold text-slate-700 leading-relaxed">{g.intro}</p>
+            {g.points.length > 0 && (
+                <ul className="space-y-1.5">
+                    {g.points.map((pt, i) => (
+                        <li key={i} className="flex gap-2 text-[11px] font-medium text-slate-500 leading-relaxed">
+                            <span className="text-advent-navy/40 shrink-0">&bull;</span>
+                            <span>{pt}</span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {g.example && (
+                <div className="bg-white border border-slate-200/70 rounded-xl p-3.5 space-y-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">{g.example.label}</span>
+                    <p className="text-[11px] font-medium text-slate-600 italic leading-relaxed">{g.example.body}</p>
+                    {g.example.tips && (
+                        <ul className="space-y-0.5 pt-1">
+                            {g.example.tips.map((t, i) => (
+                                <li key={i} className="text-[10px] font-bold text-slate-400">- {t}</li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// The template's required submission checklist, evaluated against what has been
+// filled in, so residents are not left self-assessing against a paper list.
+function SubmissionChecklist({ data }: { data: any }) {
+    const results = SUBMISSION_CHECKLIST.map(item => ({ label: item.label, met: item.isMet(data) }));
+    const outstanding = results.filter(r => !r.met).length;
+    return (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Submission checklist</h4>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${outstanding === 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                    {outstanding === 0 ? "All requirements met" : `${outstanding} outstanding`}
+                </span>
+            </div>
+            <ul className="space-y-2">
+                {results.map(r => (
+                    <li key={r.label} className="flex items-start gap-2.5">
+                        <span className={`mt-0.5 w-4 h-4 rounded-md shrink-0 flex items-center justify-center text-[9px] font-black ${r.met ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-300 border border-slate-200"}`}>
+                            {r.met ? "✓" : ""}
+                        </span>
+                        <span className={`text-xs font-semibold leading-snug ${r.met ? "text-slate-400 line-through decoration-slate-300" : "text-slate-700"}`}>
+                            {r.label}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+            <p className="text-[10px] font-medium text-slate-400 italic">
+                These are the template&apos;s required items. Your mentor still reviews the content itself.
+            </p>
+        </div>
     );
 }

@@ -51,7 +51,12 @@ export function withDevRole<T extends { role?: string | null } | null>(profile: 
     // AUTH_BYPASS is checked FIRST on purpose. It folds to a literal false in a
     // production build, so the minifier drops everything below it - including the
     // env lookup. Reading the env var first left it behind as a dead expression.
-    if (!AUTH_BYPASS) return profile;
+    // Gated on NODE_ENV rather than AUTH_BYPASS so the role can be previewed
+    // while signed in for real. AUTH_BYPASS substitutes a fake user whenever
+    // getUser() returns null, which happens before the session hydrates - the
+    // page then queries as anonymous, RLS refuses it, and the dashboard falls
+    // back to demo data. Folds away in production exactly the same way.
+    if (process.env.NODE_ENV === "production") return profile;
     const override = process.env.NEXT_PUBLIC_DEV_AUTH_ROLE;
     if (!override) return profile;
     return { ...(profile ?? {}), role: override } as T;
