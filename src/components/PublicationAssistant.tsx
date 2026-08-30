@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { scanForPHI } from '@/utils/phi_guard'
+import { searchSemanticScholar, fetchReadableText } from "@/utils/ebm";
 import {
     generateAbstract,
     synthesizeLitInsight,
@@ -94,44 +95,8 @@ async function searchPubMed(query: string) {
     }
 }
 
-async function searchSemanticScholar(query: string) {
-    try {
-        const apiKey = process.env.NEXT_PUBLIC_SEMANTIC_SCHOLAR_KEY || '';
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json'
-        };
-        if (apiKey) {
-            headers['x-api-key'] = apiKey;
-        }
+// Semantic Scholar search lives in utils/ebm.ts and is proxied server-side.
 
-        const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(
-            query
-        )}&limit=5&fields=title,authors,venue,year,url,abstract`;
-
-        const response = await fetch(url, { headers });
-        if (!response.ok) throw new Error('Semantic Scholar search failed');
-        const data = await response.json();
-        const papers = data.data || [];
-
-        return papers.map((paper: any) => {
-            const authorsList = paper.authors 
-                ? paper.authors.map((a: any) => a.name).join(', ')
-                : 'Unknown Authors';
-            return {
-                id: paper.paperId,
-                title: paper.title || 'No Title Available',
-                authors: authorsList,
-                journal: paper.venue || 'No Venue Listed',
-                date: paper.year ? paper.year.toString() : 'No Year',
-                url: paper.url || `https://www.semanticscholar.org/paper/${paper.paperId}`,
-                abstract: paper.abstract || ''
-            };
-        });
-    } catch (err) {
-        console.error('Semantic Scholar search failed:', err);
-        throw err;
-    }
-}
 
 async function searchOpenAlex(query: string) {
     try {
@@ -559,24 +524,10 @@ export default function PublicationAssistant({
         setSynthesizingId(result.id);
         try {
             let textToPass = result.abstract || '';
-            const jinaKey = process.env.NEXT_PUBLIC_JINA_READER_KEY || '';
-            
-            // If the paper has a URL and Jina Key is present, and we don't have an abstract yet, fetch it
-            if (result.url && jinaKey && !textToPass) {
-                try {
-                    const jinaRes = await fetch(`https://r.jina.ai/${encodeURIComponent(result.url)}`, {
-                        headers: {
-                            'Authorization': `Bearer ${jinaKey}`
-                        }
-                    });
-                    if (jinaRes.ok) {
-                        const jinaText = await jinaRes.text();
-                        // Truncate to prevent token bloat
-                        textToPass = jinaText.substring(0, 4000);
-                    }
-                } catch (jinaErr) {
-                    console.warn("Jina Reader fetch failed:", jinaErr);
-                }
+            // Reader key is server-side now; it used to be NEXT_PUBLIC_*, which
+            // inlines it into the public bundle. Best-effort: returns "" on failure.
+            if (result.url && !textToPass) {
+                textToPass = await fetchReadableText(result.url);
             }
 
             const insight = await synthesizeLitInsight(

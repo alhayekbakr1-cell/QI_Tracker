@@ -192,7 +192,63 @@ serve(async (req) => {
 
     try {
         const body = await req.json()
-        const { prompt, mode, useSearch, persona, stream } = body  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
+        const { prompt, mode, useSearch, persona, stream } = body
+        const { action } = body
+
+        // ─── Credentialed third-party proxy ──────────────────────────────────
+        // Semantic Scholar and Jina Reader keys used to be NEXT_PUBLIC_*, which
+        // inlines them into the public static bundle exactly as the Gemini key
+        // once was. They now live in Edge Function secrets and are only ever
+        // used here. Reuses this function rather than a new one so there is a
+        // single implementation of the auth and rate-limit checks above.
+        if (action === 'scholar-search') {
+            const query = String(body.query ?? '').slice(0, 300)
+            if (!query) {
+                return new Response(JSON.stringify({ error: 'query is required' }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
+            }
+            const s2Key = Deno.env.get('SEMANTIC_SCHOLAR_KEY') ?? ''
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+            // Still works unkeyed, just throttled harder - so a missing secret
+            // degrades rather than breaking literature search outright.
+            if (s2Key) headers['x-api-key'] = s2Key
+
+            const upstream = await fetch(
+                'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
+                encodeURIComponent(query) +
+                '&limit=5&fields=title,authors,venue,year,url,abstract',
+                { headers }
+            )
+            const text = await upstream.text()
+            return new Response(text, {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: upstream.status,
+            })
+        }
+
+        if (action === 'reader') {
+            const target = String(body.url ?? '')
+            // Only ever http(s). We call r.jina.ai, which does the fetching, so
+            // this is not an SSRF surface, but reject nonsense early anyway.
+            if (!/^https?:\/\//i.test(target)) {
+                return new Response(JSON.stringify({ error: 'a http(s) url is required' }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
+            }
+            const jinaKey = Deno.env.get('JINA_READER_KEY') ?? ''
+            const headers: Record<string, string> = {}
+            if (jinaKey) headers['Authorization'] = `Bearer ${jinaKey}`
+
+            const upstream = await fetch('https://r.jina.ai/' + encodeURIComponent(target), { headers })
+            if (!upstream.ok) {
+                return new Response(JSON.stringify({ error: `reader failed (HTTP ${upstream.status})` }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: upstream.status })
+            }
+            // Truncated server-side so a huge page cannot blow up the caller.
+            const text = (await upstream.text()).slice(0, 4000)
+            return new Response(JSON.stringify({ text }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+        }
+  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
         const apiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_GENERATIVE_AI_API_KEY')
 
         if (!apiKey) {

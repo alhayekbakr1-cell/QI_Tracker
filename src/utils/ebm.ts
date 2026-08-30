@@ -1,5 +1,7 @@
 "use client"
 
+import { createClient } from "./supabase/client";
+
 export interface EBMPaper {
     id: string;
     title: string;
@@ -49,6 +51,51 @@ async function fetchWithRetry(
     throw new Error(`${registry} request failed (HTTP ${lastStatus}).`);
 }
 
+/**
+ * Calls the qi-consultant Edge Function, which holds the Semantic Scholar and
+ * Jina keys server-side. Those were previously NEXT_PUBLIC_*, which inlines a
+ * secret into the public bundle — the same mistake that exposed the Gemini key.
+ *
+ * Uses fetch rather than functions.invoke so the retry helper can still see the
+ * HTTP status and back off on 429.
+ */
+async function callProxy(payload: Record<string, unknown>, registry: string): Promise<Response> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!session?.access_token || !base) {
+        throw new Error("You need to be signed in to search the literature registries.");
+    }
+    return fetchWithRetry(
+        `${base}/functions/v1/qi-consultant`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+                apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+            },
+            body: JSON.stringify(payload),
+        },
+        registry
+    );
+}
+
+/**
+ * Fetches readable page text for a paper URL via the server-side Jina proxy.
+ * Returns empty string when unavailable — callers treat this as best-effort.
+ */
+export async function fetchReadableText(url: string): Promise<string> {
+    try {
+        const res = await callProxy({ action: "reader", url }, "Reader");
+        const data = await res.json();
+        return typeof data?.text === "string" ? data.text : "";
+    } catch (err) {
+        console.warn("Reader proxy failed:", err);
+        return "";
+    }
+}
+
 export async function searchPubMed(query: string): Promise<EBMPaper[]> {
     try {
         const searchRes = await fetch(
@@ -94,19 +141,12 @@ export async function searchPubMed(query: string): Promise<EBMPaper[]> {
 
 export async function searchSemanticScholar(query: string): Promise<EBMPaper[]> {
     try {
-        const apiKey = process.env.NEXT_PUBLIC_SEMANTIC_SCHOLAR_KEY || '';
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json'
-        };
-        if (apiKey) {
-            headers['x-api-key'] = apiKey;
-        }
+        // The API key lives in Edge Function secrets now, not in this bundle.
+        const response = await callProxy(
+            { action: "scholar-search", query },
+            "Semantic Scholar"
+        );
 
-        const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(
-            query
-        )}&limit=5&fields=title,authors,venue,year,url,abstract`;
-
-        const response = await fetchWithRetry(url, { headers }, 'Semantic Scholar');
         const data = await response.json();
         const papers = data.data || [];
 

@@ -44,12 +44,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_AZURE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_AZURE_CLIENT_ID }}
           NEXT_PUBLIC_INSTITUTIONAL_SECRET: ${{ secrets.NEXT_PUBLIC_INSTITUTIONAL_SECRET }}
+          # Semantic Scholar and Jina keys are also intentionally absent: they are
+          # proxied through the qi-consultant Edge Function and live in its secrets.
           # NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY intentionally NOT set here.
           # Any NEXT_PUBLIC_ var is inlined into this static export and becomes
           # world-readable. The Gemini key lives in Supabase Edge Function secrets.
-          NEXT_PUBLIC_SEMANTIC_SCHOLAR_KEY: ${{ secrets.NEXT_PUBLIC_SEMANTIC_SCHOLAR_KEY }}
           NEXT_PUBLIC_OPENALEX_KEY: ${{ secrets.NEXT_PUBLIC_OPENALEX_KEY }}
-          NEXT_PUBLIC_JINA_READER_KEY: ${{ secrets.NEXT_PUBLIC_JINA_READER_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
