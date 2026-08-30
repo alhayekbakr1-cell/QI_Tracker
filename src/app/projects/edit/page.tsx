@@ -223,6 +223,7 @@ function EditProjectContent() {
 
     const [project, setProject] = useState<Project | null>(null);
     const [allProfiles, setAllProfiles] = useState<any[]>([]);
+    const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
     const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
     const [selectedProponentIds, setSelectedProponentIds] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -297,6 +298,11 @@ function EditProjectContent() {
                 .select('id, full_name, email, role')
                 .order('full_name');
             setAllProfiles(profiles || []);
+
+            // Deleting a project is restricted to programme staff in RLS. Without
+            // knowing the role here the button rendered for everyone, so residents
+            // saw a Delete control that could only ever fail with a policy error.
+            setCurrentUserRole(profiles?.find((p: any) => p.id === user.id)?.role ?? null);
 
             setIsLoading(false);
         }
@@ -536,7 +542,9 @@ function EditProjectContent() {
                     <p className="text-slate-500 mt-1 text-sm font-semibold">Make amendments below to audit logs and live PDSA operations.</p>
                 </div>
 
-                <DeleteProjectButton onClick={confirmDeleteWorkflow} isPending={isDeleting} />
+                {(currentUserRole === 'Admin' || currentUserRole === 'Operator') && (
+                    <DeleteProjectButton onClick={confirmDeleteWorkflow} isPending={isDeleting} />
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-start">

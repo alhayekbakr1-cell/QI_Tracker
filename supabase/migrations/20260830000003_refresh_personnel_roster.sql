@@ -129,7 +129,12 @@ WHERE email NOT IN (SELECT email FROM roster_2026);
 UPDATE public.profiles p
 SET email = r.email,
     full_name = COALESCE(NULLIF(p.full_name, ''), r.name),
-    role = r.role::user_role
+    -- Never demote an elevated account. The roster describes training level;
+    -- it is not an authorisation list. Applying it verbatim demoted the chief
+    -- resident to Viewer because he is correctly listed as a PGY-3.
+    role = CASE WHEN p.role IN ('Admin', 'Operator', 'Faculty')
+                THEN p.role
+                ELSE r.role::user_role END
 FROM roster_2026 r
 WHERE lower(p.email) = r.email
    OR public.norm_person_name(p.full_name) = public.norm_person_name(r.name);
