@@ -259,7 +259,6 @@ export default function AdminPage() {
                                 <th className="px-6 py-4">User</th>
                                 <th className="px-6 py-4">Role</th>
                                 <th className="px-6 py-4">Joined</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -286,27 +285,6 @@ export default function AdminPage() {
                                     </td>
                                     <td className="px-6 py-4 text-slate-500 font-mono text-xs">
                                         {new Date(profile.created_at).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        {profile.role !== 'Admin' && (
-                                            <button
-                                                onClick={() => toggleRole(profile.id, profile.role)}
-                                                disabled={!!updatingId}
-                                                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all
-                                                    ${profile.role === 'Viewer'
-                                                        ? 'bg-advent-navy text-white hover:bg-advent-cobalt shadow-sm'
-                                                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-red-600'}
-                                                    ${updatingId === profile.id ? 'opacity-50 cursor-not-allowed' : ''}
-                                                `}
-                                            >
-                                                {updatingId === profile.id ? (
-                                                    <Loader2 className="w-3 h-3 animate-spin mx-auto" />
-                                                ) : (
-                                                    profile.role === 'Viewer' ? 'Promote to Op' :
-                                                        profile.role === 'Operator' ? 'Promote to Faculty' : 'Reset to Viewer'
-                                                )}
-                                            </button>
-                                        )}
                                     </td>
                                 </tr>
                             ))}
