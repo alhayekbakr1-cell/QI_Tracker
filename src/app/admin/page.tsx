@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Profile, UserRole } from "@/types";
@@ -29,7 +30,8 @@ export default function AdminPage() {
 
     useEffect(() => {
         async function fetchAdminData() {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user: authedUser } } = await supabase.auth.getUser();
+            const user = authedUser ?? (AUTH_BYPASS ? (DEV_USER as any) : null);
 
             if (!user) {
                 router.push("/login");

@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useEffect, useState } from "react";
 import { Project } from "@/types";
 import ProjectCard from "@/components/ProjectCard";
@@ -75,7 +76,8 @@ export default function FacultyDashboard() {
     const supabase = createClient();
 
     const fetchFacultyData = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user: authedUser } } = await supabase.auth.getUser();
+            const user = authedUser ?? (AUTH_BYPASS ? (DEV_USER as any) : null);
         if (!user) return;
 
         // Fetch profile to verify role

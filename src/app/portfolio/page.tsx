@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Project } from "@/types";
@@ -39,7 +40,8 @@ export default function PortfolioPage() {
             let user: any = null;
             let profile: any = null;
 
-            const { data: { user: authUser } } = await supabase.auth.getUser();
+            const { data: { user: authedUser } } = await supabase.auth.getUser();
+            const authUser = authedUser ?? (AUTH_BYPASS ? (DEV_USER as any) : null);
             if (!authUser) {
                 router.push("/login");
                 return;

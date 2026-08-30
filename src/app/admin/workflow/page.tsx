@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { Project } from "@/types";
@@ -16,7 +17,8 @@ export default function WorkflowPage() {
 
     useEffect(() => {
         async function fetchProjects() {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user: authedUser } } = await supabase.auth.getUser();
+            const user = authedUser ?? (AUTH_BYPASS ? (DEV_USER as any) : null);
 
             if (!user) {
                 router.push("/login");

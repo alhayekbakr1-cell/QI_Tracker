@@ -16,6 +16,28 @@ interface ProjectRow {
     pdsa_cycle: number | null;
     proponent_ids: string[] | null;
     lead_proponent_ids: string[] | null;
+    proponents: string[] | null;
+    lead_proponents: string[] | null;
+}
+
+/**
+ * Names on projects are entered by hand ("Ahmad Anees" vs "Anees Ahmad MD"), so
+ * compare on surname-ish tokens rather than exact strings. Deliberately requires
+ * a token of 3+ characters to match, so short fragments cannot collide.
+ */
+function nameMatches(candidates: string[] | null, fullName: string | null): boolean {
+    if (!candidates?.length || !fullName) return false;
+    const strip = (v: string) =>
+        v.toLowerCase().replace(/\b(dr\.?|md|do|mbbs)\b/g, "").replace(/[^a-z0-9 ]/g, " ");
+    const mine = new Set(strip(fullName).split(/\s+/).filter(t => t.length > 2));
+    if (mine.size === 0) return false;
+    return candidates.some(c => {
+        const theirs = strip(c).split(/\s+/).filter(t => t.length > 2);
+        // Require at least two shared tokens when both names have several, so
+        // "Khan" alone does not attach every Khan in the programme to a project.
+        const shared = theirs.filter(t => mine.has(t)).length;
+        return theirs.length >= 2 && mine.size >= 2 ? shared >= 2 : shared >= 1;
+    });
 }
 
 interface ResidentRow {
@@ -46,7 +68,7 @@ export default function CohortOverview() {
         (async () => {
             const [{ data: profiles }, { data: projects }] = await Promise.all([
                 supabase.from("profiles").select("id, full_name, role").order("full_name"),
-                supabase.from("projects").select("id, title, status, last_updated_date, protocol_url, presentation_url, pdsa_cycle, proponent_ids, lead_proponent_ids"),
+                supabase.from("projects").select("id, title, status, last_updated_date, protocol_url, presentation_url, pdsa_cycle, proponent_ids, lead_proponent_ids, proponents, lead_proponents"),
             ]);
             if (cancelled) return;
 
@@ -57,9 +79,16 @@ export default function CohortOverview() {
             );
 
             const rows: ResidentRow[] = cohort.map((profile: Profile) => {
+                // Match on id AND on name. Many projects carry proponent_ids that
+                // resolve to no profile at all — orphaned UUIDs, presumably from an
+                // earlier profile rebuild — while the names in proponents[] are
+                // correct. Matching on id alone reported most of the cohort as
+                // having no project when they plainly do.
                 const mine = (projects || []).filter((p: ProjectRow) =>
                     (p.proponent_ids || []).includes(profile.id) ||
-                    (p.lead_proponent_ids || []).includes(profile.id)
+                    (p.lead_proponent_ids || []).includes(profile.id) ||
+                    nameMatches(p.proponents, profile.full_name) ||
+                    nameMatches(p.lead_proponents, profile.full_name)
                 );
                 const hasProtocol = mine.some(p => !!p.protocol_url);
                 const hasPresentation = mine.some(p => !!p.presentation_url);

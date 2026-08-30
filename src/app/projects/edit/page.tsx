@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Project } from "@/types";
 import PHIWarning from "@/components/PHIWarning";
@@ -258,7 +259,8 @@ function EditProjectContent() {
         }
 
         async function fetchData() {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user: authedUser } } = await supabase.auth.getUser();
+            const user = authedUser ?? (AUTH_BYPASS ? (DEV_USER as any) : null);
             if (!user) {
                 router.push("/login");
                 return;

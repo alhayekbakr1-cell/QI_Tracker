@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Project } from "@/types";
@@ -17,7 +18,8 @@ export default function KanbanPage() {
 
     useEffect(() => {
         async function fetchProjects() {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user: authedUser } } = await supabase.auth.getUser();
+            const user = authedUser ?? (AUTH_BYPASS ? (DEV_USER as any) : null);
 
             if (!user) {
                 router.push("/login");

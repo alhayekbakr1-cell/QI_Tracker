@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useRouter } from "next/navigation";
 import ProjectCard from "@/components/ProjectCard";
 import SkeletonProjectCard from "@/components/SkeletonProjectCard";
@@ -32,7 +33,8 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user: authedUser } } = await supabase.auth.getUser();
+            const user = authedUser ?? (AUTH_BYPASS ? (DEV_USER as any) : null);
 
         if (user) {
           setUserEmail(user.email || "bakr.alhayek@adventhealth.com");
