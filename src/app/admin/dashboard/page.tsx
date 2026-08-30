@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import ActivityFeed from "@/components/ActivityFeed";
 import CohortOverview from "@/components/CohortOverview";
+import ProjectLifecycleBoard from "@/components/ProjectLifecycleBoard";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types";
@@ -132,6 +133,12 @@ export default function ExecutiveDashboard() {
                 or one mentor, so nobody could see the cohort as a whole. */}
             <div className="mb-10">
                 <CohortOverview />
+            </div>
+
+            {/* A-Z status of every project. Replaces needing to work an approval
+                queue: the chief is no longer a gate, so this is a status board. */}
+            <div className="mb-10">
+                <ProjectLifecycleBoard />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
