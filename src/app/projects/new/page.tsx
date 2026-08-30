@@ -35,22 +35,9 @@ const STEP_FIELDS: Record<number, string[]> = {
     3: ['updates_and_barriers', 'abstract_summary'],
 };
 
-const FACULTY_MENTORS_PRESET = [
-  "Dr. Lidia Sepulveda Rubiera",
-  "Dr. Claudia Kroker-Bode (Dr. KB)",
-  "Dr. Anna Hadid",
-  "Dr. Muhammad Anwar",
-  "Dr. Sara Bibi",
-  "Dr. Thomas Carson",
-  "Dr. Asha Ramsakal",
-  "Dr. Faheem Ahmad",
-  "Dr. Mounica Banala",
-  "Dr. Ryan Brink",
-  "Dr. Raja Ramesh Gummalla",
-  "Dr. Carlos Santos De Jesus",
-  "Dr. James Vernace",
-  "Dr. Christopher Yanichko"
-];
+// Faculty are loaded from the directory at runtime (see facultyDirectory below).
+// This used to be a hardcoded array of 14 names, which silently went stale
+// every time the roster changed and could not carry email addresses.
 function AIUpdateSection({ initialValue, onChange }: { initialValue: string, onChange: (val: string) => void }) {
     const [value, setValue] = useState(initialValue);
     const [isDrafting, setIsDrafting] = useState(false);
@@ -124,6 +111,7 @@ export default function NewProjectPage() {
     const [step, setStep] = useState(0);
     const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
     const [selectedFaculty, setSelectedFaculty] = useState("");
+    const [facultyDirectory, setFacultyDirectory] = useState<{ name: string; email: string }[]>([]);
 
     // Custom Modal Dialog state
     const [dialogState, setDialogState] = useState<{
@@ -159,6 +147,15 @@ export default function NewProjectPage() {
                 .select('id, full_name, email, role')
                 .order('full_name');
             setAllProfiles(profiles || []);
+
+            // Faculty rarely hold app accounts, so they live in the directory
+            // rather than in profiles.
+            const { data: facultyRows } = await supabase
+                .from('directory')
+                .select('name, email')
+                .eq('role', 'Faculty')
+                .order('name');
+            setFacultyDirectory(facultyRows || []);
 
             const current = profiles?.find(p => p.id === user.id);
             if (current) {
@@ -821,7 +818,7 @@ export default function NewProjectPage() {
                                             className="w-full p-4 bg-slate-50 border border-slate-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-advent-navy/10 focus:border-advent-navy text-slate-900 font-bold transition-all cursor-pointer text-sm"
                                         >
                                             <option value="">-- Select Faculty Mentor --</option>
-                                            {FACULTY_MENTORS_PRESET.map(name => (
+                                            {facultyDirectory.map(({ name }) => (
                                                 <option key={name} value={name}>{name}</option>
                                             ))}
                                             <option value="Other">Other / Manual Entry...</option>

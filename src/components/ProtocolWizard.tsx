@@ -1468,7 +1468,25 @@ async function notifyMentor(mentorName: string, projectTitle: string, residentNa
             .limit(1)
             .maybeSingle();
 
-        if (!mentor?.email) {
+        // Faculty usually have no profile: profiles.id references auth.users, so
+        // one only exists once they have signed in. The directory is the roster,
+        // and it carries their address, so fall back to it.
+        let email: string | null = mentor?.email ?? null;
+        let displayName: string = mentor?.full_name || mentorName;
+        if (!email) {
+            const { data: dir } = await supabase
+                .from("directory")
+                .select("name, email")
+                .ilike("name", `%${mentorName.trim()}%`)
+                .limit(1)
+                .maybeSingle();
+            if (dir?.email) {
+                email = dir.email;
+                displayName = dir.name || displayName;
+            }
+        }
+
+        if (!email) {
             console.info(
                 `No stored email for mentor "${mentorName}" - skipping notification. ` +
                 `Link them from the directory to enable mentor emails.`
@@ -1478,15 +1496,17 @@ async function notifyMentor(mentorName: string, projectTitle: string, residentNa
 
         const by = residentName ? `${residentName} has` : "A resident has";
         await sendEmail(TEMPLATES.PROTOCOL_APPROVED || TEMPLATES.MENTOR_ASSIGNED, {
-            to_email: mentor.email,
-            to_name: mentor.full_name || mentorName,
+            to_email: email,
+            to_name: displayName,
             project_title: projectTitle,
             message:
                 `${by} completed the 14-section QI protocol for "${projectTitle}" and named you as faculty mentor. ` +
                 `Please review it in the Athena registry and record your attestation when you are satisfied.`,
         });
 
-        if (mentor.id) {
+        // Only profile holders can receive an in-app notification; directory-only
+        // faculty get the email alone until they first sign in.
+        if (mentor?.id) {
             await supabase.from("notifications").insert({
                 user_id: mentor.id,
                 type: "general",
