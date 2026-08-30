@@ -1,9 +1,10 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
+import { INSTITUTIONAL_RESOURCES } from "@/constants/institutionalResources";
 import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
 import { useRouter } from "next/navigation";
-import { BookOpen, CheckSquare, Lightbulb, ExternalLink, Activity, ArrowRight } from "lucide-react";
+import { BookOpen, CheckSquare, Lightbulb, ExternalLink, Activity, ArrowRight, Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import QIHandbook from "@/components/QIHandbook";
 
@@ -113,6 +114,50 @@ export default function ResourcesPage() {
                             title="SMART Goals"
                             description="Specific, Measurable, Achievable, Relevant, and Time-bound aims are the foundation of any project."
                         />
+                    </div>
+                </div>
+
+                {/* AdventHealth resources. Kept visually distinct from the public
+                    links below: these sit behind the institutional tenant and are
+                    the ones residents are actually expected to use. */}
+                <div className="md:col-span-2 bg-white border border-advent-navy/15 p-8 rounded-2xl shadow-sm">
+                    <div className="flex items-start gap-3 mb-5">
+                        <div className="bg-advent-navy/5 border border-advent-navy/10 p-2.5 rounded-xl shrink-0">
+                            <Building2 className="w-5 h-5 text-advent-navy" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight">AdventHealth Resources</h2>
+                            <p className="text-sm font-medium text-slate-500 mt-0.5">
+                                Institutional support for your research and QI work.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {INSTITUTIONAL_RESOURCES.map(r => (
+                            <a
+                                key={r.href}
+                                href={r.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group block p-5 rounded-2xl border border-slate-200/80 hover:border-advent-navy/30 hover:bg-slate-50/70 transition-all"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <span className="text-sm font-bold text-slate-900 group-hover:text-advent-navy transition-colors">
+                                        {r.label}
+                                    </span>
+                                    <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-advent-navy shrink-0 transition-colors" />
+                                </div>
+                                <p className="text-xs font-medium text-slate-500 leading-relaxed mt-1.5">
+                                    {r.description}
+                                </p>
+                                {r.requiresSignIn && (
+                                    <span className="inline-block mt-3 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                        Sign in with your AdventHealth account
+                                    </span>
+                                )}
+                            </a>
+                        ))}
                     </div>
                 </div>
 
