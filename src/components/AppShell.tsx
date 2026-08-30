@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from '@/utils/supabase/client'
+import { withDevRole } from "@/utils/auth/devBypass";
 import { useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import Header from '@/components/Header'
@@ -54,7 +55,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     .eq('id', user.id)
                     .single()
                 if (profile) {
-                    setRole(profile.role)
+                    setRole(withDevRole(profile)?.role ?? profile.role)
                     setFullName(profile.full_name)
                 }
             }

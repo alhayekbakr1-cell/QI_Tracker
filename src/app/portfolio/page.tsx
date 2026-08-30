@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "@/utils/supabase/client";
-import { AUTH_BYPASS, DEV_USER } from "@/utils/auth/devBypass";
+import { AUTH_BYPASS, DEV_USER, withDevRole } from "@/utils/auth/devBypass";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Project } from "@/types";
@@ -56,7 +56,7 @@ export default function PortfolioPage() {
                     .select('*')
                     .eq('id', user.id)
                     .single();
-                profile = profileData;
+                profile = withDevRole(profileData);
                 setUserProfile(profile);
             }
 

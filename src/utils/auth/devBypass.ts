@@ -34,3 +34,25 @@ export const DEV_USER = {
     id: process.env.NEXT_PUBLIC_DEV_AUTH_USER_ID || "00000000-0000-0000-0000-000000000000",
     email: "dev.preview@local",
 };
+
+/**
+ * Dev-only role override, for inspecting a role you do not hold.
+ *
+ * Set NEXT_PUBLIC_DEV_AUTH_ROLE in .env.development.local (Viewer, Operator,
+ * Admin, Faculty). Viewer is the resident role — the schema has no separate
+ * Resident value.
+ *
+ * Gated on AUTH_BYPASS, which is compile-time false in a production build, so
+ * this cannot alter anyone's permissions on the deployed site. It only changes
+ * what the local UI renders; the database still enforces the real role through
+ * RLS, so this can show you a layout but never grant access.
+ */
+export function withDevRole<T extends { role?: string | null } | null>(profile: T): T {
+    // AUTH_BYPASS is checked FIRST on purpose. It folds to a literal false in a
+    // production build, so the minifier drops everything below it - including the
+    // env lookup. Reading the env var first left it behind as a dead expression.
+    if (!AUTH_BYPASS) return profile;
+    const override = process.env.NEXT_PUBLIC_DEV_AUTH_ROLE;
+    if (!override) return profile;
+    return { ...(profile ?? {}), role: override } as T;
+}
