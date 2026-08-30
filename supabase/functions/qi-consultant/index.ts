@@ -149,7 +149,7 @@ async function getCallerId(req: Request): Promise<string | null> {
 // client-side fallback any more, so retrying here is the only cushion.
 function isTransient(err: unknown): boolean {
     const msg = String((err as Error)?.message ?? err)
-    return /(429|500|502|503|504)/.test(msg) ||
+    return /\b(429|500|502|503|504)\b/.test(msg) ||
            /overloaded|unavailable|rate limit|try again|timeout/i.test(msg)
 }
 
@@ -192,7 +192,7 @@ serve(async (req) => {
 
     try {
         const body = await req.json()
-        const { prompt, mode, useSearch, persona } = body  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
+        const { prompt, mode, useSearch, persona, stream } = body  // mode: 'json' | 'text' (default: 'text'), useSearch: boolean
         const apiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_GENERATIVE_AI_API_KEY')
 
         if (!apiKey) {
@@ -204,6 +204,58 @@ serve(async (req) => {
 
         const genAI = new GoogleGenerativeAI(apiKey)
         const systemInstruction = systemInstructionFor(mode, persona)
+
+        // Streaming path, used by the Dr. QI chat only.
+        //
+        // Deliberately NOT applied to the other AI helpers: they parse a complete
+        // string (JSON extraction, abstract generation), so handing them a stream
+        // would break them. Search grounding is also skipped here — it needs the
+        // whole response before tool results resolve, and the chat has a separate
+        // literature search anyway.
+        if (stream && mode !== 'json' && !useSearch) {
+            const streamingModel = genAI.getGenerativeModel({
+                model: GEMINI_MODEL,
+                systemInstruction,
+                generationConfig: {
+                    temperature: 0.4,
+                    topP: 0.85,
+                    topK: 30,
+                    maxOutputTokens: MAX_OUTPUT_TOKENS,
+                }
+            });
+
+            const streamResult = await withRetry(() => streamingModel.generateContentStream(prompt));
+            const encoder = new TextEncoder();
+
+            const body = new ReadableStream({
+                async start(controller) {
+                    try {
+                        for await (const chunk of streamResult.stream) {
+                            const piece = chunk.text();
+                            if (piece) controller.enqueue(encoder.encode(piece));
+                        }
+                        controller.close();
+                    } catch (err) {
+                        // The status line is already sent by this point, so an error
+                        // here cannot become a 4xx. Emit a marker the client can
+                        // detect rather than truncating silently mid-sentence.
+                        controller.enqueue(encoder.encode("\n\n[stream-error] " + String((err as Error)?.message ?? err)));
+                        controller.close();
+                    }
+                }
+            });
+
+            return new Response(body, {
+                headers: {
+                    ...corsHeaders,
+                    'Content-Type': 'text/plain; charset=utf-8',
+                    'Cache-Control': 'no-cache, no-transform',
+                    'X-Accel-Buffering': 'no',
+                },
+                status: 200,
+            });
+        }
+
         let result;
         
         try {

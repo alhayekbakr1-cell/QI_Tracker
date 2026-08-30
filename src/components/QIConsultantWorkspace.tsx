@@ -22,7 +22,7 @@ import {
     BookOpen,
     ExternalLink
 } from "lucide-react";
-import { getQIAdvice } from "@/utils/ai";
+import { streamQIAdvice } from "@/utils/ai";
 import { scanForPHI } from "@/utils/phi_guard";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types";
@@ -49,6 +49,8 @@ export default function QIConsultantWorkspace() {
     const [searchQuery, setSearchQuery] = useState("");
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    // Text accumulated so far for the in-flight reply, rendered live.
+    const [streamingText, setStreamingText] = useState("");
     
     // Inline Renaming State
     const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -134,7 +136,7 @@ export default function QIConsultantWorkspace() {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [sessions, activeSessionId, isLoading]);
+    }, [sessions, activeSessionId, isLoading, streamingText]);
 
     const activeSession = sessions.find(s => s.id === activeSessionId) || null;
 
@@ -306,13 +308,21 @@ Dr. QI directive: Incorporate findings or align your Quality Improvement suggest
         }
 
         try {
-            // Prep conversation history formatted as getQIAdvice accepts:
+            // Conversation history in the shape the prompt builder expects.
             const historyPayload = updatedMessages.map(m => ({
                 role: m.role,
                 content: m.content
             }));
 
-            const advice = await getQIAdvice(messageText, projectContext || undefined, undefined, historyPayload);
+            setStreamingText("");
+            const advice = await streamQIAdvice(
+                messageText,
+                setStreamingText,
+                projectContext || undefined,
+                undefined,
+                historyPayload
+            );
+            setStreamingText("");
 
             const newAIMessage: ChatMessage = {
                 role: 'ai',
@@ -726,10 +736,22 @@ Dr. QI directive: Incorporate findings or align your Quality Improvement suggest
                             ))}
                             {isLoading && (
                                 <div className="flex justify-start">
-                                    <div className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl rounded-bl-none flex items-center gap-2">
-                                        <Loader2 className="w-4 h-4 animate-spin text-advent-navy" />
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Dr. QI is preparing advice...</span>
-                                    </div>
+                                    {streamingText ? (
+                                        // Render partial markdown as it arrives. An unclosed **bold**
+                                        // mid-stream simply renders as literal asterisks for a moment,
+                                        // which is far less jarring than a spinner that hides progress.
+                                        <div className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl rounded-bl-none max-w-3xl prose prose-sm prose-slate">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {streamingText}
+                                            </ReactMarkdown>
+                                            <span className="inline-block w-1.5 h-4 bg-advent-navy/60 animate-pulse align-middle ml-0.5" aria-hidden="true" />
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl rounded-bl-none flex items-center gap-2">
+                                            <Loader2 className="w-4 h-4 animate-spin text-advent-navy" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Dr. QI is preparing advice...</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

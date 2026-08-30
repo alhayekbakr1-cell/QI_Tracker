@@ -2,6 +2,86 @@ import { createClient } from "./supabase/client";
 
 const supabase = createClient();
 
+/**
+ * Streams a chat reply, calling onChunk as text arrives.
+ *
+ * Uses fetch rather than supabase.functions.invoke because invoke buffers the
+ * whole body before resolving, which defeats the point. The session token is
+ * attached by hand for the same reason — the Edge Function requires a real
+ * authenticated user, not the anon key.
+ *
+ * Returns the complete text so callers can persist it exactly as before.
+ * Falls back to a normal buffered request if streaming is unavailable, so a
+ * proxy that strips chunked encoding degrades to the old behaviour instead of
+ * breaking the chat.
+ */
+export async function streamAIChat(
+  prompt: string,
+  onChunk: (accumulated: string) => void
+): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!token || !base) {
+    // No session: the function would reject this anyway. Use the buffered path
+    // so the caller still gets its usual, clearer error.
+    return askAI(prompt, { isChat: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${base}/functions/v1/qi-consultant`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+      },
+      body: JSON.stringify({ prompt, mode: "text", persona: "mentor", stream: true }),
+    });
+  } catch {
+    return askAI(prompt, { isChat: true });
+  }
+
+  if (!response.ok || !response.body) {
+    // Surface the server's own message rather than a generic network error.
+    let detail = `Dr. QI is unavailable (HTTP ${response.status}).`;
+    try {
+      const parsed = await response.json();
+      if (parsed?.error) detail = `Dr. QI is unavailable: ${parsed.error}`;
+    } catch { /* body was not JSON; keep the status-based message */ }
+    throw new Error(detail);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let accumulated = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    accumulated += decoder.decode(value, { stream: true });
+    onChunk(accumulated);
+  }
+  accumulated += decoder.decode();
+
+  // The function cannot return a 4xx once streaming has begun, so it appends
+  // this marker instead of truncating silently.
+  const marker = accumulated.indexOf("[stream-error]");
+  if (marker !== -1) {
+    const message = accumulated.slice(marker + "[stream-error]".length).trim();
+    if (!accumulated.slice(0, marker).trim()) {
+      throw new Error(`Dr. QI is unavailable: ${message}`);
+    }
+    // Partial answer already shown: keep it, drop the marker.
+    accumulated = accumulated.slice(0, marker).trimEnd();
+    onChunk(accumulated);
+  }
+
+  return accumulated;
+}
+
 export async function askAI(prompt: string, options?: { mode?: 'json' | 'text'; useSearch?: boolean; isChat?: boolean }) {
   const isJsonRequest = options?.mode === 'json' || 
     /output\s+ONLY\s+a\s+valid,?\s+raw\s+JSON/i.test(prompt) || 
@@ -154,12 +234,14 @@ export async function suggestMetrics(projectTitle: string) {
   return askAI(prompt);
 }
 
-export async function getQIAdvice(
+// Shared prompt construction. getQIAdvice and streamQIAdvice both call this so
+// the buffered and streaming paths cannot drift in what the mentor is told.
+function buildQIAdvicePrompt(
   question: string,
   context?: string,
   handbookContent?: string,
   history?: { role: 'user' | 'ai'; content: string }[]
-) {
+): string {
   const defaultHandbook = `
   ADVENTHEALTH GME QI & SCHOLARLY ACTIVITY ACADEMIC GUIDELINES:
   
@@ -210,7 +292,34 @@ ${historyText}
 ` : ''}Current Resident Message: "${question}"
 ${context ? `Project Context: ${context}` : ''}`;
 
-  return askAI(prompt, { isChat: true });
+  return prompt;
+}
+
+export async function getQIAdvice(
+  question: string,
+  context?: string,
+  handbookContent?: string,
+  history?: { role: 'user' | 'ai'; content: string }[]
+) {
+  return askAI(buildQIAdvicePrompt(question, context, handbookContent, history), { isChat: true });
+}
+
+/**
+ * Streaming twin of getQIAdvice, for the Dr. QI chat.
+ *
+ * Rebuilds the identical prompt by delegating to getQIAdvice's own construction
+ * via buildQIAdvicePrompt, so the two paths cannot drift apart in what the
+ * mentor is told.
+ */
+export async function streamQIAdvice(
+  question: string,
+  onChunk: (accumulated: string) => void,
+  context?: string,
+  handbookContent?: string,
+  history?: { role: 'user' | 'ai'; content: string }[]
+): Promise<string> {
+  const prompt = buildQIAdvicePrompt(question, context, handbookContent, history);
+  return streamAIChat(prompt, onChunk);
 }
 
 export async function generateExecutiveReport(projectsSummary: string) {
