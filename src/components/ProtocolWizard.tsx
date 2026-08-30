@@ -527,12 +527,11 @@ function renderWizardStep(
                         />
                     </div>
 
-                    <DirectorySelect 
-                        label="Co-Investigators (Residents/Students)" 
-                        value={data.coInvestigators} 
-                        onChange={v => update("coInvestigators", v)} 
-                        options={directory} 
-                        isMulti={true} 
+                    <DirectoryMultiSelect
+                        label="Co-Investigators (Residents/Students)"
+                        value={data.coInvestigators}
+                        onChange={v => update("coInvestigators", v)}
+                        options={directory}
                     />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1323,6 +1322,102 @@ function SubmissionChecklist({ data }: { data: any }) {
             </ul>
             <p className="text-[10px] font-medium text-slate-400 italic">
                 These are the template&apos;s required items. Your mentor still reviews the content itself.
+            </p>
+        </div>
+    );
+}
+
+// Real multi-select for people.
+//
+// The previous control was a single <input list=...> with a hint reading
+// "Separate multiple names with commas". Picking from a datalist REPLACES the
+// input value, so a second selection wiped the first and the only way to enter
+// several people was to type every name by hand, exactly.
+//
+// Stores a comma-separated string so the ProtocolData shape and the Word
+// exporter are unchanged.
+function DirectoryMultiSelect({ label, value, options, onChange }: {
+    label: string;
+    value: string;
+    options: any[];
+    onChange: (v: string) => void;
+}) {
+    const [query, setQuery] = useState("");
+    const selected = value.split(",").map(v => v.trim()).filter(Boolean);
+
+    const add = (name: string) => {
+        const clean = name.trim();
+        if (!clean || selected.some(s => s.toLowerCase() === clean.toLowerCase())) return;
+        onChange([...selected, clean].join(", "));
+        setQuery("");
+    };
+    const remove = (name: string) =>
+        onChange(selected.filter(s => s !== name).join(", "));
+
+    const q = query.trim().toLowerCase();
+    const matches = q
+        ? options
+            .filter(o => (o.name || "").toLowerCase().includes(q))
+            .filter(o => !selected.some(s => s.toLowerCase() === (o.name || "").toLowerCase()))
+            .slice(0, 6)
+        : [];
+
+    return (
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+
+            {selected.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {selected.map(name => (
+                        <span key={name} className="inline-flex items-center gap-1.5 bg-advent-navy/5 border border-advent-navy/15 text-advent-navy pl-3 pr-2 py-1.5 rounded-xl text-[11px] font-bold">
+                            {name}
+                            <button
+                                type="button"
+                                onClick={() => remove(name)}
+                                aria-label={`Remove ${name}`}
+                                className="text-advent-navy/40 hover:text-rose-600 transition-colors"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            <div className="relative">
+                <input
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => {
+                        // Enter adds a free-text name too, so people who are not in
+                        // the directory can still be listed.
+                        if (e.key === "Enter") { e.preventDefault(); add(query); }
+                    }}
+                    placeholder="Search the directory, or type a name and press Enter..."
+                    className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-800 font-bold text-slate-700 transition-all text-xs shadow-3xs"
+                />
+                {matches.length > 0 && (
+                    <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden">
+                        {matches.map(o => (
+                            <li key={o.email || o.name}>
+                                <button
+                                    type="button"
+                                    onClick={() => add(o.name)}
+                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                                >
+                                    <span className="block text-xs font-bold text-slate-800">{o.name}</span>
+                                    {o.email && <span className="block text-[10px] font-medium text-slate-400">{o.email}</span>}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            <p className="text-[9px] font-medium text-slate-400 italic ml-1">
+                {selected.length === 0
+                    ? "Add as many co-investigators as you need."
+                    : `${selected.length} selected`}
             </p>
         </div>
     );
