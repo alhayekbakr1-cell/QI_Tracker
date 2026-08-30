@@ -379,7 +379,9 @@ function EditProjectContent() {
             status: formData.get('status') as any,
             category: formData.get('category') as string,
             subcategory: formData.get('subcategory') as string,
-            pdsa_cycle: parseInt(formData.get('pdsa_cycle') as string) || 1,
+            // Default 0, not 1. A project with no cycles recorded was being
+            // credited with one, inflating every graduation count in the programme.
+            pdsa_cycle: parseInt(formData.get('pdsa_cycle') as string) || 0,
             faculty: finalFacultyName,
             faculty_id: finalFacultyId,
             primary_outcome: primaryOutcome,

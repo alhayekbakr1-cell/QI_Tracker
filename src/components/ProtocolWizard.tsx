@@ -309,6 +309,18 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose, isReg
                     console.warn("Direct OneDrive upload bypassed or blocked:", err);
                 }
 
+                // A cycle counts as documented once it has both a plan and a do -
+                // an empty scaffold row should not earn credit toward graduation.
+                const documentedCycles = (formData.pdsaCycles || []).filter(
+                    c => (c?.plan || "").trim() && (c?.do || "").trim()
+                ).length;
+                const { data: existingProject } = await supabase
+                    .from('projects')
+                    .select('pdsa_cycle')
+                    .eq('id', projectId)
+                    .maybeSingle();
+                const existingCycles = existingProject?.pdsa_cycle ?? 0;
+
                 // 3. Save to database profiles & project_files
                 const { data: { user } } = await supabase.auth.getUser();
                 const { data: profile } = user
@@ -327,7 +339,15 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose, isReg
                     }),
                     supabase.from('projects').update({ 
                         protocol_url: oneDriveUrl || null,
-                        status: 'Active'
+                        status: 'Active',
+                        // Credit the cycles the resident actually documented. The
+                        // graduation milestone reads projects.pdsa_cycle, but cycles
+                        // are written in the protocol as pdsaCycles - and nothing
+                        // connected the two, so a resident could document three full
+                        // PDSA cycles and still see 0/2 with no explanation.
+                        // Never lowers a stored count; a manual entry may reflect work
+                        // recorded before the protocol was written.
+                        pdsa_cycle: Math.max(documentedCycles, Number(existingCycles) || 0),
                     }).eq('id', projectId),
                 ]);
 
