@@ -41,6 +41,7 @@ import ProjectReportGenerator from "@/components/ProjectReportGenerator";
 import { sendEmail, TEMPLATES } from "@/utils/email";
 import ConferenceCountdown from "@/components/ConferenceCountdown";
 import FacultySignOff from "@/components/FacultySignOff";
+import AttestationPanel from "@/components/AttestationPanel";
 import ProjectComments from "@/components/ProjectComments";
 import PublicationAssistant from "@/components/PublicationAssistant";
 import TaskManager from "@/components/TaskManager";
@@ -621,6 +622,14 @@ export default function ProjectDetailPage() {
                         project={project}
                         userRole={userProfile?.role || null}
                         onUpdate={(updated) => setProject(updated)}
+                    />
+
+                    {/* Durable signed milestones. FacultySignOff above only flips
+                        booleans on the project row, which cannot say who signed or
+                        when, and un-ticking erased that it was ever signed. */}
+                    <AttestationPanel
+                        projectId={project.id}
+                        currentUser={userProfile ? { id: userProfile.id, full_name: userProfile.full_name, role: userProfile.role } : null}
                     />
 
                     {/* Academic Toolkit Portal */}
