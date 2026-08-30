@@ -48,11 +48,14 @@ const MILESTONES: { key: Milestone; label: string; statement: string }[] = [
 export default function AttestationPanel({
     projectId,
     currentUser,
+    onMilestoneChange,
 }: {
     projectId: string;
     // full_name is nullable on profiles, so an attestation must not depend on it
     // being present — faculty_name is NOT NULL in the table.
     currentUser: { id: string; full_name: string | null; role?: string | null } | null;
+    /** Lets the project page reflect the legacy approval flags without a refetch. */
+    onMilestoneChange?: (updated: Record<string, boolean>) => void;
 }) {
     const [attestations, setAttestations] = useState<Attestation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +80,26 @@ export default function AttestationPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId]);
 
+    // The Faculty Portal still counts pending work from projects.faculty_approved_*,
+    // and the project page derives its approved badge from them. Attestations are
+    // the source of truth now, so mirror them onto those columns rather than
+    // leaving that UI permanently stale.
+    const syncLegacyFlag = async (m: Milestone, approved: boolean) => {
+        const column =
+            m === "protocol" ? "faculty_approved_protocol" :
+            m === "pdsa" ? "faculty_approved_pdsa" : null;
+        if (!column) return;
+        const { error } = await supabase
+            .from("projects")
+            .update({ [column]: approved })
+            .eq("id", projectId);
+        if (error) {
+            console.error("Failed to sync legacy approval flag:", error);
+            return;
+        }
+        onMilestoneChange?.({ [column]: approved });
+    };
+
     const activeFor = (m: Milestone) => attestations.find(a => a.milestone === m && !a.revoked_at);
 
     const sign = async (m: Milestone) => {
@@ -96,6 +119,7 @@ export default function AttestationPanel({
             toast.error(error.message);
             return;
         }
+        await syncLegacyFlag(m, true);
         toast.success(`${entry.label} attested.`);
         load();
     };
@@ -111,6 +135,7 @@ export default function AttestationPanel({
             toast.error(error.message);
             return;
         }
+        await syncLegacyFlag(a.milestone, false);
         toast.success("Attestation withdrawn. The record is retained.");
         load();
     };

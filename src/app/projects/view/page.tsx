@@ -41,7 +41,6 @@ import ConferenceMatcher from "@/components/ConferenceMatcher";
 import ProjectReportGenerator from "@/components/ProjectReportGenerator";
 import { sendEmail, TEMPLATES } from "@/utils/email";
 import ConferenceCountdown from "@/components/ConferenceCountdown";
-import FacultySignOff from "@/components/FacultySignOff";
 import AttestationPanel from "@/components/AttestationPanel";
 import ProjectComments from "@/components/ProjectComments";
 import PublicationAssistant from "@/components/PublicationAssistant";
@@ -622,20 +621,17 @@ export default function ProjectDetailPage() {
 
                 {/* Governance Sidebar Console */}
                 <div className="space-y-6">
-                    {/* Faculty Sign-off Governance Control */}
-                    <FacultySignOff
-                        project={project}
-                        userRole={userProfile?.role || null}
-                        onUpdate={(updated) => setProject(updated)}
-                    />
-
-                    {/* Durable signed milestones. FacultySignOff above only flips
-                        booleans on the project row, which cannot say who signed or
-                        when, and un-ticking erased that it was ever signed. */}
-                    <AttestationPanel
-                        projectId={project.id}
-                        currentUser={userProfile ? { id: userProfile.id, full_name: userProfile.full_name, role: userProfile.role } : null}
-                    />
+                    {/* Attestations replace the old FacultySignOff panel, which showed
+                        the same milestones as two booleans that could not record who
+                        signed or when. Residents never attest, so this is not rendered
+                        for them at all - their milestone status is on the portfolio. */}
+                    {(userProfile?.role === 'Faculty' || userProfile?.role === 'Admin' || userProfile?.role === 'Operator') && (
+                        <AttestationPanel
+                            projectId={project.id}
+                            currentUser={userProfile ? { id: userProfile.id, full_name: userProfile.full_name, role: userProfile.role } : null}
+                            onMilestoneChange={(updated) => setProject(p => p ? { ...p, ...updated } : p)}
+                        />
+                    )}
 
                     {/* Academic Toolkit Portal */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-4">
