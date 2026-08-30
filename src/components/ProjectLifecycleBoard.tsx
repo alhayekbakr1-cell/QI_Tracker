@@ -16,10 +16,11 @@ import { getProjectHealth, HEALTH_STYLES } from "@/utils/projectHealth";
  * is a status board, not an inbox.
  */
 
-type Stage = "created" | "protocol" | "attested" | "pdsa" | "presented";
+type Stage = "submitted" | "sponsored" | "protocol" | "attested" | "pdsa" | "presented";
 
 const STAGES: { key: Stage; label: string; short: string }[] = [
-    { key: "created", label: "Registered", short: "Reg" },
+    { key: "submitted", label: "Proposal submitted", short: "Submit" },
+    { key: "sponsored", label: "Mentor sponsored", short: "Sponsor" },
     { key: "protocol", label: "Protocol written", short: "Proto" },
     { key: "attested", label: "Mentor attested", short: "Attest" },
     { key: "pdsa", label: "2+ PDSA cycles", short: "PDSA" },
@@ -41,6 +42,7 @@ interface Row {
     attestedBy: string | null;
     attestedAt: string | null;
     completed: number;
+    isProposal?: boolean;
 }
 
 export default function ProjectLifecycleBoard() {
@@ -59,6 +61,14 @@ export default function ProjectLifecycleBoard() {
                 supabase.from("attestations").select("project_id, milestone, faculty_name, signed_at, revoked_at"),
                 supabase.from("project_files").select("project_id, file_name"),
             ]);
+
+            // Proposals still awaiting mentor sponsorship never reach the projects
+            // table, so without this they would be invisible here - and the Review
+            // Board that used to surface them has been removed.
+            const { data: pending } = await supabase
+                .from("project_registration_requests")
+                .select("id, title, faculty, lead_proponents, created_at, mentor_approval_status, status")
+                .neq("status", "approved");
             if (cancelled) return;
 
             const live = (attestations || []).filter((a: any) => !a.revoked_at);
@@ -74,7 +84,8 @@ export default function ProjectLifecycleBoard() {
                 const cycles = Number(p.pdsa_cycle) || 0;
 
                 const done: Record<Stage, boolean> = {
-                    created: true,
+                    submitted: true,
+                    sponsored: true,
                     // A protocol counts as written if it produced a document, by
                     // either storage route.
                     protocol: !!p.protocol_url || hasProtocolFile.has(p.id),
@@ -101,9 +112,28 @@ export default function ProjectLifecycleBoard() {
                 };
             });
 
+            const proposals: Row[] = (pending || []).map((r: any) => ({
+                id: r.id,
+                title: r.title,
+                status: r.mentor_approval_status === "rejected" ? "Revisions requested" : "Awaiting mentor sponsorship",
+                faculty: r.faculty,
+                lead: (r.lead_proponents || [])[0] || "Unassigned",
+                created_at: r.created_at,
+                // Proposals are not stale in the project sense; suppress the badge.
+                last_updated_date: null,
+                pdsa_cycle: 0,
+                protocol_url: null,
+                presentation_url: null,
+                done: { submitted: true, sponsored: false, protocol: false, attested: false, pdsa: false, presented: false },
+                attestedBy: null,
+                attestedAt: null,
+                completed: 1,
+                isProposal: true,
+            }));
+
             // Least progressed first: those are the ones needing a nudge.
-            built.sort((a, b) => a.completed - b.completed);
-            setRows(built);
+            const all = [...proposals, ...built].sort((a, b) => a.completed - b.completed);
+            setRows(all);
             setIsLoading(false);
         })();
         return () => { cancelled = true; };
@@ -120,7 +150,8 @@ export default function ProjectLifecycleBoard() {
     }, [rows, query]);
 
     const awaitingAttestation = rows.filter(r => r.done.protocol && !r.done.attested).length;
-    const noProtocol = rows.filter(r => !r.done.protocol).length;
+    const noProtocol = rows.filter(r => !r.isProposal && !r.done.protocol).length;
+    const awaitingSponsor = rows.filter(r => r.isProposal).length;
 
     if (isLoading) {
         return (
@@ -154,7 +185,13 @@ export default function ProjectLifecycleBoard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+                <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl p-3">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Awaiting mentor sponsorship</span>
+                    <p className={`text-2xl font-black leading-none mt-1 ${awaitingSponsor ? "text-sky-600" : "text-slate-300"}`}>
+                        {awaitingSponsor}
+                    </p>
+                </div>
                 <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl p-3">
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Awaiting mentor attestation</span>
                     <p className={`text-2xl font-black leading-none mt-1 ${awaitingAttestation ? "text-amber-600" : "text-slate-300"}`}>
@@ -176,7 +213,7 @@ export default function ProjectLifecycleBoard() {
                     return (
                         <Link
                             key={r.id}
-                            href={`/projects/view?id=${r.id}`}
+                            href={r.isProposal ? "/faculty" : `/projects/view?id=${r.id}`}
                             className="block p-4 rounded-2xl border border-slate-200/70 hover:border-slate-300 hover:bg-slate-50/60 transition-all group"
                         >
                             <div className="flex items-start justify-between gap-3 mb-3">
@@ -188,8 +225,8 @@ export default function ProjectLifecycleBoard() {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${styles.badge}`}>
-                                        {health.label}
+                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${r.isProposal ? "bg-sky-50 text-sky-700 border-sky-200" : styles.badge}`}>
+                                        {r.isProposal ? r.status : health.label}
                                     </span>
                                     <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
                                 </div>
