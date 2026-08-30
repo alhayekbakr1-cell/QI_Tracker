@@ -10,6 +10,7 @@ import {
     Clock, ArrowRight, Activity, ShieldCheck, Mail, Loader2, Search, Filter
 } from "lucide-react";
 import ActivityFeed from "@/components/ActivityFeed";
+import CohortOverview from "@/components/CohortOverview";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types";
@@ -126,6 +127,12 @@ export default function ExecutiveDashboard() {
                     </button>
                 </div>
             </header>
+
+            {/* Program-level view. Every other surface is scoped to one resident
+                or one mentor, so nobody could see the cohort as a whole. */}
+            <div className="mb-10">
+                <CohortOverview />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
                 {stats.map((s, idx) => (
