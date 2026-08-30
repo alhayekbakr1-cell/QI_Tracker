@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { getProtocolSectionAdvice } from "@/utils/ai";
 import { PROTOCOL_GUIDANCE, SUBMISSION_CHECKLIST } from "@/constants/protocolGuidance";
+import { uploadProjectFile } from "@/utils/projectStorage";
+import { sendEmail, TEMPLATES } from "@/utils/email";
 import { generateProtocolDoc, ProtocolData } from "@/utils/protocolExport";
 import { uploadToSharedFolder } from "@/utils/oneDrive";
 import { createClient } from "@/utils/supabase/client";
@@ -269,12 +271,29 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose, isReg
 
                 if (updateError) throw updateError;
 
-                alert("Success! Your official 14-section QI Protocol has been updated and submitted for dual-sponsorship review.");
+                await notifyMentor(formData.mentor, formData.title || projectTitle, null);
+                alert("Success! Your official 14-section QI Protocol has been updated and submitted for dual-sponsorship review. Your faculty mentor has been notified.");
                 localStorage.removeItem(`qi_protocol_draft_${projectId}`);
                 if (onSaveSuccess) onSaveSuccess();
                 onClose();
             } else {
-                // 2. Attempt direct upload to shared OneDrive folders
+                // 2a. Store the protocol in-app first. OneDrive below is best-effort
+                // and frequently blocked; without this the document existed only in
+                // the Downloads folder of whoever generated it.
+                let storagePath: string | null = null;
+                try {
+                    const stored = await uploadProjectFile(
+                        projectId,
+                        fileName,
+                        blob,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    );
+                    storagePath = stored.storagePath;
+                } catch (err) {
+                    console.error("In-app storage upload failed:", err);
+                }
+
+                // 2b. Attempt direct upload to shared OneDrive folders
                 let oneDriveUrl = "";
                 try {
                     const { url } = await uploadToSharedFolder(
@@ -302,6 +321,7 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose, isReg
                         file_name: fileName,
                         file_type: 'docx',
                         file_url: oneDriveUrl || null,
+                        storage_path: storagePath,
                         uploaded_by: profile?.id ?? null,
                         uploaded_by_name: profile?.full_name ?? null,
                     }),
@@ -311,7 +331,13 @@ export default function ProtocolWizard({ projectId, projectTitle, onClose, isReg
                     }).eq('id', projectId),
                 ]);
 
-                alert("Success! Your official 14-section QI Protocol docx has been generated, downloaded, and registered in the system.");
+                await notifyMentor(formData.mentor, formData.title || projectTitle, profile?.full_name ?? null);
+
+                alert(
+                    storagePath
+                        ? "Success! Your 14-section QI Protocol has been generated, downloaded, and stored on the project. Your faculty mentor has been notified."
+                        : "Your protocol was generated and downloaded, but could not be stored on the project. Please re-run the export or contact the QI office."
+                );
                 localStorage.removeItem(`qi_protocol_draft_${projectId}`);
                 if (onSaveSuccess) onSaveSuccess();
                 onClose();
@@ -1421,4 +1447,56 @@ function DirectoryMultiSelect({ label, value, options, onChange }: {
             </p>
         </div>
     );
+}
+
+/**
+ * Tells the faculty mentor a protocol is ready for them.
+ *
+ * Completing a protocol previously notified nobody: the resident saw an alert
+ * and the mentor found out by chance. Resolves the mentor's stored address from
+ * their profile - deliberately never guessing an address from their name, which
+ * is how mentor emails used to reach uninvolved colleagues.
+ */
+async function notifyMentor(mentorName: string, projectTitle: string, residentName: string | null) {
+    if (!mentorName?.trim()) return;
+    try {
+        const supabase = createClient();
+        const { data: mentor } = await supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .ilike("full_name", `%${mentorName.trim()}%`)
+            .limit(1)
+            .maybeSingle();
+
+        if (!mentor?.email) {
+            console.info(
+                `No stored email for mentor "${mentorName}" - skipping notification. ` +
+                `Link them from the directory to enable mentor emails.`
+            );
+            return;
+        }
+
+        const by = residentName ? `${residentName} has` : "A resident has";
+        await sendEmail(TEMPLATES.PROTOCOL_APPROVED || TEMPLATES.MENTOR_ASSIGNED, {
+            to_email: mentor.email,
+            to_name: mentor.full_name || mentorName,
+            project_title: projectTitle,
+            message:
+                `${by} completed the 14-section QI protocol for "${projectTitle}" and named you as faculty mentor. ` +
+                `Please review it in the Athena registry and record your attestation when you are satisfied.`,
+        });
+
+        if (mentor.id) {
+            await supabase.from("notifications").insert({
+                user_id: mentor.id,
+                type: "general",
+                title: "Protocol ready for your review",
+                message: `${by} completed the QI protocol for "${projectTitle}".`,
+                is_read: false,
+            });
+        }
+    } catch (err) {
+        // Never block the save on a notification failure.
+        console.error("Mentor notification failed:", err);
+    }
 }

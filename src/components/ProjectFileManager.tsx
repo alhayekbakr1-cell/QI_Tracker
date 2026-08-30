@@ -20,6 +20,7 @@ import { ProjectFile, Profile } from "@/types";
 import { format } from "date-fns";
 import { useMsal } from "@azure/msal-react";
 import { uploadToSharedFolder } from "@/utils/oneDrive";
+import { uploadProjectFile, downloadProjectFile } from "@/utils/projectStorage";
 
 interface ProjectFileManagerProps {
     projectId: string;
@@ -62,15 +63,26 @@ export default function ProjectFileManager({ projectId, projectName, currentUser
 
             setUploading(true);
 
-            // 1. Upload to shared OneDrive folder
-            const { url: finalUrl } = await uploadToSharedFolder(
-                instance,
-                accounts[0],
-                projectName || projectId,
-                file.name,
-                file,
-                file.type
-            );
+            // 1. Store in-app first. This is the copy the mentor and the programme
+            // can actually retrieve; OneDrive below is best-effort and is regularly
+            // blocked, which previously failed the whole upload.
+            const { storagePath } = await uploadProjectFile(projectId, file.name, file, file.type);
+
+            // 2. Mirror to the shared OneDrive folder where that is available.
+            let finalUrl = "";
+            try {
+                const res = await uploadToSharedFolder(
+                    instance,
+                    accounts[0],
+                    projectName || projectId,
+                    file.name,
+                    file,
+                    file.type
+                );
+                finalUrl = res.url;
+            } catch (err) {
+                console.warn("OneDrive mirror skipped:", err);
+            }
 
             // 3. Save file reference in project_files table
             const { data: dbData, error: dbError } = await supabase
@@ -79,7 +91,8 @@ export default function ProjectFileManager({ projectId, projectName, currentUser
                     project_id: projectId,
                     file_name: file.name,
                     file_type: file.name.split('.').pop() || null,
-                    file_url: finalUrl,
+                    file_url: finalUrl || null,
+                    storage_path: storagePath,
                     uploaded_by: currentUserProfile?.id || null,
                     uploaded_by_name: currentUserProfile?.full_name || null
                 }])
@@ -313,15 +326,29 @@ export default function ProjectFileManager({ projectId, projectName, currentUser
                                 </div>
 
                                 <div className="flex items-center gap-1.5">
-                                    <a
-                                        href={file.file_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    {/* The bucket is private, so there is no permanent link:
+                                        a signed URL is minted per click. Falls back to the
+                                        OneDrive link for files stored before in-app storage. */}
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                if ((file as any).storage_path) {
+                                                    await downloadProjectFile((file as any).storage_path, file.file_name);
+                                                } else if (file.file_url) {
+                                                    window.open(file.file_url, "_blank", "noopener");
+                                                } else {
+                                                    alert("This file has no stored copy. Please re-upload it.");
+                                                }
+                                            } catch (err: any) {
+                                                alert(err?.message || "Could not open that file.");
+                                            }
+                                        }}
                                         className="p-1.5 text-slate-400 hover:text-advent-blue hover:bg-slate-50 rounded-lg transition-all"
                                         title="View/Download"
                                     >
                                         <Download className="w-3.5 h-3.5" />
-                                    </a>
+                                    </button>
 
                                     {(currentUserProfile?.role === 'Admin' || currentUserProfile?.role === 'Faculty' || file.uploaded_by === currentUserProfile?.id) && (
                                         <button
