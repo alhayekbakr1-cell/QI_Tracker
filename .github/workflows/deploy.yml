@@ -52,7 +52,7 @@ jobs:
           NEXT_PUBLIC_OPENALEX_KEY: ${{ secrets.NEXT_PUBLIC_OPENALEX_KEY }}
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./out
 
